@@ -28,6 +28,18 @@ local Window = Library:CreateWindow({
 	Icon = 95816097006870,
 	NotifySide = "Right",
 	ShowCustomCursor = true,
+
+	-- Modded visuals: background image, gradient overlay, and custom border stroke.
+	BackgroundImage = "rbxassetid://14909902842",
+	BackgroundImageTransparency = 0.82,
+	Gradient = true,
+	GradientColorSequence = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(125, 85, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 15, 15)),
+	}),
+	GradientRotation = 35,
+	BorderColor = Color3.fromRGB(125, 85, 255),
+	BorderThickness = 1.5,
 })
 
 -- CALLBACK NOTE:
@@ -455,6 +467,51 @@ DropdownGroupBox:AddDropdown("MySearchableDropdown", {
 
 	Disabled = false, -- Will disable the dropdown (true / false)
 	Visible = true, -- Will make the dropdown invisible (true / false)
+})
+
+DropdownGroupBox:AddDropdown("MyCardDropdown", {
+	Values = { "Nebula", "Aurora", "Obsidian" },
+	Default = "Nebula",
+	Text = "Advanced card dropdown",
+	Searchable = true,
+	CardDropdown = true,
+	CardHeight = 82,
+	MaxVisibleDropdownItems = 3,
+	ValueImages = {
+		Nebula = "sparkles",
+		Aurora = "zap",
+		Obsidian = "gem",
+	},
+	Cards = {
+		Nebula = {
+			Text = "Nebula Theme",
+			Description = "Purple space cards with glowing accent strokes.",
+			Thumbnail = "rbxassetid://14909902842",
+			Icon = "sparkles",
+			BottomBarTransparency = 0.15,
+			StrokeColor = Color3.fromRGB(125, 85, 255),
+		},
+		Aurora = {
+			Text = "Aurora Theme",
+			Description = "Bright green and blue card with transparent bottom bar.",
+			Thumbnail = "rbxassetid://14909902842",
+			Icon = "zap",
+			BottomBarTransparency = 0.25,
+			StrokeColor = Color3.fromRGB(34, 197, 94),
+		},
+		Obsidian = {
+			Text = "Obsidian Theme",
+			Description = "Dark glass card for premium script hub menus.",
+			Thumbnail = "rbxassetid://14909902842",
+			Icon = "gem",
+			BottomBarTransparency = 0.1,
+			StrokeColor = Color3.fromRGB(255, 255, 255),
+			StrokeTransparency = 0.65,
+		},
+	},
+	Callback = function(Value)
+		print("[cb] Card dropdown selected:", Value)
+	end,
 })
 
 DropdownGroupBox:AddDropdown("MyDisplayFormattedDropdown", {

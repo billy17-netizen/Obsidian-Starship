@@ -13,6 +13,8 @@ This fork keeps the familiar Obsidian/Linoria-style API while adding quality-of-
 - Progress notifications: pass `Progress = 0` and update it later with `Notification:SetProgress(0.5)` for long-running jobs.
 - Dismissible toasts: notifications include a close button by default; use `CloseButton = false` or `Dismissible = false` to hide it.
 - Improved key tabs: `AddKeyBox` now supports expected-key validation, Enter-to-submit, status text, auto-clear behavior, and dynamic `SetExpectedKey` updates.
+- Visual polish: windows support `BackgroundImage`, image transparency, gradient overlays, and custom border/shadow stroke settings.
+- Advanced card dropdowns: set `CardDropdown = true` and provide `Cards` with thumbnails, bottom-bar transparency, icon, title, description, and per-card stroke options.
 - The original `Library:Notify({...})` API still works and now accepts `Type`/`Variant`, `AccentColor`, `Progress`, `Actions`, `CloseButton`, and `Dismissible` fields.
 
 See `Example.lua` for a complete notification and key-system showcase alongside the standard Obsidian element examples. The example loads this fork from `https://raw.githubusercontent.com/tanhoangviet/Obsidian-UI-Modded/refs/heads/main/`.

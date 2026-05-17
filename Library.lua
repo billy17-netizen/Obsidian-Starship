@@ -316,6 +316,25 @@ local Templates = {
         GlobalSearch = false,
         CornerRadius = 4,
         NotifySide = "Right",
+
+        Gradient = false,
+        GradientColorSequence = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(125, 85, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 15, 15)),
+        }),
+        GradientTransparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.88),
+            NumberSequenceKeypoint.new(1, 1),
+        }),
+        GradientRotation = 35,
+        BackgroundImageTransparency = 0.75,
+        BackgroundImageScaleType = Enum.ScaleType.Crop,
+        BorderColor = "OutlineColor",
+        BorderThickness = 1,
+        BorderTransparency = 0,
+        ShadowColor = "DarkColor",
+        ShadowThickness = 1.5,
+        ShadowTransparency = 0,
         ShowCustomCursor = true,
         Font = Enum.Font.Code,
         ToggleKeybind = Enum.KeyCode.RightControl,
@@ -416,9 +435,14 @@ local Templates = {
         Values = {},
         DisabledValues = {},
         ValueImages = {},
+        Cards = {},
 
         Multi = false,
         MaxVisibleDropdownItems = 8,
+        CardDropdown = false,
+        CardHeight = 76,
+        CardBottomBarTransparency = 0.2,
+        CardImageTransparency = 0,
 
         Callback = function() end,
         Changed = function() end,
@@ -1509,20 +1533,41 @@ function Library:MakeLine(Frame: GuiObject, Info)
     return Line
 end
 
-function Library:AddOutline(Frame: GuiObject)
+function Library:AddOutline(Frame: GuiObject, Info)
+    Info = Info or {}
+
     local OutlineStroke = New("UIStroke", {
-        Color = "OutlineColor",
-        Thickness = 1,
-        ZIndex = 2,
+        Color = Info.Color or "OutlineColor",
+        Thickness = Info.Thickness or 1,
+        Transparency = Info.Transparency or 0,
+        ZIndex = Info.ZIndex or 2,
         Parent = Frame,
     })
     local ShadowStroke = New("UIStroke", {
-        Color = "DarkColor",
-        Thickness = 1.5,
-        ZIndex = 1,
+        Color = Info.ShadowColor or "DarkColor",
+        Thickness = Info.ShadowThickness or 1.5,
+        Transparency = Info.ShadowTransparency or 0,
+        ZIndex = Info.ShadowZIndex or 1,
         Parent = Frame,
     })
     return OutlineStroke, ShadowStroke
+end
+
+function Library:AddGradient(Frame: GuiObject, Info)
+    Info = Info or {}
+
+    local Gradient = New("UIGradient", {
+        Color = Info.Color or Info.ColorSequence or ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Library.Scheme.AccentColor),
+            ColorSequenceKeypoint.new(1, Library.Scheme.BackgroundColor),
+        }),
+        Offset = Info.Offset or Vector2.zero,
+        Rotation = Info.Rotation or 0,
+        Transparency = Info.Transparency or NumberSequence.new(0),
+        Parent = Frame,
+    })
+
+    return Gradient
 end
 
 function Library:AddBlank(Frame: GuiObject, Size: UDim2)
@@ -4705,8 +4750,11 @@ do
             Values = Info.Values,
             DisabledValues = Info.DisabledValues,
             ValueImages = Info.ValueImages,
+            Cards = Info.Cards,
 
             Multi = Info.Multi,
+            CardDropdown = Info.CardDropdown,
+            CardHeight = Info.CardHeight,
 
             SpecialType = Info.SpecialType,
             ExcludeLocalPlayer = Info.ExcludeLocalPlayer,
@@ -4829,6 +4877,23 @@ do
             })
         end
 
+        local ResolveImage = function(Image)
+            if not Image then
+                return nil
+            end
+
+            if typeof(Image) == "table" then
+                return Image
+            end
+
+            return Library:GetCustomIcon(tostring(Image))
+                or {
+                    Url = tostring(Image),
+                    ImageRectOffset = Vector2.zero,
+                    ImageRectSize = Vector2.zero,
+                }
+        end
+
         local GetValueImage = function(Value)
             if not Value then
                 return nil
@@ -4840,12 +4905,28 @@ do
                     ValueImage = { Url = string.format("rbxthumb://type=AvatarHeadShot&id=%s&w=48&h=48", tostring(Value.UserId)) }
                 end
             else
-                if Info.ValueImages and Info.ValueImages[Value] then
-                    ValueImage = Library:GetCustomIcon(Info.ValueImages[Value])
+                if Dropdown.ValueImages and Dropdown.ValueImages[Value] then
+                    ValueImage = ResolveImage(Dropdown.ValueImages[Value])
                 end
             end
 
             return ValueImage
+        end
+
+        local GetCardInfo = function(Value)
+            local Card = Dropdown.Cards and Dropdown.Cards[Value]
+            if typeof(Card) ~= "table" then
+                Card = {}
+            end
+
+            Card.Text = Card.Text or (Info.FormatListValue and tostring(Info.FormatListValue(Value)) or tostring(Value))
+            Card.Description = Card.Description or Card.Desc
+            Card.Thumbnail = ResolveImage(Card.Thumbnail or Card.BackgroundImage or Card.Image)
+            Card.Icon = ResolveImage(Card.Icon or (Dropdown.ValueImages and Dropdown.ValueImages[Value]))
+            Card.BottomBarTransparency = Card.BottomBarTransparency or Info.CardBottomBarTransparency
+            Card.ImageTransparency = Card.ImageTransparency or Info.CardImageTransparency
+
+            return Card
         end
 
         local MenuTable = Library:AddContextMenu(
@@ -4871,7 +4952,8 @@ do
         Dropdown.Menu = MenuTable
 
         function Dropdown:RecalculateListSize(Count)
-            local Y = math.clamp((Count or GetTableSize(Dropdown.Values)) * 21, 0, Info.MaxVisibleDropdownItems * 21)
+            local ItemHeight = Dropdown.CardDropdown and Dropdown.CardHeight or 21
+            local Y = math.clamp((Count or GetTableSize(Dropdown.Values)) * ItemHeight, 0, Info.MaxVisibleDropdownItems * ItemHeight)
 
             MenuTable:SetSize(function()
                 return UDim2.fromOffset((DisplayContainer.AbsoluteSize.X / Library.DPIScale) + 1, Y)
@@ -4904,8 +4986,9 @@ do
                             ValueImage = GetValueImage(Value)
                         end
 
+                        local Card = Dropdown.CardDropdown and GetCardInfo(Value) or nil
                         Str = Str
-                            .. (Info.FormatDisplayValue and tostring(Info.FormatDisplayValue(Value)) or tostring(Value))
+                            .. (Card and Card.Text or Info.FormatDisplayValue and tostring(Info.FormatDisplayValue(Value)) or tostring(Value))
                             .. ", "
                     end
                 end
@@ -4913,9 +4996,10 @@ do
                 Str = Str:sub(1, #Str - 2)
             else
                 ValueImage = GetValueImage(Dropdown.Value)
-                Str = Dropdown.Value and tostring(Dropdown.Value) or ""
+                local Card = Dropdown.CardDropdown and GetCardInfo(Dropdown.Value) or nil
+                Str = Dropdown.Value and (Card and Card.Text or tostring(Dropdown.Value)) or ""
 
-                if Str ~= "" and Info.FormatDisplayValue then
+                if Str ~= "" and Info.FormatDisplayValue and not Card then
                     Str = tostring(Info.FormatDisplayValue(Str))
                 end
             end
@@ -4970,8 +5054,10 @@ do
 
             local Count = 0
             for _, Value in Values do
-                local FormattedValue = tostring(Info.FormatListValue and Info.FormatListValue(Value) or Value)
-                if SearchBox and not FormattedValue:lower():match(SearchBox.Text:lower()) then
+                local CardInfo = Dropdown.CardDropdown and GetCardInfo(Value) or nil
+                local FormattedValue = CardInfo and CardInfo.Text or tostring(Info.FormatListValue and Info.FormatListValue(Value) or Value)
+                local SearchValue = FormattedValue .. " " .. (CardInfo and tostring(CardInfo.Description or "") or "")
+                if SearchBox and not SearchValue:lower():match(SearchBox.Text:lower()) then
                     continue
                 end
 
@@ -4980,41 +5066,132 @@ do
                 local IsDisabled = table.find(DisabledValues, Value)
                 local Table = {}
                 local ValueImage = GetValueImage(Value)
+                local Image
+                local Button
+                local TitleLabel
+                local DescLabel
+                local BottomBar
 
                 local Container = New("Frame", {
                     BackgroundColor3 = "MainColor",
                     BackgroundTransparency = 1,
+                    ClipsDescendants = Dropdown.CardDropdown,
                     LayoutOrder = IsDisabled and 1 or 0,
-                    Size = UDim2.new(1, 0, 0, 21),
+                    Size = UDim2.new(1, 0, 0, Dropdown.CardDropdown and Dropdown.CardHeight or 21),
                     Parent = MenuTable.Menu,
                 })
 
-                local Image = ValueImage and New("ImageLabel", {
-                    BackgroundTransparency = 1,
-                    Image = ValueImage.Url,
-                    ImageRectOffset = ValueImage.ImageRectOffset,
-                    ImageRectSize = ValueImage.ImageRectSize,
-                    ImageTransparency = 0.5,
-                    Size = UDim2.fromOffset(16, 16),
-                    Position = UDim2.fromOffset(4, 3),
-                    Parent = Container,
-                })
+                if Dropdown.CardDropdown then
+                    table.insert(
+                        Library.Corners,
+                        New("UICorner", {
+                            CornerRadius = UDim.new(0, math.max(2, Library.CornerRadius - 1)),
+                            Parent = Container,
+                        })
+                    )
+                    Library:AddOutline(Container, {
+                        Color = CardInfo.StrokeColor or "OutlineColor",
+                        Thickness = CardInfo.StrokeThickness or 1,
+                        Transparency = CardInfo.StrokeTransparency or 0.35,
+                        ShadowTransparency = 1,
+                    })
 
-                local Button = New("TextButton", {
-                    BackgroundTransparency = 1,
-                    Size = ValueImage and UDim2.new(1, -18, 0, 21) or UDim2.new(1, 0, 0, 21),
-                    Position = ValueImage and UDim2.fromOffset(18, 0) or UDim2.fromOffset(0, 0),
-                    Text = FormattedValue,
-                    TextSize = 14,
-                    TextTransparency = 0.5,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    Parent = Container,
-                })
-                New("UIPadding", {
-                    PaddingLeft = UDim.new(0, 7),
-                    PaddingRight = UDim.new(0, 7),
-                    Parent = Button,
-                })
+                    Image = CardInfo.Thumbnail and New("ImageLabel", {
+                        BackgroundColor3 = "BackgroundColor",
+                        BackgroundTransparency = 0,
+                        Image = CardInfo.Thumbnail.Url,
+                        ImageRectOffset = CardInfo.Thumbnail.ImageRectOffset or Vector2.zero,
+                        ImageRectSize = CardInfo.Thumbnail.ImageRectSize or Vector2.zero,
+                        ImageTransparency = CardInfo.ImageTransparency or 0,
+                        ScaleType = CardInfo.ScaleType or Enum.ScaleType.Crop,
+                        Size = UDim2.fromScale(1, 1),
+                        Parent = Container,
+                    })
+
+                    BottomBar = New("Frame", {
+                        AnchorPoint = Vector2.new(0, 1),
+                        BackgroundColor3 = CardInfo.BottomBarColor or "DarkColor",
+                        BackgroundTransparency = CardInfo.BottomBarTransparency or 0.2,
+                        Position = UDim2.fromScale(0, 1),
+                        Size = UDim2.new(1, 0, 0, math.clamp(CardInfo.BottomBarHeight or 35, 24, Dropdown.CardHeight)),
+                        Parent = Container,
+                    })
+
+                    local CardIcon = CardInfo.Icon
+                    if CardIcon then
+                        New("ImageLabel", {
+                            BackgroundTransparency = 1,
+                            Image = CardIcon.Url,
+                            ImageRectOffset = CardIcon.ImageRectOffset or Vector2.zero,
+                            ImageRectSize = CardIcon.ImageRectSize or Vector2.zero,
+                            ImageTransparency = 0,
+                            Position = UDim2.fromOffset(7, 7),
+                            Size = UDim2.fromOffset(20, 20),
+                            Parent = BottomBar,
+                        })
+                    end
+
+                    TitleLabel = New("TextLabel", {
+                        BackgroundTransparency = 1,
+                        Position = UDim2.fromOffset(CardIcon and 33 or 8, 3),
+                        Size = UDim2.new(1, CardIcon and -39 or -14, 0, CardInfo.Description and 15 or 28),
+                        Text = FormattedValue,
+                        TextSize = 14,
+                        TextTruncate = Enum.TextTruncate.AtEnd,
+                        TextWrapped = false,
+                        TextXAlignment = Enum.TextXAlignment.Left,
+                        Parent = BottomBar,
+                    })
+
+                    if CardInfo.Description then
+                        DescLabel = New("TextLabel", {
+                            BackgroundTransparency = 1,
+                            Position = UDim2.fromOffset(CardIcon and 33 or 8, 18),
+                            Size = UDim2.new(1, CardIcon and -39 or -14, 0, 14),
+                            Text = tostring(CardInfo.Description),
+                            TextSize = 12,
+                            TextTransparency = 0.25,
+                            TextTruncate = Enum.TextTruncate.AtEnd,
+                            TextWrapped = false,
+                            TextXAlignment = Enum.TextXAlignment.Left,
+                            Parent = BottomBar,
+                        })
+                    end
+
+                    Button = New("TextButton", {
+                        BackgroundTransparency = 1,
+                        Size = UDim2.fromScale(1, 1),
+                        Text = "",
+                        Parent = Container,
+                    })
+                else
+                    Image = ValueImage and New("ImageLabel", {
+                        BackgroundTransparency = 1,
+                        Image = ValueImage.Url,
+                        ImageRectOffset = ValueImage.ImageRectOffset or Vector2.zero,
+                        ImageRectSize = ValueImage.ImageRectSize or Vector2.zero,
+                        ImageTransparency = 0.5,
+                        Size = UDim2.fromOffset(16, 16),
+                        Position = UDim2.fromOffset(4, 3),
+                        Parent = Container,
+                    })
+
+                    Button = New("TextButton", {
+                        BackgroundTransparency = 1,
+                        Size = ValueImage and UDim2.new(1, -18, 0, 21) or UDim2.new(1, 0, 0, 21),
+                        Position = ValueImage and UDim2.fromOffset(18, 0) or UDim2.fromOffset(0, 0),
+                        Text = FormattedValue,
+                        TextSize = 14,
+                        TextTransparency = 0.5,
+                        TextXAlignment = Enum.TextXAlignment.Left,
+                        Parent = Container,
+                    })
+                    New("UIPadding", {
+                        PaddingLeft = UDim.new(0, 7),
+                        PaddingRight = UDim.new(0, 7),
+                        Parent = Button,
+                    })
+                end
 
                 local Selected
                 if Info.Multi then
@@ -5031,10 +5208,26 @@ do
                     end
 
                     Container.BackgroundTransparency = Selected and 0 or 1
-                    Button.TextTransparency = IsDisabled and 0.8 or Selected and 0 or 0.5
+                    if Dropdown.CardDropdown then
+                        Container.BackgroundTransparency = Selected and 0 or 0.15
+                        if BottomBar then
+                            BottomBar.BackgroundTransparency = IsDisabled and 0.6 or Selected and 0.05 or (CardInfo.BottomBarTransparency or 0.2)
+                        end
+                        if Image then
+                            Image.ImageTransparency = IsDisabled and 0.45 or (CardInfo.ImageTransparency or 0)
+                        end
+                        if TitleLabel then
+                            TitleLabel.TextTransparency = IsDisabled and 0.8 or Selected and 0 or 0.05
+                        end
+                        if DescLabel then
+                            DescLabel.TextTransparency = IsDisabled and 0.85 or Selected and 0.15 or 0.3
+                        end
+                    else
+                        Button.TextTransparency = IsDisabled and 0.8 or Selected and 0 or 0.5
 
-                    if Image then
-                        Image.ImageTransparency = IsDisabled and 0.8 or Selected and 0 or 0.5
+                        if Image then
+                            Image.ImageTransparency = IsDisabled and 0.8 or Selected and 0 or 0.5
+                        end
                     end
                 end
 
@@ -5150,6 +5343,28 @@ do
             end
 
             Dropdown.ValueImages = ValueImages
+            Dropdown:BuildDropdownList()
+        end
+
+        function Dropdown:SetCards(Cards)
+            if typeof(Cards) ~= "table" then
+                return
+            end
+
+            Dropdown.Cards = Cards
+            Info.Cards = Cards
+            Dropdown:BuildDropdownList()
+        end
+
+        function Dropdown:AddCards(Cards)
+            if typeof(Cards) ~= "table" then
+                return
+            end
+
+            for key, val in Cards do
+                Dropdown.Cards[key] = val
+            end
+
             Dropdown:BuildDropdownList()
         end
 
@@ -6691,6 +6906,9 @@ function Library:CreateWindow(WindowInfo)
     local Tabs
     local Container
     local BackgroundImage
+    local WindowGradient
+    local MainOutlineStroke
+    local MainShadowStroke
     local BottomBackground
     local FooterLabel
 
@@ -6728,7 +6946,21 @@ function Library:CreateWindow(WindowInfo)
                 Parent = MainFrame,
             })
         )
-        Library:AddOutline(MainFrame)
+        MainOutlineStroke, MainShadowStroke = Library:AddOutline(MainFrame, {
+            Color = WindowInfo.BorderColor,
+            Thickness = WindowInfo.BorderThickness,
+            Transparency = WindowInfo.BorderTransparency,
+            ShadowColor = WindowInfo.ShadowColor,
+            ShadowThickness = WindowInfo.ShadowThickness,
+            ShadowTransparency = WindowInfo.ShadowTransparency,
+        })
+        if WindowInfo.Gradient then
+            WindowGradient = Library:AddGradient(MainFrame, {
+                Color = WindowInfo.GradientColorSequence,
+                Rotation = WindowInfo.GradientRotation,
+                Transparency = WindowInfo.GradientTransparency,
+            })
+        end
         Library:MakeLine(MainFrame, {
             Position = UDim2.fromOffset(0, 48),
             Size = UDim2.new(1, 0, 0, 1),
@@ -6741,15 +6973,22 @@ function Library:CreateWindow(WindowInfo)
             Parent = MainFrame,
         })
 
-        if WindowInfo.BackgroundImage then
+        local function CreateBackgroundImage(Image)
+            if BackgroundImage then
+                BackgroundImage.Image = Image
+                BackgroundImage.Visible = Image ~= nil and Image ~= ""
+                return BackgroundImage
+            end
+
             BackgroundImage = New("ImageLabel", {
-                Image = WindowInfo.BackgroundImage,
+                Image = Image or "",
                 Position = UDim2.fromScale(0, 0),
                 Size = UDim2.fromScale(1, 1),
-                ScaleType = Enum.ScaleType.Stretch,
-                ZIndex = 999,
+                ScaleType = WindowInfo.BackgroundImageScaleType,
+                ZIndex = 1,
                 BackgroundTransparency = 1,
-                ImageTransparency = 0.75,
+                ImageTransparency = WindowInfo.BackgroundImageTransparency,
+                Visible = Image ~= nil and Image ~= "",
                 Parent = MainFrame,
             })
 
@@ -6760,7 +6999,11 @@ function Library:CreateWindow(WindowInfo)
                     Parent = BackgroundImage,
                 })
             )
+
+            return BackgroundImage
         end
+
+        CreateBackgroundImage(WindowInfo.BackgroundImage)
 
         if WindowInfo.Center then
             MainFrame.Position = UDim2.new(0.5, -MainFrame.Size.X.Offset / 2, 0.5, -MainFrame.Size.Y.Offset / 2)
@@ -7062,13 +7305,80 @@ function Library:CreateWindow(WindowInfo)
         WindowInfo.Title = title
     end
 
-    if WindowInfo.BackgroundImage then
-        function Window:SetBackgroundImage(Image: string)
-            assert(typeof(Image) == "string", "Expected string for Image got: " .. typeof(Image))
+    function Window:SetBackgroundImage(Image: string)
+        assert(typeof(Image) == "string", "Expected string for Image got: " .. typeof(Image))
 
-            BackgroundImage.Image = Image
-            WindowInfo.BackgroundImage = Image
+        BackgroundImage.Image = Image
+        BackgroundImage.Visible = Image ~= ""
+        WindowInfo.BackgroundImage = Image
+    end
+
+    Window.ChangeBackgroundImage = Window.SetBackgroundImage
+
+    function Window:SetBackgroundImageTransparency(Transparency: number)
+        assert(typeof(Transparency) == "number", "Expected number for Transparency got: " .. typeof(Transparency))
+
+        WindowInfo.BackgroundImageTransparency = math.clamp(Transparency, 0, 1)
+        BackgroundImage.ImageTransparency = WindowInfo.BackgroundImageTransparency
+    end
+
+    function Window:SetGradient(Enabled: boolean, GradientInfo)
+        WindowInfo.Gradient = Enabled == true
+
+        if not WindowGradient and WindowInfo.Gradient then
+            WindowGradient = Library:AddGradient(MainFrame, GradientInfo or {
+                Color = WindowInfo.GradientColorSequence,
+                Rotation = WindowInfo.GradientRotation,
+                Transparency = WindowInfo.GradientTransparency,
+            })
+        elseif WindowGradient then
+            WindowGradient.Enabled = WindowInfo.Gradient
         end
+
+        if WindowGradient and GradientInfo then
+            WindowGradient.Color = GradientInfo.Color or GradientInfo.ColorSequence or WindowGradient.Color
+            WindowGradient.Rotation = GradientInfo.Rotation or WindowGradient.Rotation
+            WindowGradient.Transparency = GradientInfo.Transparency or WindowGradient.Transparency
+        end
+    end
+
+    function Window:SetBorder(Info)
+        Info = Info or {}
+
+        if Info.Color then
+            MainOutlineStroke.Color = GetSchemeValue(Info.Color) or Info.Color
+            if typeof(Info.Color) == "string" then
+                if not Library.Registry[MainOutlineStroke] then
+                    Library:AddToRegistry(MainOutlineStroke, {})
+                end
+                Library.Registry[MainOutlineStroke].Color = Info.Color
+            end
+        end
+        if Info.Thickness then
+            MainOutlineStroke.Thickness = Info.Thickness
+        end
+        if Info.Transparency then
+            MainOutlineStroke.Transparency = Info.Transparency
+        end
+        if Info.ShadowColor then
+            MainShadowStroke.Color = GetSchemeValue(Info.ShadowColor) or Info.ShadowColor
+            if typeof(Info.ShadowColor) == "string" then
+                if not Library.Registry[MainShadowStroke] then
+                    Library:AddToRegistry(MainShadowStroke, {})
+                end
+                Library.Registry[MainShadowStroke].Color = Info.ShadowColor
+            end
+        end
+        if Info.ShadowThickness then
+            MainShadowStroke.Thickness = Info.ShadowThickness
+        end
+        if Info.ShadowTransparency then
+            MainShadowStroke.Transparency = Info.ShadowTransparency
+        end
+    end
+
+    function Window:ChangeFooter(footer: string)
+        return Window:SetFooter(footer)
     end
 
     function Window:SetFooter(footer: string)
