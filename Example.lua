@@ -205,6 +205,83 @@ local MyDisabledButton = LeftGroupBox:AddButton({
 		:AddButton({ Text = 'Kick all', Func = Functions.KickAll, Tooltip = 'This will kick everyone in the game!' })
 ]]
 
+local NotificationGroupBox = Tabs.Main:AddRightGroupbox("Notifications", "bell")
+
+NotificationGroupBox:AddButton({
+	Text = "Show success toast",
+	Func = function()
+		Library:NotifySuccess({
+			Title = "Config saved",
+			Description = "Your settings are safe and ready for the next session.",
+			Time = 4,
+			Actions = {
+				{
+					Text = "Nice",
+					Callback = function(Notification)
+						print("Dismissed notification:", Notification.Title)
+					end,
+				},
+			},
+		})
+	end,
+})
+
+NotificationGroupBox:AddButton({
+	Text = "Show progress toast",
+	Func = function()
+		local Notification = Library:NotifyInfo({
+			Title = "Downloading assets",
+			Description = "Preparing icons, images, and cached resources...",
+			Persist = true,
+			Progress = 0,
+			Actions = {
+				{
+					Text = "Cancel",
+					Risky = true,
+					Callback = function(Toast)
+						Toast:ChangeDescription("Download cancelled by the user.")
+					end,
+				},
+			},
+		})
+
+		for Step = 1, 10 do
+			if Notification.Destroyed then
+				return
+			end
+
+			task.wait(0.15)
+			Notification:SetProgress(Step / 10)
+		end
+
+		Notification:ChangeTitle("Download complete")
+		Notification:ChangeDescription("All assets were prepared successfully.")
+		task.wait(0.5)
+		Notification:Destroy()
+	end,
+})
+
+NotificationGroupBox:AddButton({
+	Text = "Show warning toast",
+	Func = function()
+		Library:NotifyWarning({
+			Title = "Heads up",
+			Description = "This demonstrates variant icons, accent colors, and action buttons.",
+			Time = 6,
+			Actions = {
+				{ Text = "Got it" },
+				{
+					Text = "Keep open",
+					CloseOnClick = false,
+					Callback = function(Toast)
+						Toast:ChangeDescription("This toast will stay until its timer ends.")
+					end,
+				},
+			},
+		})
+	end,
+})
+
 -- Groupbox:AddLabel
 -- Arguments: Text, DoesWrap, Idx
 -- Arguments: Idx, Options
