@@ -67,6 +67,8 @@ export type NotificationInfo = {
     Variant: NotificationVariant?,
     Progress: number?,
     Actions: { NotificationAction }?,
+    CloseButton: boolean?,
+    Dismissible: boolean?,
 }
 
 export type Notification = NotificationInfo & {
@@ -688,12 +690,49 @@ export type Tab = {
     SetVisible: (self: Tab, Visible: boolean) -> (),
 }
 
+
+export type KeyBox = {
+    ExpectedKey: string?,
+    CaseSensitive: boolean,
+    AutoClear: boolean,
+    ClearOnSuccess: boolean,
+    LastKey: string,
+    LastSuccess: boolean,
+    Type: "KeyBox",
+
+    SetStatus: (self: KeyBox, Text: string, Color: (Color3 | string)?) -> (),
+    SetExpectedKey: (self: KeyBox, ExpectedKey: string?) -> (),
+    SetValue: (self: KeyBox, Value: string?) -> (),
+    GetValue: (self: KeyBox) -> string,
+    Submit: (self: KeyBox) -> (),
+}
+
+
+export type KeyBoxInfo = {
+    ExpectedKey: string?,
+    Default: string?,
+    Placeholder: string?,
+    ButtonText: string?,
+    StatusText: string?,
+    SuccessText: string?,
+    FailureText: string?,
+    StatusColor: Color3 | string?,
+    CaseSensitive: boolean?,
+    AutoClear: boolean?,
+    ClearOnSuccess: boolean?,
+    ClearTextOnFocus: boolean?,
+    ShowStatus: boolean?,
+    Callback: (Success: boolean, Key: string, KeyBox: KeyBox) -> (),
+}
+
 export type KeyTab = BaseGroupbox & {
     Elements: { [any]: any },
     IsKeyTab: true,
     Container: ScrollingFrame,
 
-    AddKeyBox: (self: KeyTab, ExpectedKey: string?, Callback: (Success: boolean, Key: string) -> ()) -> (),
+    AddKeyBox: ((self: KeyTab, Callback: (Key: string) -> ()) -> KeyBox)
+        & ((self: KeyTab, ExpectedKey: string?, Callback: (Success: boolean, Key: string, KeyBox: KeyBox) -> ()) -> KeyBox)
+        & ((self: KeyTab, Info: KeyBoxInfo) -> KeyBox),
     Resize: (self: KeyTab) -> (),
     Hover: (self: KeyTab, Hovering: boolean) -> (),
     Show: (self: KeyTab) -> (),

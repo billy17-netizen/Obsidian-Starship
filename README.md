@@ -8,9 +8,11 @@ This fork keeps the familiar Obsidian/Linoria-style API while adding quality-of-
 
 ## Modded highlights
 
-- Notification variants: `Library:NotifyInfo`, `Library:NotifySuccess`, `Library:NotifyWarning`, and `Library:NotifyError` add sensible icons and accent colors automatically.
+- Notification variants: `Library:NotifyInfo`, `Library:NotifySuccess`, `Library:NotifyWarning`, and `Library:NotifyError` add sensible icons, titles, and accent colors automatically.
 - Actionable notifications: pass an `Actions` array with button text and callbacks to let users confirm, cancel, or open follow-up UI directly from a toast.
 - Progress notifications: pass `Progress = 0` and update it later with `Notification:SetProgress(0.5)` for long-running jobs.
-- The original `Library:Notify({...})` API still works and now accepts `Type`/`Variant`, `AccentColor`, `Progress`, and `Actions` fields.
+- Dismissible toasts: notifications include a close button by default; use `CloseButton = false` or `Dismissible = false` to hide it.
+- Improved key tabs: `AddKeyBox` now supports expected-key validation, Enter-to-submit, status text, auto-clear behavior, and dynamic `SetExpectedKey` updates.
+- The original `Library:Notify({...})` API still works and now accepts `Type`/`Variant`, `AccentColor`, `Progress`, `Actions`, `CloseButton`, and `Dismissible` fields.
 
-See `Example.lua` for a complete notification showcase alongside the standard Obsidian element examples.
+See `Example.lua` for a complete notification and key-system showcase alongside the standard Obsidian element examples. The example loads this fork from `https://raw.githubusercontent.com/tanhoangviet/Obsidian-UI-Modded/refs/heads/main/`.

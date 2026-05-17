@@ -734,17 +734,55 @@ Tabs.Key:AddLabel({
 	Size = 16,
 })
 
-Tabs.Key:AddKeyBox(function(ReceivedKey)
-	-- KeyBox only takes the callback for the button, you need to implement your own key check inside the callback
-	local Success = ReceivedKey == "Banana"
+Tabs.Key:AddKeyBox({
+	ExpectedKey = "Banana",
+	Placeholder = "Type Banana and press Enter",
+	ButtonText = "Unlock",
+	ClearOnSuccess = true,
+	SuccessText = "Access granted",
+	FailureText = "Wrong key, try Banana",
+	Callback = function(Success, ReceivedKey, KeyBox)
+		print("Expected Key: Banana - Received Key:", ReceivedKey, "| Success:", Success)
 
-	print("Expected Key: Banana - Received Key:", ReceivedKey, "| Success:", Success)
-	Library:Notify({
-		Title = "Expected Key: Banana",
-		Description = "Received Key: " .. ReceivedKey .. "\nSuccess: " .. tostring(Success),
-		Time = 4,
-	})
-end)
+		if Success then
+			Library:NotifySuccess({
+				Title = "Key accepted",
+				Description = "The key system validated your access and cleared the input box.",
+				Time = 4,
+			})
+		else
+			Library:NotifyError({
+				Title = "Invalid key",
+				Description = "Received " .. ReceivedKey .. ". Try the expected key: " .. tostring(KeyBox.ExpectedKey),
+				Time = 4,
+			})
+		end
+	end,
+})
+
+local DynamicKeyBox = Tabs.Key:AddKeyBox({
+	ExpectedKey = "Obsidian",
+	Placeholder = "Dynamic key example",
+	ButtonText = "Check",
+	CaseSensitive = false,
+	Callback = function(Success, ReceivedKey, KeyBox)
+		KeyBox:SetStatus(
+			Success and "Dynamic key accepted" or "Expected: " .. tostring(KeyBox.ExpectedKey),
+			Success and Color3.fromRGB(34, 197, 94) or Color3.fromRGB(245, 158, 11)
+		)
+	end,
+})
+Tabs.Key:AddButton({
+	Text = "Change dynamic key",
+	Func = function()
+		DynamicKeyBox:SetExpectedKey("Modded")
+		Library:NotifyInfo({
+			Title = "Key changed",
+			Description = "The dynamic key is now Modded.",
+			Time = 3,
+		})
+	end,
+})
 
 -- DraggableLabel
 

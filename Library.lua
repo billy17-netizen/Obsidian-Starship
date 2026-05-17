@@ -6140,6 +6140,7 @@ local function ApplyNotificationVariant(Data)
     end
 
     Data.Type = VariantName
+    Data.Title = Data.Title or VariantName
     Data.Icon = Data.Icon or Variant.Icon
     Data.BigIcon = Data.BigIcon or Variant.BigIcon
     Data.IconColor = Data.IconColor or Variant.Color
@@ -6165,13 +6166,17 @@ local function NormalizeNotificationData(...)
         Data.Variant = Info.Variant
         Data.Progress = Info.Progress
         Data.Actions = Info.Actions
+        Data.CloseButton = Info.CloseButton
+        Data.Dismissible = Info.Dismissible
     else
+        Data.Title = "Notification"
         Data.Description = tostring(Info)
         Data.Time = select(2, ...) or 5
         Data.SoundId = select(3, ...)
     end
 
     ApplyNotificationVariant(Data)
+    Data.Title = Data.Title or "Notification"
     Data.Destroyed = false
     return Data
 end
@@ -6232,6 +6237,37 @@ function Library:Notify(...)
         Size = UDim2.fromScale(1, 0),
         Parent = Holder,
     })
+
+    local CloseButton
+    if Data.CloseButton ~= false and Data.Dismissible ~= false then
+        CloseButton = New("TextButton", {
+            AnchorPoint = Vector2.new(1, 0),
+            BackgroundTransparency = 1,
+            Position = UDim2.new(1, 2, 0, -3),
+            Size = UDim2.fromOffset(18, 18),
+            Text = "×",
+            TextSize = 16,
+            TextTransparency = 0.25,
+            ZIndex = 6,
+            Parent = Holder,
+        })
+
+        Library:GiveSignal(CloseButton.MouseEnter:Connect(function()
+            TweenService:Create(CloseButton, Library.TweenInfo, {
+                TextTransparency = 0,
+            }):Play()
+        end))
+        Library:GiveSignal(CloseButton.MouseLeave:Connect(function()
+            TweenService:Create(CloseButton, Library.TweenInfo, {
+                TextTransparency = 0.25,
+            }):Play()
+        end))
+        Library:GiveSignal(CloseButton.MouseButton1Click:Connect(function()
+            if not Data.Destroyed then
+                Data:Destroy()
+            end
+        end))
+    end
 
     if Data.BigIcon then
         New("UIListLayout", {
@@ -6314,7 +6350,8 @@ function Library:Notify(...)
             TextSize = 15,
             TextXAlignment = Enum.TextXAlignment.Left,
             TextYAlignment = Enum.TextYAlignment.Center,
-            TextWrapped = true,
+            TextTruncate = Enum.TextTruncate.AtEnd,
+            TextWrapped = false,
             Parent = TitleContainer,
         })
     end
@@ -6387,23 +6424,28 @@ function Library:Notify(...)
     function Data:Resize()
         local ExtraWidth = BigIconLabel and 32 or 0
         local IconWidth = IconLabel and 21 or 0
+        local CloseWidth = CloseButton and 18 or 0
+        local MaxTextWidth = math.max(
+            48,
+            (NotificationArea.AbsoluteSize.X / Library.DPIScale) - 24 - ExtraWidth - CloseWidth
+        )
+        local MaxTitleWidth = math.max(48, MaxTextWidth - IconWidth)
 
         if Title then
-            local X, Y =
-                Library:GetTextBounds(Title.Text, Title.FontFace, Title.TextSize, (NotificationArea.AbsoluteSize.X / Library.DPIScale) - 24 - ExtraWidth - IconWidth)
-            Title.Size = UDim2.fromOffset(X, Y)
+            local X, Y = Library:GetTextBounds(Title.Text, Title.FontFace, Title.TextSize, MaxTitleWidth)
+            X = math.min(X, MaxTitleWidth)
+            Title.Size = UDim2.fromOffset(X, math.max(Y, 18))
             TitleX = X + IconWidth
-            TitleContainer.Size = UDim2.fromOffset(TitleX, math.max(Y, IconLabel and 16 or 0))
+            TitleContainer.Size = UDim2.fromOffset(TitleX, math.max(Y, IconLabel and 16 or 0, 18))
         end
 
         if Desc then
-            local X, Y =
-                Library:GetTextBounds(Desc.Text, Desc.FontFace, Desc.TextSize, (NotificationArea.AbsoluteSize.X / Library.DPIScale) - 24 - ExtraWidth)
+            local X, Y = Library:GetTextBounds(Desc.Text, Desc.FontFace, Desc.TextSize, MaxTextWidth)
             Desc.Size = UDim2.fromOffset(X, Y)
             DescX = X
         end
 
-        FakeBackground.Size = UDim2.fromOffset(math.max(TitleX, DescX) + 24 + ExtraWidth, 0)
+        FakeBackground.Size = UDim2.fromOffset(math.max(TitleX, DescX) + 24 + ExtraWidth + CloseWidth, 0)
     end
 
     function Data:ChangeTitle(Text)
@@ -8095,22 +8137,55 @@ function Library:CreateWindow(WindowInfo)
             IsKeyTab = true,
         }
 
-        function Tab:AddKeyBox(Callback)
-            assert(typeof(Callback) == "function", "Callback must be a function")
+        function Tab:AddKeyBox(...)
+            local Args = { ... }
+            local Info = {}
+            local LegacyCallback = false
 
+            if select("#", ...) == 1 and typeof(Args[1]) == "function" then
+                Info.Callback = Args[1]
+                LegacyCallback = true
+            elseif select("#", ...) == 1 and typeof(Args[1]) == "table" then
+                Info = Args[1]
+            else
+                Info.ExpectedKey = Args[1]
+                Info.Callback = Args[2]
+            end
+
+            assert(typeof(Info.Callback) == "function", "Callback must be a function")
+
+            local KeyBox = {
+                ExpectedKey = Info.ExpectedKey,
+                CaseSensitive = Info.CaseSensitive == true,
+                AutoClear = Info.AutoClear == true,
+                ClearOnSuccess = Info.ClearOnSuccess == true,
+                LastKey = "",
+                LastSuccess = false,
+                Type = "KeyBox",
+            }
+
+            local ShowStatus = Info.ShowStatus ~= false
             local Holder = New("Frame", {
                 BackgroundTransparency = 1,
-                Size = UDim2.new(0.75, 0, 0, 21),
+                Size = UDim2.new(0.75, 0, 0, ShowStatus and 43 or 21),
                 Parent = TabContainer,
+            })
+
+            local InputRow = New("Frame", {
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 21),
+                Parent = Holder,
             })
 
             local Box = New("TextBox", {
                 BackgroundColor3 = "MainColor",
-                PlaceholderText = "Key",
+                ClearTextOnFocus = Info.ClearTextOnFocus ~= false,
+                PlaceholderText = Info.Placeholder or "Enter key",
                 Size = UDim2.new(1, -71, 1, 0),
+                Text = Info.Default or "",
                 TextSize = 14,
                 TextXAlignment = Enum.TextXAlignment.Left,
-                Parent = Holder,
+                Parent = InputRow,
             })
             New("UIPadding", {
                 PaddingLeft = UDim.new(0, 8),
@@ -8134,9 +8209,9 @@ function Library:CreateWindow(WindowInfo)
                 BackgroundColor3 = "MainColor",
                 Position = UDim2.fromScale(1, 0),
                 Size = UDim2.new(0, 63, 1, 0),
-                Text = "Execute",
+                Text = Info.ButtonText or "Execute",
                 TextSize = 14,
-                Parent = Holder,
+                Parent = InputRow,
             })
             New("UIStroke", {
                 Color = "OutlineColor",
@@ -8150,6 +8225,89 @@ function Library:CreateWindow(WindowInfo)
                 })
             )
 
+            local StatusLabel
+            if ShowStatus then
+                StatusLabel = New("TextLabel", {
+                    BackgroundTransparency = 1,
+                    Position = UDim2.fromOffset(0, 25),
+                    Size = UDim2.new(1, 0, 0, 18),
+                    Text = Info.StatusText or (Info.ExpectedKey and "Waiting for key..." or "Ready"),
+                    TextColor3 = Info.StatusColor or "FontColor",
+                    TextSize = 13,
+                    TextTransparency = 0.25,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
+                    TextWrapped = false,
+                    Parent = Holder,
+                })
+            end
+
+            local function NormalizeKey(Key)
+                Key = tostring(Key or "")
+                if KeyBox.CaseSensitive then
+                    return Key
+                end
+
+                return Key:lower()
+            end
+
+            local function CheckKey(ReceivedKey)
+                if KeyBox.ExpectedKey == nil or tostring(KeyBox.ExpectedKey) == "" then
+                    return true
+                end
+
+                return NormalizeKey(ReceivedKey) == NormalizeKey(KeyBox.ExpectedKey)
+            end
+
+            function KeyBox:SetStatus(Text, Color)
+                if not StatusLabel then
+                    return
+                end
+
+                StatusLabel.Text = tostring(Text or "")
+                local ResolvedColor = GetSchemeValue(Color) or Color
+                if typeof(ResolvedColor) == "Color3" then
+                    StatusLabel.TextColor3 = ResolvedColor
+                end
+            end
+
+            function KeyBox:SetExpectedKey(ExpectedKey)
+                KeyBox.ExpectedKey = ExpectedKey
+                KeyBox:SetStatus(ExpectedKey and "Waiting for key..." or "Ready", Library.Scheme.FontColor)
+            end
+
+            function KeyBox:SetValue(Value)
+                Box.Text = tostring(Value or "")
+            end
+
+            function KeyBox:GetValue()
+                return Box.Text
+            end
+
+            function KeyBox:Submit()
+                local ReceivedKey = Box.Text
+                local Success = CheckKey(ReceivedKey)
+
+                KeyBox.LastKey = ReceivedKey
+                KeyBox.LastSuccess = Success
+
+                if Success then
+                    KeyBox:SetStatus(Info.SuccessText or "Key accepted", Color3.fromRGB(34, 197, 94))
+                else
+                    KeyBox:SetStatus(Info.FailureText or "Invalid key", Color3.fromRGB(239, 68, 68))
+                end
+
+                if LegacyCallback then
+                    Library:SafeCallback(Info.Callback, ReceivedKey)
+                else
+                    Library:SafeCallback(Info.Callback, Success, ReceivedKey, KeyBox)
+                end
+
+                if KeyBox.AutoClear or (Success and KeyBox.ClearOnSuccess) then
+                    Box.Text = ""
+                end
+            end
+
             Button.InputBegan:Connect(function(Input)
                 if not IsClickInput(Input) then
                     return
@@ -8159,8 +8317,16 @@ function Library:CreateWindow(WindowInfo)
                     return
                 end
 
-                Callback(Box.Text)
+                KeyBox:Submit()
             end)
+
+            Box.FocusLost:Connect(function(EnterPressed)
+                if EnterPressed then
+                    KeyBox:Submit()
+                end
+            end)
+
+            return KeyBox
         end
 
         function Tab:RefreshSides() end
