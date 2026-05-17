@@ -49,7 +49,14 @@ local Window = Library:CreateWindow({
 
 -- You do not have to set your tabs & groups up this way, just a prefrence.
 -- You can find more icons in https://lucide.dev/
+Library:ApplyNewElements() -- Enables/advertises modded elements like glass panels, shiny buttons, and liquid toggles.
+
 local Tabs = {
+	-- Creates a special generated dashboard tab with overview cards and new liquid-glass controls
+	Dashboard = Window:AddDashboardTab({
+		Badge = "LIVE",
+		Text = "Welcome to the modded Obsidian dashboard. Use this tab as a landing page for script hubs.",
+	}),
 	-- Creates a new tab titled Main
 	Main = Window:AddTab("Main", "user"),
 	Key = Window:AddKeyTab("Key System"),
@@ -73,6 +80,27 @@ UISettingsTab:UpdateWarningBox({
 -- Groupbox and Tabbox inherit the same functions
 -- except Tabboxes you have to call the functions on a tab (Tabbox:AddTab(Name))
 local LeftGroupBox = Tabs.Main:AddLeftGroupbox("Groupbox", "boxes")
+
+LeftGroupBox:AddGlassPanel("ExampleGlassPanel", {
+	Title = "Liquid glass preview",
+	Description = "A reusable glass panel with gradient, icon, badge, and custom stroke styling.",
+	Icon = "sparkles",
+	Badge = "NEW",
+	Height = 82,
+})
+LeftGroupBox:AddLiquidGlassToggle("ExampleLiquidToggle", {
+	Text = "Liquid glass toggle",
+	Default = true,
+	Callback = function(Value)
+		print("[cb] Liquid glass toggle changed:", Value)
+	end,
+})
+LeftGroupBox:AddShinyButton({
+	Text = "Shiny animated button",
+	Callback = function()
+		Library:NotifySuccess({ Title = "Shiny", Description = "The new shiny button was clicked!", Time = 3 })
+	end,
+})
 
 -- We can also get our Main tab via the following code:
 -- local LeftGroupBox = Window.Tabs.Main:AddLeftGroupbox("Groupbox", "boxes")

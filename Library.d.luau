@@ -170,6 +170,51 @@ export type SliderInfo = {
 }
 
 
+
+export type GlassPanelInfo = {
+    Title: string?,
+    Text: string?,
+    Description: string?,
+    Desc: string?,
+    Icon: string?,
+    Badge: string?,
+    Height: number?,
+    AccentColor: Color3 | string?,
+    BackgroundColor: Color3 | string?,
+    Transparency: number?,
+    StrokeColor: Color3 | string?,
+    StrokeThickness: number?,
+    StrokeTransparency: number?,
+    ShadowTransparency: number?,
+    Gradient: boolean?,
+    GradientColorSequence: ColorSequence?,
+    GradientTransparency: NumberSequence?,
+    GradientRotation: number?,
+    Visible: boolean?,
+}
+
+export type NewElementButtonInfo = {
+    Text: string?,
+    Func: ((any) -> ())?,
+    Callback: ((any) -> ())?,
+    Icon: string?,
+    Height: number?,
+    AccentColor: Color3 | string?,
+    BackgroundColor: Color3 | string?,
+    Transparency: number?,
+    HoverTransparency: number?,
+    StrokeColor: Color3 | string?,
+    StrokeThickness: number?,
+    StrokeTransparency: number?,
+    ShadowTransparency: number?,
+    GradientColorSequence: ColorSequence?,
+    GradientTransparency: NumberSequence?,
+    GradientRotation: number?,
+    Shine: boolean?,
+    Disabled: boolean?,
+    Visible: boolean?,
+}
+
 export type DropdownCardInfo = {
     Text: string?,
     Description: string?,
@@ -318,6 +363,30 @@ export type ColorPicker = {
 }
 
 export type Addon = KeyPicker | ColorPicker
+
+
+export type GlassPanel = {
+    Text: string,
+    Title: string,
+    Description: string,
+    Visible: boolean,
+    Type: "GlassPanel",
+    Holder: Frame,
+    SetTitle: (self: GlassPanel, Text: string) -> (),
+    SetDescription: (self: GlassPanel, Text: string) -> (),
+    SetVisible: (self: GlassPanel, Visible: boolean) -> (),
+}
+
+export type NewElementButton = {
+    Text: string,
+    Disabled: boolean,
+    Visible: boolean,
+    Type: "HighlightButton" | "ShinyButton" | "LiquidGlassButton",
+    Holder: TextButton,
+    SetText: (self: NewElementButton, Text: string) -> (),
+    SetDisabled: (self: NewElementButton, Disabled: boolean) -> (),
+    SetVisible: (self: NewElementButton, Visible: boolean) -> (),
+}
 
 --// Base Element Types
 export type Label = {
@@ -626,6 +695,12 @@ export type BaseGroupbox = {
         Idx: string?
     ) -> Label,
     AddButton: (self: Groupbox, Info: ButtonInfo | string, Func: (() -> ())?, Idx: string?) -> Button,
+    AddGlassPanel: ((self: Groupbox, Info: GlassPanelInfo) -> GlassPanel)
+        & ((self: Groupbox, Idx: string, Info: GlassPanelInfo) -> GlassPanel),
+    AddHighlightButton: (self: Groupbox, Info: NewElementButtonInfo) -> NewElementButton,
+    AddShinyButton: (self: Groupbox, Info: NewElementButtonInfo) -> NewElementButton,
+    AddLiquidGlassButton: (self: Groupbox, Info: NewElementButtonInfo) -> NewElementButton,
+    AddLiquidGlassToggle: (self: Groupbox, Idx: string, Info: ToggleInfo) -> Toggle,
     AddCheckbox: (self: Groupbox, Idx: string, Info: ToggleInfo) -> Toggle,
     AddToggle: (self: Groupbox, Idx: string, Info: ToggleInfo) -> Toggle,
     AddInput: (self: Groupbox, Idx: string, Info: InputInfo) -> Input,
@@ -807,6 +882,7 @@ export type Window = {
         Icon: string?,
         Description: string?
     ) -> KeyTab,
+    AddDashboardTab: (self: Window, Info: { Name: string?, Icon: string?, Description: string?, Title: string?, Text: string?, Badge: string?, AccentColor: Color3 | string? }?) -> Tab,
     AddDialog: (
         self: Window,
         Info: {
@@ -887,6 +963,11 @@ export type Library = {
     RemoveFromRegistry: (self: Library, Instance: GuiObject) -> (),
     AddOutline: (self: Library, Frame: GuiObject, Info: { Color: (Color3 | string)?, Thickness: number?, Transparency: number?, ShadowColor: (Color3 | string)?, ShadowThickness: number?, ShadowTransparency: number? }?) -> (UIStroke, UIStroke),
     AddGradient: (self: Library, Frame: GuiObject, Info: { Color: ColorSequence?, ColorSequence: ColorSequence?, Offset: Vector2?, Rotation: number?, Transparency: NumberSequence? }?) -> UIGradient,
+    ApplyNewElements: (self: Library, Target: any?) -> any,
+    ApplyNewElments: (self: Library, Target: any?) -> any,
+    ApplyNewElement: (self: Library, Target: any?) -> any,
+    applynewelments: (self: Library, Target: any?) -> any,
+    applynewelements: (self: Library, Target: any?) -> any,
     UpdateColorsUsingRegistry: (self: Library) -> (),
     UpdateDPI: (self: Library, Instance: GuiObject, Properties: { [string]: any }) -> (),
     SetDPIScale: (self: Library, DPIScale: number) -> (),

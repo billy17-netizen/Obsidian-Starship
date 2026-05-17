@@ -3821,6 +3821,430 @@ do
         return Button
     end
 
+    local function ParseNewElementInfo(...)
+        local First = select(1, ...)
+        local Second = select(2, ...)
+
+        if typeof(First) == "table" then
+            return nil, First
+        elseif typeof(Second) == "table" then
+            return First, Second
+        end
+
+        return nil, {}
+    end
+
+    function Funcs:AddGlassPanel(...)
+        local Idx, Info = ParseNewElementInfo(...)
+        Info = Info or {}
+
+        local Groupbox = self
+        local Container = Groupbox.Container
+        local Accent = Info.AccentColor or "AccentColor"
+
+        local Panel = {
+            Text = Info.Title or Info.Text or "Glass Panel",
+            Title = Info.Title or Info.Text or "Glass Panel",
+            Description = Info.Description or Info.Desc or "",
+            Visible = Info.Visible ~= false,
+            Type = "GlassPanel",
+        }
+
+        local Holder = New("Frame", {
+            BackgroundColor3 = Info.BackgroundColor or "MainColor",
+            BackgroundTransparency = Info.Transparency or 0.18,
+            ClipsDescendants = true,
+            Size = UDim2.new(1, 0, 0, Info.Height or 76),
+            Visible = Panel.Visible,
+            Parent = Container,
+        })
+        table.insert(
+            Library.Corners,
+            New("UICorner", {
+                CornerRadius = UDim.new(0, Info.CornerRadius or Library.CornerRadius),
+                Parent = Holder,
+            })
+        )
+        Library:AddOutline(Holder, {
+            Color = Info.StrokeColor or Accent,
+            Thickness = Info.StrokeThickness or 1,
+            Transparency = Info.StrokeTransparency or 0.35,
+            ShadowTransparency = Info.ShadowTransparency or 0.45,
+        })
+        if Info.Gradient ~= false then
+            Library:AddGradient(Holder, {
+                Color = Info.GradientColorSequence or ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, typeof(Accent) == "Color3" and Accent or Library.Scheme.AccentColor),
+                    ColorSequenceKeypoint.new(1, Library.Scheme.MainColor),
+                }),
+                Rotation = Info.GradientRotation or 25,
+                Transparency = Info.GradientTransparency or NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.72),
+                    NumberSequenceKeypoint.new(1, 0.96),
+                }),
+            })
+        end
+        New("UIPadding", {
+            PaddingBottom = UDim.new(0, 10),
+            PaddingLeft = UDim.new(0, 12),
+            PaddingRight = UDim.new(0, 12),
+            PaddingTop = UDim.new(0, 10),
+            Parent = Holder,
+        })
+
+        local Icon
+        local ParsedIcon = Info.Icon and Library:GetCustomIcon(Info.Icon)
+        if ParsedIcon then
+            Icon = New("ImageLabel", {
+                BackgroundTransparency = 1,
+                Image = ParsedIcon.Url,
+                ImageColor3 = Info.IconColor or Accent,
+                ImageRectOffset = ParsedIcon.ImageRectOffset,
+                ImageRectSize = ParsedIcon.ImageRectSize,
+                Position = UDim2.fromOffset(0, 2),
+                Size = UDim2.fromOffset(24, 24),
+                Parent = Holder,
+            })
+        end
+
+        local Title = New("TextLabel", {
+            BackgroundTransparency = 1,
+            Position = UDim2.fromOffset(Icon and 32 or 0, 0),
+            Size = UDim2.new(1, Icon and -32 or 0, 0, 20),
+            Text = Panel.Title,
+            TextSize = Info.TitleSize or 16,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextTruncate = Enum.TextTruncate.AtEnd,
+            TextWrapped = false,
+            Parent = Holder,
+        })
+        local Description = New("TextLabel", {
+            BackgroundTransparency = 1,
+            Position = UDim2.fromOffset(Icon and 32 or 0, 24),
+            Size = UDim2.new(1, Icon and -32 or 0, 1, -24),
+            Text = Panel.Description,
+            TextSize = Info.DescriptionSize or 13,
+            TextTransparency = 0.25,
+            TextWrapped = true,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Top,
+            Parent = Holder,
+        })
+
+        if Info.Badge then
+            local Badge = New("TextLabel", {
+                AnchorPoint = Vector2.new(1, 0),
+                AutomaticSize = Enum.AutomaticSize.X,
+                BackgroundColor3 = Accent,
+                BackgroundTransparency = 0.25,
+                Position = UDim2.new(1, 0, 0, 0),
+                Size = UDim2.fromOffset(0, 18),
+                Text = tostring(Info.Badge),
+                TextSize = 12,
+                Parent = Holder,
+            })
+            New("UIPadding", {
+                PaddingLeft = UDim.new(0, 7),
+                PaddingRight = UDim.new(0, 7),
+                Parent = Badge,
+            })
+            table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Badge }))
+        end
+
+        function Panel:SetTitle(Text)
+            Panel.Title = tostring(Text)
+            Panel.Text = Panel.Title
+            Title.Text = Panel.Title
+        end
+
+        function Panel:SetDescription(Text)
+            Panel.Description = tostring(Text)
+            Description.Text = Panel.Description
+        end
+
+        function Panel:SetVisible(Visible)
+            Panel.Visible = Visible
+            Holder.Visible = Visible
+            Groupbox:Resize()
+        end
+
+        Panel.Holder = Holder
+        table.insert(Groupbox.Elements, Panel)
+        if Idx then
+            Options[Idx] = Panel
+        end
+        Groupbox:Resize()
+        return Panel
+    end
+
+    local function CreateNewElementButton(Groupbox, Info, Variant)
+        Info = Info or {}
+        local Container = Groupbox.Container
+        local Accent = Info.AccentColor or "AccentColor"
+        local Button = {
+            Text = Info.Text or (Variant == "ShinyButton" and "Shiny Button" or "Highlight Button"),
+            Func = Info.Func or Info.Callback or function() end,
+            Disabled = Info.Disabled or false,
+            Visible = Info.Visible ~= false,
+            Type = Variant,
+        }
+
+        local Holder = New("TextButton", {
+            Active = not Button.Disabled,
+            BackgroundColor3 = Info.BackgroundColor or "MainColor",
+            BackgroundTransparency = Info.Transparency or 0.08,
+            ClipsDescendants = true,
+            Size = UDim2.new(1, 0, 0, Info.Height or 30),
+            Text = "",
+            Visible = Button.Visible,
+            Parent = Container,
+        })
+        table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(0, Info.CornerRadius or Library.CornerRadius), Parent = Holder }))
+        Library:AddOutline(Holder, {
+            Color = Info.StrokeColor or Accent,
+            Thickness = Info.StrokeThickness or 1,
+            Transparency = Info.StrokeTransparency or 0.25,
+            ShadowTransparency = Info.ShadowTransparency or 0.35,
+        })
+        Library:AddGradient(Holder, {
+            Color = Info.GradientColorSequence or ColorSequence.new({
+                ColorSequenceKeypoint.new(0, typeof(Accent) == "Color3" and Accent or Library.Scheme.AccentColor),
+                ColorSequenceKeypoint.new(1, Library.Scheme.MainColor),
+            }),
+            Rotation = Info.GradientRotation or 0,
+            Transparency = Info.GradientTransparency or NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0.45),
+                NumberSequenceKeypoint.new(1, 0.9),
+            }),
+        })
+
+        local ParsedIcon = Info.Icon and Library:GetCustomIcon(Info.Icon)
+        if ParsedIcon then
+            New("ImageLabel", {
+                AnchorPoint = Vector2.new(0, 0.5),
+                BackgroundTransparency = 1,
+                Image = ParsedIcon.Url,
+                ImageColor3 = Info.IconColor or Accent,
+                ImageRectOffset = ParsedIcon.ImageRectOffset,
+                ImageRectSize = ParsedIcon.ImageRectSize,
+                Position = UDim2.new(0, 10, 0.5, 0),
+                Size = UDim2.fromOffset(16, 16),
+                Parent = Holder,
+            })
+        end
+
+        local Label = New("TextLabel", {
+            BackgroundTransparency = 1,
+            Position = ParsedIcon and UDim2.fromOffset(16, 0) or UDim2.fromOffset(0, 0),
+            Size = ParsedIcon and UDim2.new(1, -24, 1, 0) or UDim2.fromScale(1, 1),
+            Text = Button.Text,
+            TextSize = Info.TextSize or 14,
+            Parent = Holder,
+        })
+
+        local Shine
+        if Variant == "ShinyButton" or Variant == "LiquidGlassButton" or Info.Shine then
+            Shine = New("Frame", {
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                BackgroundColor3 = "WhiteColor",
+                BackgroundTransparency = 0.7,
+                Position = UDim2.fromScale(-0.25, 0.5),
+                Rotation = 18,
+                Size = UDim2.new(0, 18, 2, 0),
+                Parent = Holder,
+            })
+            Library:AddGradient(Shine, {
+                Rotation = 90,
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 1),
+                    NumberSequenceKeypoint.new(0.5, 0.15),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+            })
+        end
+
+        Holder.MouseEnter:Connect(function()
+            if Button.Disabled then
+                return
+            end
+            TweenService:Create(Holder, Library.TweenInfo, { BackgroundTransparency = Info.HoverTransparency or 0 }):Play()
+            TweenService:Create(Label, Library.TweenInfo, { TextTransparency = 0 }):Play()
+            if Shine then
+                Shine.Position = UDim2.fromScale(-0.25, 0.5)
+                TweenService:Create(Shine, TweenInfo.new(0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Position = UDim2.fromScale(1.25, 0.5),
+                }):Play()
+            end
+        end)
+        Holder.MouseLeave:Connect(function()
+            if Button.Disabled then
+                return
+            end
+            TweenService:Create(Holder, Library.TweenInfo, { BackgroundTransparency = Info.Transparency or 0.08 }):Play()
+            TweenService:Create(Label, Library.TweenInfo, { TextTransparency = 0.1 }):Play()
+        end)
+        Holder.MouseButton1Click:Connect(function()
+            if Button.Disabled then
+                return
+            end
+            Library:SafeCallback(Button.Func, Button)
+        end)
+
+        function Button:SetText(Text)
+            Button.Text = tostring(Text)
+            Label.Text = Button.Text
+        end
+
+        function Button:SetDisabled(Disabled)
+            Button.Disabled = Disabled
+            Holder.Active = not Disabled
+            Label.TextTransparency = Disabled and 0.75 or 0
+        end
+
+        function Button:SetVisible(Visible)
+            Button.Visible = Visible
+            Holder.Visible = Visible
+            Groupbox:Resize()
+        end
+
+        Button.Holder = Holder
+        table.insert(Groupbox.Elements, Button)
+        Groupbox:Resize()
+        return Button
+    end
+
+    function Funcs:AddHighlightButton(Info)
+        return CreateNewElementButton(self, Info, "HighlightButton")
+    end
+
+    function Funcs:AddShinyButton(Info)
+        Info = Info or {}
+        Info.Shine = true
+        return CreateNewElementButton(self, Info, "ShinyButton")
+    end
+
+    function Funcs:AddLiquidGlassButton(Info)
+        Info = Info or {}
+        Info.Shine = true
+        Info.Transparency = Info.Transparency or 0.18
+        Info.HoverTransparency = Info.HoverTransparency or 0.04
+        return CreateNewElementButton(self, Info, "LiquidGlassButton")
+    end
+
+    function Funcs:AddLiquidGlassToggle(Idx, Info)
+        Info = Library:Validate(Info, Templates.Toggle)
+
+        local Groupbox = self
+        local Container = Groupbox.Container
+        local Toggle = {
+            Text = Info.Text,
+            Value = Info.Default,
+            Callback = Info.Callback,
+            Changed = Info.Changed,
+            Disabled = Info.Disabled,
+            Visible = Info.Visible,
+            Type = "Toggle",
+        }
+
+        local Holder = New("TextButton", {
+            Active = not Toggle.Disabled,
+            BackgroundColor3 = "MainColor",
+            BackgroundTransparency = 0.2,
+            ClipsDescendants = true,
+            Size = UDim2.new(1, 0, 0, 32),
+            Text = "",
+            Visible = Toggle.Visible,
+            Parent = Container,
+        })
+        table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = Holder }))
+        Library:AddOutline(Holder, { Color = "AccentColor", Transparency = 0.45, ShadowTransparency = 0.5 })
+        Library:AddGradient(Holder, {
+            Rotation = 12,
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0.55),
+                NumberSequenceKeypoint.new(1, 0.95),
+            }),
+        })
+        local TextLabel = New("TextLabel", {
+            BackgroundTransparency = 1,
+            Position = UDim2.fromOffset(10, 0),
+            Size = UDim2.new(1, -58, 1, 0),
+            Text = Toggle.Text,
+            TextSize = 14,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = Holder,
+        })
+        local Pill = New("Frame", {
+            AnchorPoint = Vector2.new(1, 0.5),
+            BackgroundColor3 = "OutlineColor",
+            Position = UDim2.new(1, -8, 0.5, 0),
+            Size = UDim2.fromOffset(38, 18),
+            Parent = Holder,
+        })
+        table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Pill }))
+        local Dot = New("Frame", {
+            AnchorPoint = Vector2.new(0, 0.5),
+            BackgroundColor3 = "WhiteColor",
+            Position = UDim2.new(0, 3, 0.5, 0),
+            Size = UDim2.fromOffset(12, 12),
+            Parent = Pill,
+        })
+        table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Dot }))
+
+        function Toggle:Display()
+            TweenService:Create(Pill, Library.TweenInfo, {
+                BackgroundColor3 = Toggle.Value and Library.Scheme.AccentColor or Library.Scheme.OutlineColor,
+            }):Play()
+            TweenService:Create(Dot, Library.TweenInfo, {
+                Position = Toggle.Value and UDim2.new(1, -15, 0.5, 0) or UDim2.new(0, 3, 0.5, 0),
+            }):Play()
+        end
+
+        function Toggle:SetValue(Value)
+            if Toggle.Disabled then
+                return
+            end
+            Toggle.Value = Value == true
+            Toggle:Display()
+            Library:SafeCallback(Toggle.Callback, Toggle.Value)
+            Library:SafeCallback(Toggle.Changed, Toggle.Value)
+        end
+
+        function Toggle:OnChanged(Func)
+            Toggle.Changed = Func
+        end
+
+        function Toggle:SetDisabled(Disabled)
+            Toggle.Disabled = Disabled
+            Holder.Active = not Disabled
+            TextLabel.TextTransparency = Disabled and 0.75 or 0
+        end
+
+        function Toggle:SetVisible(Visible)
+            Toggle.Visible = Visible
+            Holder.Visible = Visible
+            Groupbox:Resize()
+        end
+
+        function Toggle:SetText(Text)
+            Toggle.Text = tostring(Text)
+            TextLabel.Text = Toggle.Text
+        end
+
+        Holder.MouseButton1Click:Connect(function()
+            Toggle:SetValue(not Toggle.Value)
+        end)
+
+        Toggle:Display()
+        Toggle.Holder = Holder
+        Toggle.TextLabel = TextLabel
+        table.insert(Groupbox.Elements, Toggle)
+        Toggles[Idx] = Toggle
+        Options[Idx] = Toggle
+        Groupbox:Resize()
+        return Toggle
+    end
+
     function Funcs:AddCheckbox(Idx, Info)
         Info = Library:Validate(Info, Templates.Toggle)
 
@@ -6300,6 +6724,17 @@ do
     end
 end
 
+function Library:ApplyNewElements(Target)
+    -- New elements are installed into every groupbox/tab through the base groupbox API.
+    -- This helper exists for scripts that want an explicit opt-in call before using them.
+    return Target or Library
+end
+
+Library.ApplyNewElments = Library.ApplyNewElements
+Library.ApplyNewElement = Library.ApplyNewElements
+Library.applynewelments = Library.ApplyNewElements
+Library.applynewelements = Library.ApplyNewElements
+
 function Library:SetFont(FontFace)
     if typeof(FontFace) == "EnumItem" then
         FontFace = Font.fromEnum(FontFace)
@@ -8343,6 +8778,84 @@ function Library:CreateWindow(WindowInfo)
         Library.Tabs[Name] = Tab
 
         return Tab
+    end
+
+    function Window:AddDashboardTab(Info)
+        Info = Info or {}
+
+        local Dashboard = Window:AddTab({
+            Name = Info.Name or "Dashboard",
+            Icon = Info.Icon or "layout-dashboard",
+            Description = Info.Description or "Overview, status, quick actions, and modded liquid-glass elements.",
+        })
+
+        local Overview = Dashboard:AddLeftGroupbox(Info.OverviewTitle or "Overview", "activity")
+        Overview:AddGlassPanel("DashboardWelcome", {
+            Title = Info.Title or "Welcome back",
+            Description = Info.Text
+                or "This dashboard tab is generated by Obsidian Modded and showcases glass panels, liquid controls, and quick actions.",
+            Icon = Info.PanelIcon or "sparkles",
+            Badge = Info.Badge or "MODDED",
+            Height = 88,
+            StrokeColor = Info.AccentColor or "AccentColor",
+        })
+        Overview:AddLiquidGlassToggle("DashboardLiquidMode", {
+            Text = "Liquid glass mode",
+            Default = true,
+            Callback = function(Value)
+                Library:NotifyInfo({
+                    Title = "Dashboard",
+                    Description = "Liquid glass mode is now " .. (Value and "enabled" or "disabled") .. ".",
+                    Time = 3,
+                })
+            end,
+        })
+        Overview:AddShinyButton({
+            Text = "Pulse dashboard shine",
+            Icon = "sparkles",
+            Callback = function()
+                Library:NotifySuccess({
+                    Title = "Dashboard shine",
+                    Description = "Shiny button animation and notification fired successfully.",
+                    Time = 3,
+                })
+            end,
+        })
+
+        local Stats = Dashboard:AddRightGroupbox(Info.StatsTitle or "Stats", "bar-chart-3")
+        Stats:AddGlassPanel("DashboardStats", {
+            Title = "Session overview",
+            Description = string.format(
+                "Tabs loaded: %d\nDevice: %s\nDPI scale: %d%%",
+                GetTableSize(Library.Tabs),
+                tostring(Library.DevicePlatform or "Unknown"),
+                math.floor((Library.DPIScale or 1) * 100)
+            ),
+            Icon = "monitor",
+            Height = 92,
+            Badge = Library.IsMobile and "MOBILE" or "DESKTOP",
+        })
+        Stats:AddHighlightButton({
+            Text = "Refresh dashboard status",
+            Callback = function()
+                Options.DashboardStats:SetDescription(string.format(
+                    "Tabs loaded: %d\nDevice: %s\nDPI scale: %d%%",
+                    GetTableSize(Library.Tabs),
+                    tostring(Library.DevicePlatform or "Unknown"),
+                    math.floor((Library.DPIScale or 1) * 100)
+                ))
+            end,
+        })
+        Stats:AddLiquidGlassButton({
+            Text = "Open keybind menu",
+            Callback = function()
+                if Library.KeybindFrame then
+                    Library.KeybindFrame.Visible = true
+                end
+            end,
+        })
+
+        return Dashboard
     end
 
     function Window:AddKeyTab(...)

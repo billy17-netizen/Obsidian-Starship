@@ -14,6 +14,8 @@ This fork keeps the familiar Obsidian/Linoria-style API while adding quality-of-
 - Dismissible toasts: notifications include a close button by default; use `CloseButton = false` or `Dismissible = false` to hide it.
 - Improved key tabs: `AddKeyBox` now supports expected-key validation, Enter-to-submit, status text, auto-clear behavior, and dynamic `SetExpectedKey` updates.
 - Visual polish: windows support `BackgroundImage`, image transparency, gradient overlays, and custom border/shadow stroke settings.
+- Dashboard tab: `Window:AddDashboardTab()` creates a ready-made landing tab with overview panels, status cards, and quick actions.
+- New element pack: `Library:ApplyNewElements()` exposes glass panels, liquid-glass toggles/buttons, highlight buttons, and shiny animated buttons on groupboxes.
 - Advanced card dropdowns: set `CardDropdown = true` and provide `Cards` with thumbnails, bottom-bar transparency, icon, title, description, and per-card stroke options.
 - The original `Library:Notify({...})` API still works and now accepts `Type`/`Variant`, `AccentColor`, `Progress`, `Actions`, `CloseButton`, and `Dismissible` fields.
 
