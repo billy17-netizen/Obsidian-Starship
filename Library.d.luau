@@ -10,6 +10,7 @@ export type Scheme = {
     FontColor: Color3,
     Font: Font,
     RedColor: Color3,
+    DestructiveColor: Color3,
     DarkColor: Color3,
     WhiteColor: Color3,
 }
@@ -41,22 +42,45 @@ export type Tooltip = {
     Destroy: (self: Tooltip) -> (),
 }
 
-export type Notification = {
+export type NotificationAction = {
+    Text: string,
+    Callback: ((any) -> ())?,
+    Func: ((any) -> ())?,
+    CloseOnClick: boolean?,
+    Risky: boolean?,
+}
+
+export type NotificationVariant = "Info" | "Success" | "Warning" | "Error"
+
+export type NotificationInfo = {
     Title: string?,
-    Description: string,
-    Time: number | Instance,
+    Description: string?,
+    Time: number | Instance?,
     SoundId: string | number?,
     Steps: number?,
     Persist: boolean?,
     Icon: string?,
     BigIcon: string?,
     IconColor: Color3 | string?,
+    AccentColor: Color3 | string?,
+    Type: NotificationVariant?,
+    Variant: NotificationVariant?,
+    Progress: number?,
+    Actions: { NotificationAction }?,
+    CloseButton: boolean?,
+    Dismissible: boolean?,
+}
+
+export type Notification = NotificationInfo & {
+    Description: string?,
+    Time: number | Instance,
     Destroyed: boolean,
 
     Resize: (self: Notification) -> (),
     ChangeTitle: (self: Notification, Text: string) -> (),
     ChangeDescription: (self: Notification, Text: string) -> (),
     ChangeStep: (self: Notification, NewStep: number) -> (),
+    SetProgress: (self: Notification, Progress: number) -> (),
     Destroy: (self: Notification) -> (),
 }
 
@@ -666,12 +690,49 @@ export type Tab = {
     SetVisible: (self: Tab, Visible: boolean) -> (),
 }
 
+
+export type KeyBox = {
+    ExpectedKey: string?,
+    CaseSensitive: boolean,
+    AutoClear: boolean,
+    ClearOnSuccess: boolean,
+    LastKey: string,
+    LastSuccess: boolean,
+    Type: "KeyBox",
+
+    SetStatus: (self: KeyBox, Text: string, Color: (Color3 | string)?) -> (),
+    SetExpectedKey: (self: KeyBox, ExpectedKey: string?) -> (),
+    SetValue: (self: KeyBox, Value: string?) -> (),
+    GetValue: (self: KeyBox) -> string,
+    Submit: (self: KeyBox) -> (),
+}
+
+
+export type KeyBoxInfo = {
+    ExpectedKey: string?,
+    Default: string?,
+    Placeholder: string?,
+    ButtonText: string?,
+    StatusText: string?,
+    SuccessText: string?,
+    FailureText: string?,
+    StatusColor: Color3 | string?,
+    CaseSensitive: boolean?,
+    AutoClear: boolean?,
+    ClearOnSuccess: boolean?,
+    ClearTextOnFocus: boolean?,
+    ShowStatus: boolean?,
+    Callback: (Success: boolean, Key: string, KeyBox: KeyBox) -> (),
+}
+
 export type KeyTab = BaseGroupbox & {
     Elements: { [any]: any },
     IsKeyTab: true,
     Container: ScrollingFrame,
 
-    AddKeyBox: (self: KeyTab, ExpectedKey: string?, Callback: (Success: boolean, Key: string) -> ()) -> (),
+    AddKeyBox: ((self: KeyTab, Callback: (Key: string) -> ()) -> KeyBox)
+        & ((self: KeyTab, ExpectedKey: string?, Callback: (Success: boolean, Key: string, KeyBox: KeyBox) -> ()) -> KeyBox)
+        & ((self: KeyTab, Info: KeyBoxInfo) -> KeyBox),
     Resize: (self: KeyTab) -> (),
     Hover: (self: KeyTab, Hovering: boolean) -> (),
     Show: (self: KeyTab) -> (),
@@ -827,19 +888,11 @@ export type Library = {
     Unload: (self: Library) -> (),
     SetFont: (self: Library, FontFace: Font | Enum.Font) -> (),
     SetNotifySide: (self: Library, Side: "Left" | "Right") -> (),
-    Notify: (
-        self: Library,
-        Info: {
-            Title: string,
-            Description: string,
-            Time: number?,
-            SoundId: string | number?,
-            Steps: number?,
-            Persist: boolean?,
-        } | string,
-        Time: number?,
-        SoundId: string | number?
-    ) -> Notification,
+    Notify: (self: Library, Info: NotificationInfo | string, Time: number?, SoundId: string | number?) -> Notification,
+    NotifyInfo: (self: Library, Info: NotificationInfo | string, Time: number?, SoundId: string | number?) -> Notification,
+    NotifySuccess: (self: Library, Info: NotificationInfo | string, Time: number?, SoundId: string | number?) -> Notification,
+    NotifyWarning: (self: Library, Info: NotificationInfo | string, Time: number?, SoundId: string | number?) -> Notification,
+    NotifyError: (self: Library, Info: NotificationInfo | string, Time: number?, SoundId: string | number?) -> Notification,
     CreateWindow: (
         self: Library,
         WindowInfo: {

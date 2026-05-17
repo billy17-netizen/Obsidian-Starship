@@ -2,7 +2,7 @@
 -- example script by https://github.com/mstudio45/LinoriaLib/blob/main/Example.lua and modified by deivid
 -- You can suggest changes with a pull request or something
 
-local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+local repo = "https://raw.githubusercontent.com/tanhoangviet/Obsidian-UI-Modded/refs/heads/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
 local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
@@ -204,6 +204,83 @@ local MyDisabledButton = LeftGroupBox:AddButton({
 	LeftGroupBox:AddButton({ Text = 'Kill all', Func = Functions.KillAll, Tooltip = 'This will kill everyone in the game!' })
 		:AddButton({ Text = 'Kick all', Func = Functions.KickAll, Tooltip = 'This will kick everyone in the game!' })
 ]]
+
+local NotificationGroupBox = Tabs.Main:AddRightGroupbox("Notifications", "bell")
+
+NotificationGroupBox:AddButton({
+	Text = "Show success toast",
+	Func = function()
+		Library:NotifySuccess({
+			Title = "Config saved",
+			Description = "Your settings are safe and ready for the next session.",
+			Time = 4,
+			Actions = {
+				{
+					Text = "Nice",
+					Callback = function(Notification)
+						print("Dismissed notification:", Notification.Title)
+					end,
+				},
+			},
+		})
+	end,
+})
+
+NotificationGroupBox:AddButton({
+	Text = "Show progress toast",
+	Func = function()
+		local Notification = Library:NotifyInfo({
+			Title = "Downloading assets",
+			Description = "Preparing icons, images, and cached resources...",
+			Persist = true,
+			Progress = 0,
+			Actions = {
+				{
+					Text = "Cancel",
+					Risky = true,
+					Callback = function(Toast)
+						Toast:ChangeDescription("Download cancelled by the user.")
+					end,
+				},
+			},
+		})
+
+		for Step = 1, 10 do
+			if Notification.Destroyed then
+				return
+			end
+
+			task.wait(0.15)
+			Notification:SetProgress(Step / 10)
+		end
+
+		Notification:ChangeTitle("Download complete")
+		Notification:ChangeDescription("All assets were prepared successfully.")
+		task.wait(0.5)
+		Notification:Destroy()
+	end,
+})
+
+NotificationGroupBox:AddButton({
+	Text = "Show warning toast",
+	Func = function()
+		Library:NotifyWarning({
+			Title = "Heads up",
+			Description = "This demonstrates variant icons, accent colors, and action buttons.",
+			Time = 6,
+			Actions = {
+				{ Text = "Got it" },
+				{
+					Text = "Keep open",
+					CloseOnClick = false,
+					Callback = function(Toast)
+						Toast:ChangeDescription("This toast will stay until its timer ends.")
+					end,
+				},
+			},
+		})
+	end,
+})
 
 -- Groupbox:AddLabel
 -- Arguments: Text, DoesWrap, Idx
@@ -657,17 +734,55 @@ Tabs.Key:AddLabel({
 	Size = 16,
 })
 
-Tabs.Key:AddKeyBox(function(ReceivedKey)
-	-- KeyBox only takes the callback for the button, you need to implement your own key check inside the callback
-	local Success = ReceivedKey == "Banana"
+Tabs.Key:AddKeyBox({
+	ExpectedKey = "Banana",
+	Placeholder = "Type Banana and press Enter",
+	ButtonText = "Unlock",
+	ClearOnSuccess = true,
+	SuccessText = "Access granted",
+	FailureText = "Wrong key, try Banana",
+	Callback = function(Success, ReceivedKey, KeyBox)
+		print("Expected Key: Banana - Received Key:", ReceivedKey, "| Success:", Success)
 
-	print("Expected Key: Banana - Received Key:", ReceivedKey, "| Success:", Success)
-	Library:Notify({
-		Title = "Expected Key: Banana",
-		Description = "Received Key: " .. ReceivedKey .. "\nSuccess: " .. tostring(Success),
-		Time = 4,
-	})
-end)
+		if Success then
+			Library:NotifySuccess({
+				Title = "Key accepted",
+				Description = "The key system validated your access and cleared the input box.",
+				Time = 4,
+			})
+		else
+			Library:NotifyError({
+				Title = "Invalid key",
+				Description = "Received " .. ReceivedKey .. ". Try the expected key: " .. tostring(KeyBox.ExpectedKey),
+				Time = 4,
+			})
+		end
+	end,
+})
+
+local DynamicKeyBox = Tabs.Key:AddKeyBox({
+	ExpectedKey = "Obsidian",
+	Placeholder = "Dynamic key example",
+	ButtonText = "Check",
+	CaseSensitive = false,
+	Callback = function(Success, ReceivedKey, KeyBox)
+		KeyBox:SetStatus(
+			Success and "Dynamic key accepted" or "Expected: " .. tostring(KeyBox.ExpectedKey),
+			Success and Color3.fromRGB(34, 197, 94) or Color3.fromRGB(245, 158, 11)
+		)
+	end,
+})
+Tabs.Key:AddButton({
+	Text = "Change dynamic key",
+	Func = function()
+		DynamicKeyBox:SetExpectedKey("Modded")
+		Library:NotifyInfo({
+			Title = "Key changed",
+			Description = "The dynamic key is now Modded.",
+			Time = 3,
+		})
+	end,
+})
 
 -- DraggableLabel
 
