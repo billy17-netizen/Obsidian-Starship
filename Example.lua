@@ -2,7 +2,7 @@
 -- example script by https://github.com/mstudio45/LinoriaLib/blob/main/Example.lua and modified by deivid
 -- You can suggest changes with a pull request or something
 
-local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+local repo = "https://raw.githubusercontent.com/tanhoangviet/Obsidian-UI-Modded/refs/heads/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
 local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
@@ -28,6 +28,18 @@ local Window = Library:CreateWindow({
 	Icon = 95816097006870,
 	NotifySide = "Right",
 	ShowCustomCursor = true,
+
+	-- Modded visuals: background image, gradient overlay, and custom border stroke.
+	BackgroundImage = "rbxassetid://14909902842",
+	BackgroundImageTransparency = 0.82,
+	Gradient = true,
+	GradientColorSequence = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(125, 85, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 15, 15)),
+	}),
+	GradientRotation = 35,
+	BorderColor = Color3.fromRGB(125, 85, 255),
+	BorderThickness = 1.5,
 })
 
 -- CALLBACK NOTE:
@@ -37,7 +49,14 @@ local Window = Library:CreateWindow({
 
 -- You do not have to set your tabs & groups up this way, just a prefrence.
 -- You can find more icons in https://lucide.dev/
+Library:ApplyNewElements() -- Enables/advertises modded elements like glass panels, shiny buttons, and liquid toggles.
+
 local Tabs = {
+	-- Creates a special generated dashboard tab with overview cards and new liquid-glass controls
+	Dashboard = Window:AddDashboardTab({
+		Badge = "LIVE",
+		Text = "Welcome to the modded Obsidian dashboard. Use this tab as a landing page for script hubs.",
+	}),
 	-- Creates a new tab titled Main
 	Main = Window:AddTab("Main", "user"),
 	Key = Window:AddKeyTab("Key System"),
@@ -61,6 +80,27 @@ UISettingsTab:UpdateWarningBox({
 -- Groupbox and Tabbox inherit the same functions
 -- except Tabboxes you have to call the functions on a tab (Tabbox:AddTab(Name))
 local LeftGroupBox = Tabs.Main:AddLeftGroupbox("Groupbox", "boxes")
+
+LeftGroupBox:AddGlassPanel("ExampleGlassPanel", {
+	Title = "Liquid glass preview",
+	Description = "A reusable glass panel with gradient, icon, badge, and custom stroke styling.",
+	Icon = "sparkles",
+	Badge = "NEW",
+	Height = 82,
+})
+LeftGroupBox:AddLiquidGlassToggle("ExampleLiquidToggle", {
+	Text = "Liquid glass toggle",
+	Default = true,
+	Callback = function(Value)
+		print("[cb] Liquid glass toggle changed:", Value)
+	end,
+})
+LeftGroupBox:AddShinyButton({
+	Text = "Shiny animated button",
+	Callback = function()
+		Library:NotifySuccess({ Title = "Shiny", Description = "The new shiny button was clicked!", Time = 3 })
+	end,
+})
 
 -- We can also get our Main tab via the following code:
 -- local LeftGroupBox = Window.Tabs.Main:AddLeftGroupbox("Groupbox", "boxes")
@@ -204,6 +244,83 @@ local MyDisabledButton = LeftGroupBox:AddButton({
 	LeftGroupBox:AddButton({ Text = 'Kill all', Func = Functions.KillAll, Tooltip = 'This will kill everyone in the game!' })
 		:AddButton({ Text = 'Kick all', Func = Functions.KickAll, Tooltip = 'This will kick everyone in the game!' })
 ]]
+
+local NotificationGroupBox = Tabs.Main:AddRightGroupbox("Notifications", "bell")
+
+NotificationGroupBox:AddButton({
+	Text = "Show success toast",
+	Func = function()
+		Library:NotifySuccess({
+			Title = "Config saved",
+			Description = "Your settings are safe and ready for the next session.",
+			Time = 4,
+			Actions = {
+				{
+					Text = "Nice",
+					Callback = function(Notification)
+						print("Dismissed notification:", Notification.Title)
+					end,
+				},
+			},
+		})
+	end,
+})
+
+NotificationGroupBox:AddButton({
+	Text = "Show progress toast",
+	Func = function()
+		local Notification = Library:NotifyInfo({
+			Title = "Downloading assets",
+			Description = "Preparing icons, images, and cached resources...",
+			Persist = true,
+			Progress = 0,
+			Actions = {
+				{
+					Text = "Cancel",
+					Risky = true,
+					Callback = function(Toast)
+						Toast:ChangeDescription("Download cancelled by the user.")
+					end,
+				},
+			},
+		})
+
+		for Step = 1, 10 do
+			if Notification.Destroyed then
+				return
+			end
+
+			task.wait(0.15)
+			Notification:SetProgress(Step / 10)
+		end
+
+		Notification:ChangeTitle("Download complete")
+		Notification:ChangeDescription("All assets were prepared successfully.")
+		task.wait(0.5)
+		Notification:Destroy()
+	end,
+})
+
+NotificationGroupBox:AddButton({
+	Text = "Show warning toast",
+	Func = function()
+		Library:NotifyWarning({
+			Title = "Heads up",
+			Description = "This demonstrates variant icons, accent colors, and action buttons.",
+			Time = 6,
+			Actions = {
+				{ Text = "Got it" },
+				{
+					Text = "Keep open",
+					CloseOnClick = false,
+					Callback = function(Toast)
+						Toast:ChangeDescription("This toast will stay until its timer ends.")
+					end,
+				},
+			},
+		})
+	end,
+})
 
 -- Groupbox:AddLabel
 -- Arguments: Text, DoesWrap, Idx
@@ -378,6 +495,51 @@ DropdownGroupBox:AddDropdown("MySearchableDropdown", {
 
 	Disabled = false, -- Will disable the dropdown (true / false)
 	Visible = true, -- Will make the dropdown invisible (true / false)
+})
+
+DropdownGroupBox:AddDropdown("MyCardDropdown", {
+	Values = { "Nebula", "Aurora", "Obsidian" },
+	Default = "Nebula",
+	Text = "Advanced card dropdown",
+	Searchable = true,
+	CardDropdown = true,
+	CardHeight = 82,
+	MaxVisibleDropdownItems = 3,
+	ValueImages = {
+		Nebula = "sparkles",
+		Aurora = "zap",
+		Obsidian = "gem",
+	},
+	Cards = {
+		Nebula = {
+			Text = "Nebula Theme",
+			Description = "Purple space cards with glowing accent strokes.",
+			Thumbnail = "rbxassetid://14909902842",
+			Icon = "sparkles",
+			BottomBarTransparency = 0.15,
+			StrokeColor = Color3.fromRGB(125, 85, 255),
+		},
+		Aurora = {
+			Text = "Aurora Theme",
+			Description = "Bright green and blue card with transparent bottom bar.",
+			Thumbnail = "rbxassetid://14909902842",
+			Icon = "zap",
+			BottomBarTransparency = 0.25,
+			StrokeColor = Color3.fromRGB(34, 197, 94),
+		},
+		Obsidian = {
+			Text = "Obsidian Theme",
+			Description = "Dark glass card for premium script hub menus.",
+			Thumbnail = "rbxassetid://14909902842",
+			Icon = "gem",
+			BottomBarTransparency = 0.1,
+			StrokeColor = Color3.fromRGB(255, 255, 255),
+			StrokeTransparency = 0.65,
+		},
+	},
+	Callback = function(Value)
+		print("[cb] Card dropdown selected:", Value)
+	end,
 })
 
 DropdownGroupBox:AddDropdown("MyDisplayFormattedDropdown", {
@@ -657,17 +819,55 @@ Tabs.Key:AddLabel({
 	Size = 16,
 })
 
-Tabs.Key:AddKeyBox(function(ReceivedKey)
-	-- KeyBox only takes the callback for the button, you need to implement your own key check inside the callback
-	local Success = ReceivedKey == "Banana"
+Tabs.Key:AddKeyBox({
+	ExpectedKey = "Banana",
+	Placeholder = "Type Banana and press Enter",
+	ButtonText = "Unlock",
+	ClearOnSuccess = true,
+	SuccessText = "Access granted",
+	FailureText = "Wrong key, try Banana",
+	Callback = function(Success, ReceivedKey, KeyBox)
+		print("Expected Key: Banana - Received Key:", ReceivedKey, "| Success:", Success)
 
-	print("Expected Key: Banana - Received Key:", ReceivedKey, "| Success:", Success)
-	Library:Notify({
-		Title = "Expected Key: Banana",
-		Description = "Received Key: " .. ReceivedKey .. "\nSuccess: " .. tostring(Success),
-		Time = 4,
-	})
-end)
+		if Success then
+			Library:NotifySuccess({
+				Title = "Key accepted",
+				Description = "The key system validated your access and cleared the input box.",
+				Time = 4,
+			})
+		else
+			Library:NotifyError({
+				Title = "Invalid key",
+				Description = "Received " .. ReceivedKey .. ". Try the expected key: " .. tostring(KeyBox.ExpectedKey),
+				Time = 4,
+			})
+		end
+	end,
+})
+
+local DynamicKeyBox = Tabs.Key:AddKeyBox({
+	ExpectedKey = "Obsidian",
+	Placeholder = "Dynamic key example",
+	ButtonText = "Check",
+	CaseSensitive = false,
+	Callback = function(Success, ReceivedKey, KeyBox)
+		KeyBox:SetStatus(
+			Success and "Dynamic key accepted" or "Expected: " .. tostring(KeyBox.ExpectedKey),
+			Success and Color3.fromRGB(34, 197, 94) or Color3.fromRGB(245, 158, 11)
+		)
+	end,
+})
+Tabs.Key:AddButton({
+	Text = "Change dynamic key",
+	Func = function()
+		DynamicKeyBox:SetExpectedKey("Modded")
+		Library:NotifyInfo({
+			Title = "Key changed",
+			Description = "The dynamic key is now Modded.",
+			Time = 3,
+		})
+	end,
+})
 
 -- DraggableLabel
 
