@@ -566,6 +566,51 @@ DropdownGroupBox:AddDropdown("MyCardDropdown", {
     end,
 })
 
+DropdownGroupBox:AddDropdown("MyCardDropdown", {
+	Values = { "Nebula", "Aurora", "Obsidian" },
+	Default = "Nebula",
+	Text = "Advanced card dropdown",
+	Searchable = true,
+	CardDropdown = true,
+	CardHeight = 82,
+	MaxVisibleDropdownItems = 3,
+	ValueImages = {
+		Nebula = "sparkles",
+		Aurora = "zap",
+		Obsidian = "gem",
+	},
+	Cards = {
+		Nebula = {
+			Text = "Nebula Theme",
+			Description = "Purple space cards with glowing accent strokes.",
+			Thumbnail = "rbxassetid://14909902842",
+			Icon = "sparkles",
+			BottomBarTransparency = 0.15,
+			StrokeColor = Color3.fromRGB(125, 85, 255),
+		},
+		Aurora = {
+			Text = "Aurora Theme",
+			Description = "Bright green and blue card with transparent bottom bar.",
+			Thumbnail = "rbxassetid://14909902842",
+			Icon = "zap",
+			BottomBarTransparency = 0.25,
+			StrokeColor = Color3.fromRGB(34, 197, 94),
+		},
+		Obsidian = {
+			Text = "Obsidian Theme",
+			Description = "Dark glass card for premium script hub menus.",
+			Thumbnail = "rbxassetid://14909902842",
+			Icon = "gem",
+			BottomBarTransparency = 0.1,
+			StrokeColor = Color3.fromRGB(255, 255, 255),
+			StrokeTransparency = 0.65,
+		},
+	},
+	Callback = function(Value)
+		print("[cb] Card dropdown selected:", Value)
+	end,
+})
+
 DropdownGroupBox:AddDropdown("MyDisplayFormattedDropdown", {
     Values = { "This", "is", "a", "formatted", "dropdown" },
     Default = 1, -- number index of the value / string
