@@ -40,6 +40,10 @@ local Window = Library:CreateWindow({
 	GradientRotation = 35,
 	BorderColor = Color3.fromRGB(125, 85, 255),
 	BorderThickness = 1.5,
+	TabStyle = "Card",
+	TabsMode = "Sidebar",
+	FullscreenBackground = true,
+	FullscreenBackgroundTransparency = 0.55,
 })
 
 -- CALLBACK NOTE:
