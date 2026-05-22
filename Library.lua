@@ -335,6 +335,14 @@ local Templates = {
         ShadowColor = "DarkColor",
         ShadowThickness = 1.5,
         ShadowTransparency = 0,
+        TabsMode = "Sidebar", -- Sidebar, Topbar
+        TabStyle = "Default", -- Default, Card
+        FullscreenBackground = false,
+        FullscreenBackgroundColor = Color3.fromRGB(0, 0, 0),
+        FullscreenBackgroundTransparency = 0.4,
+        FullscreenBackgroundImage = nil,
+        FullscreenBackgroundImageTransparency = 0.9,
+        FullscreenBackgroundImageScaleType = Enum.ScaleType.Crop,
         ShowCustomCursor = true,
         Font = Enum.Font.Code,
         ToggleKeybind = Enum.KeyCode.RightControl,
@@ -1120,6 +1128,62 @@ function Library:GetCustomIcon(IconName: string): any
     return nil
 end
 
+function Library:AnimateIconSprite(ImageObject: ImageLabel | ImageButton, AtlasInfo)
+    assert(ImageObject and ImageObject:IsA("GuiObject"), "AnimateIconSprite expected an image gui object.")
+    assert(typeof(AtlasInfo) == "table", "AnimateIconSprite expected atlas info table.")
+
+    local Frames = AtlasInfo.Frames or {}
+    local Fps = math.max(1, AtlasInfo.Fps or AtlasInfo.FPS or 24)
+    local Loop = AtlasInfo.Loop ~= false
+    local AtlasImage = AtlasInfo.Image or AtlasInfo.AtlasImage
+
+    if AtlasImage then
+        ImageObject.Image = AtlasImage
+    end
+
+    if #Frames == 0 and AtlasInfo.FrameSize and AtlasInfo.FrameCount then
+        local FrameSize = AtlasInfo.FrameSize
+        local Columns = AtlasInfo.Columns or AtlasInfo.FrameCount
+        for Index = 0, AtlasInfo.FrameCount - 1 do
+            local X = (Index % Columns) * FrameSize.X
+            local Y = math.floor(Index / Columns) * FrameSize.Y
+            table.insert(Frames, {
+                Offset = Vector2.new(X, Y),
+                Size = FrameSize,
+            })
+        end
+    end
+
+    local AnimationId = string.sub(tostring({}), 10)
+    ImageObject:SetAttribute("ObsidianSpriteAnimation", AnimationId)
+
+    task.spawn(function()
+        local Index = 1
+        while ImageObject.Parent and ImageObject:GetAttribute("ObsidianSpriteAnimation") == AnimationId do
+            local Frame = Frames[Index]
+            if Frame then
+                ImageObject.ImageRectOffset = Frame.Offset or Frame.ImageRectOffset or Vector2.zero
+                ImageObject.ImageRectSize = Frame.Size or Frame.ImageRectSize or AtlasInfo.FrameSize or Vector2.zero
+            end
+
+            task.wait(1 / Fps)
+            Index += 1
+            if Index > #Frames then
+                if not Loop then
+                    break
+                end
+                Index = 1
+            end
+        end
+    end)
+end
+
+function Library:StopIconSpriteAnimation(ImageObject: ImageLabel | ImageButton)
+    if ImageObject then
+        ImageObject:SetAttribute("ObsidianSpriteAnimation", nil)
+    end
+end
+
 function Library:Validate(Table: { [string]: any }, Template: { [string]: any }): { [string]: any }
     if typeof(Table) ~= "table" then
         return Template
@@ -1220,6 +1284,18 @@ local ScreenGui = New("ScreenGui", {
 })
 ParentUI(ScreenGui)
 Library.ScreenGui = ScreenGui
+
+local FullscreenBackground = New("ImageLabel", {
+    BackgroundColor3 = "DarkColor",
+    BackgroundTransparency = 1,
+    Image = "",
+    ImageTransparency = 1,
+    ScaleType = Enum.ScaleType.Crop,
+    Size = UDim2.fromScale(1, 1),
+    Visible = false,
+    ZIndex = 0,
+    Parent = ScreenGui,
+})
 
 ScreenGui.DescendantRemoving:Connect(function(Instance)
     Library:RemoveFromRegistry(Instance)
@@ -4114,7 +4190,24 @@ do
     end
 
     function Funcs:AddHighlightButton(Info)
-        return CreateNewElementButton(self, Info, "HighlightButton")
+        Info = Info or {}
+        Info.Transparency = Info.Transparency or 0.02
+        Info.HoverTransparency = Info.HoverTransparency or 0
+        local Button = CreateNewElementButton(self, Info, "HighlightButton")
+        local Holder = Button.Holder
+        task.spawn(function()
+            while Holder and Holder.Parent do
+                TweenService:Create(Holder, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                    BackgroundTransparency = Info.Transparency + 0.06,
+                }):Play()
+                task.wait(0.9)
+                TweenService:Create(Holder, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                    BackgroundTransparency = Info.Transparency,
+                }):Play()
+                task.wait(0.9)
+            end
+        end)
+        return Button
     end
 
     function Funcs:AddShinyButton(Info)
@@ -5792,6 +5885,28 @@ do
             Dropdown:BuildDropdownList()
         end
 
+        function Dropdown:SetCards(Cards)
+            if typeof(Cards) ~= "table" then
+                return
+            end
+
+            Dropdown.Cards = Cards
+            Info.Cards = Cards
+            Dropdown:BuildDropdownList()
+        end
+
+        function Dropdown:AddCards(Cards)
+            if typeof(Cards) ~= "table" then
+                return
+            end
+
+            for key, val in Cards do
+                Dropdown.Cards[key] = val
+            end
+
+            Dropdown:BuildDropdownList()
+        end
+
         function Dropdown:AddValueImages(ValueImages)
             if typeof(ValueImages) ~= "table" then
                 return
@@ -7325,6 +7440,8 @@ function Library:CreateWindow(WindowInfo)
     Library.Scheme.Font = WindowInfo.Font
     Library.ToggleKeybind = WindowInfo.ToggleKeybind
     Library.GlobalSearch = WindowInfo.GlobalSearch
+    local IsTopbarTabs = tostring(WindowInfo.TabsMode):lower() == "topbar"
+    local IsCardTabs = tostring(WindowInfo.TabStyle):lower() == "card"
 
     local IsDefaultSearchbarSize = WindowInfo.SearchbarSize == UDim2.fromScale(1, 1)
     local MainFrame
@@ -7352,6 +7469,13 @@ function Library:CreateWindow(WindowInfo)
     local LastExpandedWidth = InitialLeftWidth
 
     do
+        FullscreenBackground.Visible = WindowInfo.FullscreenBackground == true
+        FullscreenBackground.BackgroundColor3 = WindowInfo.FullscreenBackgroundColor
+        FullscreenBackground.BackgroundTransparency = WindowInfo.FullscreenBackgroundTransparency
+        FullscreenBackground.Image = WindowInfo.FullscreenBackgroundImage or ""
+        FullscreenBackground.ImageTransparency = WindowInfo.FullscreenBackgroundImageTransparency
+        FullscreenBackground.ScaleType = WindowInfo.FullscreenBackgroundImageScaleType
+
         Library.KeybindFrame, Library.KeybindContainer = Library:AddDraggableMenu("Keybinds")
         Library.KeybindFrame.AnchorPoint = Vector2.new(0, 0.5)
         Library.KeybindFrame.Position = UDim2.new(0, 6, 0.5, 0)
@@ -7403,8 +7527,8 @@ function Library:CreateWindow(WindowInfo)
 
         DividerLine = New("Frame", {
             BackgroundColor3 = "OutlineColor",
-            Position = UDim2.fromOffset(InitialLeftWidth, 0),
-            Size = UDim2.new(0, 1, 1, -21),
+            Position = IsTopbarTabs and UDim2.fromOffset(0, 88) or UDim2.fromOffset(InitialLeftWidth, 0),
+            Size = IsTopbarTabs and UDim2.new(1, 0, 0, 1) or UDim2.new(0, 1, 1, -21),
             Parent = MainFrame,
         })
 
@@ -7701,12 +7825,13 @@ function Library:CreateWindow(WindowInfo)
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             BackgroundColor3 = "BackgroundColor",
             CanvasSize = UDim2.fromScale(0, 0),
-            Position = UDim2.fromOffset(0, 49),
+            Position = IsTopbarTabs and UDim2.fromOffset(0, 49) or UDim2.fromOffset(0, 49),
             ScrollBarThickness = 0,
-            Size = UDim2.new(0, InitialLeftWidth, 1, -70),
+            Size = IsTopbarTabs and UDim2.new(1, 0, 0, 39) or UDim2.new(0, InitialLeftWidth, 1, -70),
             Parent = MainFrame,
         })
         New("UIListLayout", {
+            FillDirection = IsTopbarTabs and Enum.FillDirection.Horizontal or Enum.FillDirection.Vertical,
             Parent = Tabs,
         })
 
@@ -7717,8 +7842,8 @@ function Library:CreateWindow(WindowInfo)
                 return Library:GetBetterColor(Library.Scheme.BackgroundColor, 1)
             end,
             Name = "Container",
-            Position = UDim2.new(1, 0, 0, 49),
-            Size = UDim2.new(1, -InitialLeftWidth - 1, 1, -70),
+            Position = IsTopbarTabs and UDim2.new(1, 0, 0, 89) or UDim2.new(1, 0, 0, 49),
+            Size = IsTopbarTabs and UDim2.new(1, 0, 1, -110) or UDim2.new(1, -InitialLeftWidth - 1, 1, -70),
             Parent = MainFrame,
         })
         New("UIPadding", {
@@ -7812,6 +7937,16 @@ function Library:CreateWindow(WindowInfo)
         end
     end
 
+    function Window:SetTabsMode(Mode)
+        local NewIsTopbar = tostring(Mode):lower() == "topbar"
+        WindowInfo.TabsMode = NewIsTopbar and "Topbar" or "Sidebar"
+        Library:NotifyWarning({
+            Title = "Tabs mode",
+            Description = "SetTabsMode requires recreating the window to fully re-layout tabs.",
+            Time = 4,
+        })
+    end
+
     function Window:ChangeFooter(footer: string)
         return Window:SetFooter(footer)
     end
@@ -7890,6 +8025,10 @@ function Library:CreateWindow(WindowInfo)
     end
 
     function Window:SetSidebarWidth(Width)
+        if IsTopbarTabs then
+            return
+        end
+
         Width = math.clamp(Width, 48, MainFrame.Size.X.Offset - WindowInfo.MinContainerWidth - 1)
 
         DividerLine.Position = UDim2.fromOffset(Width, 0)
@@ -7951,11 +8090,25 @@ function Library:CreateWindow(WindowInfo)
         do
             TabButton = New("TextButton", {
                 BackgroundColor3 = "MainColor",
-                BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 40),
+                BackgroundTransparency = IsCardTabs and 0.1 or 1,
+                Size = IsTopbarTabs and UDim2.new(0, 140, 1, 0) or UDim2.new(1, 0, 0, 40),
                 Text = "",
                 Parent = Tabs,
             })
+            if IsCardTabs then
+                table.insert(
+                    Library.Corners,
+                    New("UICorner", {
+                        CornerRadius = UDim.new(0, math.max(2, WindowInfo.CornerRadius - 1)),
+                        Parent = TabButton,
+                    })
+                )
+                Library:AddOutline(TabButton, {
+                    Color = "AccentColor",
+                    Transparency = 0.55,
+                    ShadowTransparency = 1,
+                })
+            end
             local ButtonPadding = New("UIPadding", {
                 PaddingBottom = UDim.new(0, IsCompact and 6 or 11),
                 PaddingLeft = UDim.new(0, IsCompact and 6 or 12),
@@ -8695,7 +8848,7 @@ function Library:CreateWindow(WindowInfo)
             end
 
             TweenService:Create(TabLabel, Library.TweenInfo, {
-                TextTransparency = Hovering and 0.25 or 0.5,
+                TextTransparency = Hovering and 0.1 or (IsCardTabs and 0.2 or 0.5),
             }):Play()
             if TabIcon then
                 TweenService:Create(TabIcon, Library.TweenInfo, {
@@ -8710,7 +8863,7 @@ function Library:CreateWindow(WindowInfo)
             end
 
             TweenService:Create(TabButton, Library.TweenInfo, {
-                BackgroundTransparency = 0,
+                BackgroundTransparency = IsCardTabs and 0.02 or 0,
             }):Play()
             TweenService:Create(TabLabel, Library.TweenInfo, {
                 TextTransparency = 0,
@@ -8737,7 +8890,7 @@ function Library:CreateWindow(WindowInfo)
 
         function Tab:Hide()
             TweenService:Create(TabButton, Library.TweenInfo, {
-                BackgroundTransparency = 1,
+                BackgroundTransparency = IsCardTabs and 0.1 or 1,
             }):Play()
             TweenService:Create(TabLabel, Library.TweenInfo, {
                 TextTransparency = 0.5,

@@ -903,6 +903,7 @@ export type Window = {
     SetBackgroundImageTransparency: (self: Window, Transparency: number) -> (),
     SetGradient: (self: Window, Enabled: boolean, GradientInfo: { Color: ColorSequence?, ColorSequence: ColorSequence?, Rotation: number?, Transparency: NumberSequence? }?) -> (),
     SetBorder: (self: Window, Info: { Color: (Color3 | string)?, Thickness: number?, Transparency: number?, ShadowColor: (Color3 | string)?, ShadowThickness: number?, ShadowTransparency: number? }?) -> (),
+    SetTabsMode: (self: Window, Mode: "Sidebar" | "Topbar") -> (),
 }
 
 --// Main Library Type
@@ -963,6 +964,8 @@ export type Library = {
     RemoveFromRegistry: (self: Library, Instance: GuiObject) -> (),
     AddOutline: (self: Library, Frame: GuiObject, Info: { Color: (Color3 | string)?, Thickness: number?, Transparency: number?, ShadowColor: (Color3 | string)?, ShadowThickness: number?, ShadowTransparency: number? }?) -> (UIStroke, UIStroke),
     AddGradient: (self: Library, Frame: GuiObject, Info: { Color: ColorSequence?, ColorSequence: ColorSequence?, Offset: Vector2?, Rotation: number?, Transparency: NumberSequence? }?) -> UIGradient,
+    AnimateIconSprite: (self: Library, ImageObject: ImageLabel | ImageButton, AtlasInfo: { Image: string?, AtlasImage: string?, Fps: number?, FPS: number?, Loop: boolean?, Frames: { { Offset: Vector2?, Size: Vector2?, ImageRectOffset: Vector2?, ImageRectSize: Vector2? } }?, FrameSize: Vector2?, FrameCount: number?, Columns: number? }) -> (),
+    StopIconSpriteAnimation: (self: Library, ImageObject: ImageLabel | ImageButton) -> (),
     ApplyNewElements: (self: Library, Target: any?) -> any,
     ApplyNewElments: (self: Library, Target: any?) -> any,
     ApplyNewElement: (self: Library, Target: any?) -> any,
@@ -1035,6 +1038,14 @@ export type Library = {
             ShadowColor: Color3 | string?,
             ShadowThickness: number?,
             ShadowTransparency: number?,
+            TabsMode: "Sidebar" | "Topbar"?,
+            TabStyle: "Default" | "Card"?,
+            FullscreenBackground: boolean?,
+            FullscreenBackgroundColor: Color3?,
+            FullscreenBackgroundTransparency: number?,
+            FullscreenBackgroundImage: string?,
+            FullscreenBackgroundImageTransparency: number?,
+            FullscreenBackgroundImageScaleType: Enum.ScaleType?,
             AutoShow: boolean?,
             Center: boolean?,
             Resizable: boolean?,
