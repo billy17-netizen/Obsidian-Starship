@@ -27,7 +27,7 @@ local Window = Library:CreateWindow({
     Icon = 95816097006870,
     NotifySide = "Right",
     ShowCustomCursor = true,
-    MobileButtonsMode = "DynamicIsland",
+    MobileButtonsMode = "TopbarPlus",
 
     -- Modded visuals: background image, gradient overlay, and custom border stroke.
     BackgroundImage = "rbxassetid://14909902842",

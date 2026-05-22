@@ -1198,7 +1198,7 @@ export type Library = {
             Font: Font | Enum.Font?,
             ToggleKeybind: Enum.KeyCode?,
             MobileButtonsSide: "Left" | "Right"?,
-            MobileButtonsMode: "Normal" | "DynamicIsland"?,
+            MobileButtonsMode: "Normal" | "TopbarPlus"?,
             UnlockMouseWhileOpen: boolean?,
             EnableSidebarResize: boolean?,
             EnableCompacting: boolean?,

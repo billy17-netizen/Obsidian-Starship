@@ -349,7 +349,7 @@ local Templates = {
 
         ShowMobileButtons = true,
         MobileButtonsSide = "Left",
-        MobileButtonsMode = "Normal", -- Normal, DynamicIsland
+        MobileButtonsMode = "Normal", -- Normal, TopbarPlus
 
         UnlockMouseWhileOpen = true,
 
@@ -7385,6 +7385,62 @@ function Library:NotifySuccess(Info, Time, SoundId)
         return Library:Notify(Info)
     end
 
+    return Library:Notify({
+        Type = "Success",
+        Description = tostring(Info),
+        Time = Time,
+        SoundId = SoundId,
+    })
+end
+
+function Library:NotifyWarning(Info, Time, SoundId)
+    if typeof(Info) == "table" then
+        Info.Type = Info.Type or "Warning"
+        return Library:Notify(Info)
+    end
+
+    return Library:Notify({
+        Type = "Warning",
+        Description = tostring(Info),
+        Time = Time,
+        SoundId = SoundId,
+    })
+end
+
+function Library:NotifyError(Info, Time, SoundId)
+    if typeof(Info) == "table" then
+        Info.Type = Info.Type or "Error"
+        return Library:Notify(Info)
+    end
+
+    return Library:Notify({
+        Type = "Error",
+        Description = tostring(Info),
+        Time = Time,
+        SoundId = SoundId,
+    })
+end
+
+function Library:NotifyInfo(Info, Time, SoundId)
+    if typeof(Info) == "table" then
+        Info.Type = Info.Type or "Info"
+        return Library:Notify(Info)
+    end
+
+    return Library:Notify({
+        Type = "Info",
+        Description = tostring(Info),
+        Time = Time,
+        SoundId = SoundId,
+    })
+end
+
+function Library:NotifySuccess(Info, Time, SoundId)
+    if typeof(Info) == "table" then
+        Info.Type = Info.Type or "Success"
+        return Library:Notify(Info)
+    end
+
     return Data
 end
 
@@ -10326,72 +10382,35 @@ function Library:CreateWindow(WindowInfo)
             self:SetText(Library.CantDragForced and "Unlock" or "Lock")
         end, true)
 
-        if tostring(WindowInfo.MobileButtonsMode):lower() == "dynamicisland" then
-            local Island = New("TextButton", {
-                AnchorPoint = Vector2.new(0.5, 0),
-                AutoButtonColor = false,
-                BackgroundColor3 = "DarkColor",
-                Position = UDim2.new(0.5, 0, 0, 8),
-                Size = UDim2.fromOffset(66, 22),
-                Text = "",
-                Parent = ScreenGui,
-            })
-            table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Island }))
-            Library:AddOutline(Island, { Color = "OutlineColor", ShadowTransparency = 1 })
-            local IslandLayout = New("UIListLayout", {
-                FillDirection = Enum.FillDirection.Horizontal,
-                HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                VerticalAlignment = Enum.VerticalAlignment.Center,
-                Padding = UDim.new(0, 8),
-                Parent = Island,
-            })
-            local EyeIcon = Library:GetIcon("eye")
-            local LockIcon = Library:GetIcon("lock")
-            New("ImageLabel", {
-                BackgroundTransparency = 1,
-                Image = EyeIcon and EyeIcon.Url or "",
-                ImageRectOffset = EyeIcon and EyeIcon.ImageRectOffset or Vector2.zero,
-                ImageRectSize = EyeIcon and EyeIcon.ImageRectSize or Vector2.zero,
-                Size = UDim2.fromOffset(13, 13),
-                Parent = Island,
-            })
-            New("ImageLabel", {
-                BackgroundTransparency = 1,
-                Image = LockIcon and LockIcon.Url or "",
-                ImageRectOffset = LockIcon and LockIcon.ImageRectOffset or Vector2.zero,
-                ImageRectSize = LockIcon and LockIcon.ImageRectSize or Vector2.zero,
-                Size = UDim2.fromOffset(13, 13),
-                Parent = Island,
-            })
-            local Opened = false
-            local AutoHideTask = nil
-            local function SetIslandOpen(State)
-                Opened = State
-                ToggleButton.Button.Visible = State
-                LockButton.Button.Visible = State
-                TweenService
-                    :Create(Island, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                        Size = State and UDim2.fromOffset(152, 28) or UDim2.fromOffset(66, 22),
-                    })
-                    :Play()
-                if State then
-                    ToggleButton.Button.Position = UDim2.new(0.5, -72, 0, 40)
-                    LockButton.Button.Position = UDim2.new(0.5, 6, 0, 40)
-                    if AutoHideTask then
-                        task.cancel(AutoHideTask)
-                    end
-                    AutoHideTask = task.delay(5, function()
-                        if Opened then
-                            SetIslandOpen(false)
-                        end
-                    end)
-                end
-            end
-            SetIslandOpen(false)
-            Island.MouseButton1Click:Connect(function()
-                SetIslandOpen(not Opened)
+        if tostring(WindowInfo.MobileButtonsMode):lower() == "topbarplus" then
+            local Success, Topbar = pcall(function()
+                return loadstring(
+                    game:HttpGet(
+                        "https://raw.githubusercontent.com/tanhoangviet/ToolForLua/refs/heads/main/TopbarPlus_Extended.lua"
+                    )
+                )()
             end)
-            IslandLayout:Destroy()
+            if Success and Topbar and Topbar.Icon then
+                ToggleButton.Button.Visible = false
+                LockButton.Button.Visible = false
+
+                local Icon = Topbar.Icon
+                local Eye = Icon.new():setLabel("UI"):setImage(6031071050):align("Left")
+                Eye.toggled:Connect(function(On)
+                    Library:Toggle(On)
+                end)
+
+                local LockTop = Icon.new():setLabel("Lock"):setImage(6035047409):align("Left")
+                LockTop.toggled:Connect(function(On)
+                    Library.CantDragForced = On
+                end)
+            else
+                Library:NotifyWarning({
+                    Title = "TopbarPlus",
+                    Description = "Failed to load TopbarPlus, fallback to normal mobile buttons.",
+                    Time = 4,
+                })
+            end
         elseif WindowInfo.MobileButtonsSide == "Right" then
             ToggleButton.Button.Position = UDim2.new(1, -6, 0, 6)
             ToggleButton.Button.AnchorPoint = Vector2.new(1, 0)
