@@ -7385,6 +7385,29 @@ function Library:NotifySuccess(Info, Time, SoundId)
         return Library:Notify(Info)
     end
 
+    return Data
+end
+
+function Library:NotifyInfo(Info, Time, SoundId)
+    if typeof(Info) == "table" then
+        Info.Type = Info.Type or "Info"
+        return Library:Notify(Info)
+    end
+
+    return Library:Notify({
+        Type = "Info",
+        Description = tostring(Info),
+        Time = Time,
+        SoundId = SoundId,
+    })
+end
+
+function Library:NotifySuccess(Info, Time, SoundId)
+    if typeof(Info) == "table" then
+        Info.Type = Info.Type or "Success"
+        return Library:Notify(Info)
+    end
+
     return Library:Notify({
         Type = "Success",
         Description = tostring(Info),
