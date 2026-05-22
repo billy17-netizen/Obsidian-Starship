@@ -233,8 +233,8 @@ local Library = {
     },
 
     Registry = {},
-	Scales = {},
-	ScalesOffset = {},
+    Scales = {},
+    ScalesOffset = {},
 
     ImageManager = CustomImageManager,
     ShowCursorBinding = string.sub(tostring({}), 10),
@@ -371,7 +371,7 @@ local Templates = {
         Description = "Description",
         AutoDismiss = true,
         OutsideClickDismiss = true,
-        FooterButtons = {}
+        FooterButtons = {},
     },
     Loading = {
         Title = "mspaint",
@@ -534,13 +534,13 @@ local Sizes = {
 local SchemeReplaceAlias = {
     RedColor = "Red",
     WhiteColor = "White",
-    DarkColor = "Dark"
+    DarkColor = "Dark",
 }
 
 local SchemeAlias = {
     Red = "RedColor",
     White = "WhiteColor",
-    Dark = "DarkColor"
+    Dark = "DarkColor",
 }
 
 local function GetSchemeValue(Index)
@@ -1042,7 +1042,7 @@ function Library:SetDPIScale(DPIScale: number)
     Library.DPIScale = DPIScale / 100
     Library.MinSize = Library.OriginalMinSize * Library.DPIScale
 
-	for _, UIScale in Library.Scales do
+    for _, UIScale in Library.Scales do
         UIScale.Scale = Library.DPIScale - (tonumber(Library.ScalesOffset[UIScale]) or 0)
     end
 
@@ -1067,7 +1067,8 @@ function Library:GiveSignal(Connection: RBXScriptConnection | RBXScriptSignal)
 end
 
 function IsValidCustomIcon(Icon: string)
-    return typeof(Icon) == "string" and (Icon:match("rbxasset") or Icon:match("roblox%.com/asset/%?id=") or Icon:match("rbxthumb://type="))
+    return typeof(Icon) == "string"
+        and (Icon:match("rbxasset") or Icon:match("roblox%.com/asset/%?id=") or Icon:match("rbxthumb://type="))
 end
 
 type Icon = {
@@ -1355,7 +1356,7 @@ do
         Size = UDim2.fromOffset(20, 20),
         ZIndex = 11000,
         Visible = false,
-        Parent = Cursor
+        Parent = Cursor,
     })
 end
 
@@ -2720,7 +2721,8 @@ do
             local Input
             local ActiveModifiers = {}
 
-            local GetInput = nil; GetInput = function()
+            local GetInput = nil
+            GetInput = function()
                 Input = UserInputService.InputBegan:Wait()
                 if UserInputService:GetFocusedTextBox() ~= nil then
                     return true
@@ -2744,7 +2746,11 @@ do
 
                 if KeyName then
                     if IsMod then
-                        if KeyPicker.WhitelistedModifiers and #KeyPicker.WhitelistedModifiers > 0 and not table.find(KeyPicker.WhitelistedModifiers, KeyName) then
+                        if
+                            KeyPicker.WhitelistedModifiers
+                            and #KeyPicker.WhitelistedModifiers > 0
+                            and not table.find(KeyPicker.WhitelistedModifiers, KeyName)
+                        then
                             return GetInput()
                         end
 
@@ -2752,7 +2758,11 @@ do
                             return GetInput()
                         end
                     else
-                        if KeyPicker.Whitelisted and #KeyPicker.Whitelisted > 0 and not table.find(KeyPicker.Whitelisted, KeyName) then
+                        if
+                            KeyPicker.Whitelisted
+                            and #KeyPicker.Whitelisted > 0
+                            and not table.find(KeyPicker.Whitelisted, KeyName)
+                        then
                             return GetInput()
                         end
 
@@ -3949,10 +3959,14 @@ do
         })
         if Info.Gradient ~= false then
             Library:AddGradient(Holder, {
-                Color = Info.GradientColorSequence or ColorSequence.new({
-                    ColorSequenceKeypoint.new(0, typeof(Accent) == "Color3" and Accent or Library.Scheme.AccentColor),
-                    ColorSequenceKeypoint.new(1, Library.Scheme.MainColor),
-                }),
+                Color = Info.GradientColorSequence
+                    or ColorSequence.new({
+                        ColorSequenceKeypoint.new(
+                            0,
+                            typeof(Accent) == "Color3" and Accent or Library.Scheme.AccentColor
+                        ),
+                        ColorSequenceKeypoint.new(1, Library.Scheme.MainColor),
+                    }),
                 Rotation = Info.GradientRotation or 25,
                 Transparency = Info.GradientTransparency or NumberSequence.new({
                     NumberSequenceKeypoint.new(0, 0.72),
@@ -4075,7 +4089,10 @@ do
             Visible = Button.Visible,
             Parent = Container,
         })
-        table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(0, Info.CornerRadius or Library.CornerRadius), Parent = Holder }))
+        table.insert(
+            Library.Corners,
+            New("UICorner", { CornerRadius = UDim.new(0, Info.CornerRadius or Library.CornerRadius), Parent = Holder })
+        )
         Library:AddOutline(Holder, {
             Color = Info.StrokeColor or Accent,
             Thickness = Info.StrokeThickness or 1,
@@ -4083,10 +4100,11 @@ do
             ShadowTransparency = Info.ShadowTransparency or 0.35,
         })
         Library:AddGradient(Holder, {
-            Color = Info.GradientColorSequence or ColorSequence.new({
-                ColorSequenceKeypoint.new(0, typeof(Accent) == "Color3" and Accent or Library.Scheme.AccentColor),
-                ColorSequenceKeypoint.new(1, Library.Scheme.MainColor),
-            }),
+            Color = Info.GradientColorSequence
+                or ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, typeof(Accent) == "Color3" and Accent or Library.Scheme.AccentColor),
+                    ColorSequenceKeypoint.new(1, Library.Scheme.MainColor),
+                }),
             Rotation = Info.GradientRotation or 0,
             Transparency = Info.GradientTransparency or NumberSequence.new({
                 NumberSequenceKeypoint.new(0, 0.45),
@@ -4143,7 +4161,8 @@ do
             if Button.Disabled then
                 return
             end
-            TweenService:Create(Holder, Library.TweenInfo, { BackgroundTransparency = Info.HoverTransparency or 0 }):Play()
+            TweenService:Create(Holder, Library.TweenInfo, { BackgroundTransparency = Info.HoverTransparency or 0 })
+                :Play()
             TweenService:Create(Label, Library.TweenInfo, { TextTransparency = 0 }):Play()
             if Shine then
                 Shine.Position = UDim2.fromScale(-0.25, 0.5)
@@ -4156,7 +4175,8 @@ do
             if Button.Disabled then
                 return
             end
-            TweenService:Create(Holder, Library.TweenInfo, { BackgroundTransparency = Info.Transparency or 0.08 }):Play()
+            TweenService:Create(Holder, Library.TweenInfo, { BackgroundTransparency = Info.Transparency or 0.08 })
+                :Play()
             TweenService:Create(Label, Library.TweenInfo, { TextTransparency = 0.1 }):Play()
         end)
         Holder.MouseButton1Click:Connect(function()
@@ -4249,7 +4269,10 @@ do
             Visible = Toggle.Visible,
             Parent = Container,
         })
-        table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = Holder }))
+        table.insert(
+            Library.Corners,
+            New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = Holder })
+        )
         Library:AddOutline(Holder, { Color = "AccentColor", Transparency = 0.45, ShadowTransparency = 0.5 })
         Library:AddGradient(Holder, {
             Rotation = 12,
@@ -4285,12 +4308,16 @@ do
         table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Dot }))
 
         function Toggle:Display()
-            TweenService:Create(Pill, Library.TweenInfo, {
-                BackgroundColor3 = Toggle.Value and Library.Scheme.AccentColor or Library.Scheme.OutlineColor,
-            }):Play()
-            TweenService:Create(Dot, Library.TweenInfo, {
-                Position = Toggle.Value and UDim2.new(1, -15, 0.5, 0) or UDim2.new(0, 3, 0.5, 0),
-            }):Play()
+            TweenService
+                :Create(Pill, Library.TweenInfo, {
+                    BackgroundColor3 = Toggle.Value and Library.Scheme.AccentColor or Library.Scheme.OutlineColor,
+                })
+                :Play()
+            TweenService
+                :Create(Dot, Library.TweenInfo, {
+                    Position = Toggle.Value and UDim2.new(1, -15, 0.5, 0) or UDim2.new(0, 3, 0.5, 0),
+                })
+                :Play()
         end
 
         function Toggle:SetValue(Value)
@@ -4879,7 +4906,9 @@ do
                 end
             end
 
-            if typeof(Info.VerifyValue) == "function" and (Text ~= Input.EmptyReset and Info.VerifyValue(Text) ~= true) then
+            if
+                typeof(Info.VerifyValue) == "function" and (Text ~= Input.EmptyReset and Info.VerifyValue(Text) ~= true)
+            then
                 Text = Input.EmptyReset
             end
 
@@ -4930,7 +4959,9 @@ do
             end)
         else
             Box:GetPropertyChangedSignal("Text"):Connect(function()
-                if Box.Text == Input.Value then return end
+                if Box.Text == Input.Value then
+                    return
+                end
 
                 Input:SetValue(Box.Text)
             end)
@@ -4947,7 +4978,10 @@ do
         table.insert(Groupbox.Elements, Input)
 
         Input.Default = Input.Value
-        if typeof(Info.VerifyValue) == "function" and (Input.Default ~= Input.EmptyReset and Info.VerifyValue(Input.Default) ~= true) then
+        if
+            typeof(Info.VerifyValue) == "function"
+            and (Input.Default ~= Input.EmptyReset and Info.VerifyValue(Input.Default) ~= true)
+        then
             Input:SetValue(Input.EmptyReset)
             Input.Default = Input.EmptyReset
         end
@@ -5419,7 +5453,9 @@ do
             local ValueImage = nil
             if Dropdown.SpecialType == "Player" and Dropdown.EnablePlayerImages == true then
                 if typeof(Value) == "Instance" and Value:IsA("Player") then
-                    ValueImage = { Url = string.format("rbxthumb://type=AvatarHeadShot&id=%s&w=48&h=48", tostring(Value.UserId)) }
+                    ValueImage = {
+                        Url = string.format("rbxthumb://type=AvatarHeadShot&id=%s&w=48&h=48", tostring(Value.UserId)),
+                    }
                 end
             else
                 if Dropdown.ValueImages and Dropdown.ValueImages[Value] then
@@ -5470,7 +5506,11 @@ do
 
         function Dropdown:RecalculateListSize(Count)
             local ItemHeight = Dropdown.CardDropdown and Dropdown.CardHeight or 21
-            local Y = math.clamp((Count or GetTableSize(Dropdown.Values)) * ItemHeight, 0, Info.MaxVisibleDropdownItems * ItemHeight)
+            local Y = math.clamp(
+                (Count or GetTableSize(Dropdown.Values)) * ItemHeight,
+                0,
+                Info.MaxVisibleDropdownItems * ItemHeight
+            )
 
             MenuTable:SetSize(function()
                 return UDim2.fromOffset((DisplayContainer.AbsoluteSize.X / Library.DPIScale) + 1, Y)
@@ -5505,7 +5545,9 @@ do
 
                         local Card = Dropdown.CardDropdown and GetCardInfo(Value) or nil
                         Str = Str
-                            .. (Card and Card.Text or Info.FormatDisplayValue and tostring(Info.FormatDisplayValue(Value)) or tostring(Value))
+                            .. (Card and Card.Text or Info.FormatDisplayValue and tostring(
+                                Info.FormatDisplayValue(Value)
+                            ) or tostring(Value))
                             .. ", "
                     end
                 end
@@ -5572,7 +5614,8 @@ do
             local Count = 0
             for _, Value in Values do
                 local CardInfo = Dropdown.CardDropdown and GetCardInfo(Value) or nil
-                local FormattedValue = CardInfo and CardInfo.Text or tostring(Info.FormatListValue and Info.FormatListValue(Value) or Value)
+                local FormattedValue = CardInfo and CardInfo.Text
+                    or tostring(Info.FormatListValue and Info.FormatListValue(Value) or Value)
                 local SearchValue = FormattedValue .. " " .. (CardInfo and tostring(CardInfo.Description or "") or "")
                 if SearchBox and not SearchValue:lower():match(SearchBox.Text:lower()) then
                     continue
@@ -5613,17 +5656,18 @@ do
                         ShadowTransparency = 1,
                     })
 
-                    Image = CardInfo.Thumbnail and New("ImageLabel", {
-                        BackgroundColor3 = "BackgroundColor",
-                        BackgroundTransparency = 0,
-                        Image = CardInfo.Thumbnail.Url,
-                        ImageRectOffset = CardInfo.Thumbnail.ImageRectOffset or Vector2.zero,
-                        ImageRectSize = CardInfo.Thumbnail.ImageRectSize or Vector2.zero,
-                        ImageTransparency = CardInfo.ImageTransparency or 0,
-                        ScaleType = CardInfo.ScaleType or Enum.ScaleType.Crop,
-                        Size = UDim2.fromScale(1, 1),
-                        Parent = Container,
-                    })
+                    Image = CardInfo.Thumbnail
+                        and New("ImageLabel", {
+                            BackgroundColor3 = "BackgroundColor",
+                            BackgroundTransparency = 0,
+                            Image = CardInfo.Thumbnail.Url,
+                            ImageRectOffset = CardInfo.Thumbnail.ImageRectOffset or Vector2.zero,
+                            ImageRectSize = CardInfo.Thumbnail.ImageRectSize or Vector2.zero,
+                            ImageTransparency = CardInfo.ImageTransparency or 0,
+                            ScaleType = CardInfo.ScaleType or Enum.ScaleType.Crop,
+                            Size = UDim2.fromScale(1, 1),
+                            Parent = Container,
+                        })
 
                     BottomBar = New("Frame", {
                         AnchorPoint = Vector2.new(0, 1),
@@ -5682,16 +5726,17 @@ do
                         Parent = Container,
                     })
                 else
-                    Image = ValueImage and New("ImageLabel", {
-                        BackgroundTransparency = 1,
-                        Image = ValueImage.Url,
-                        ImageRectOffset = ValueImage.ImageRectOffset or Vector2.zero,
-                        ImageRectSize = ValueImage.ImageRectSize or Vector2.zero,
-                        ImageTransparency = 0.5,
-                        Size = UDim2.fromOffset(16, 16),
-                        Position = UDim2.fromOffset(4, 3),
-                        Parent = Container,
-                    })
+                    Image = ValueImage
+                        and New("ImageLabel", {
+                            BackgroundTransparency = 1,
+                            Image = ValueImage.Url,
+                            ImageRectOffset = ValueImage.ImageRectOffset or Vector2.zero,
+                            ImageRectSize = ValueImage.ImageRectSize or Vector2.zero,
+                            ImageTransparency = 0.5,
+                            Size = UDim2.fromOffset(16, 16),
+                            Position = UDim2.fromOffset(4, 3),
+                            Parent = Container,
+                        })
 
                     Button = New("TextButton", {
                         BackgroundTransparency = 1,
@@ -5728,7 +5773,9 @@ do
                     if Dropdown.CardDropdown then
                         Container.BackgroundTransparency = Selected and 0 or 0.15
                         if BottomBar then
-                            BottomBar.BackgroundTransparency = IsDisabled and 0.6 or Selected and 0.05 or (CardInfo.BottomBarTransparency or 0.2)
+                            BottomBar.BackgroundTransparency = IsDisabled and 0.6
+                                or Selected and 0.05
+                                or (CardInfo.BottomBarTransparency or 0.2)
                         end
                         if Image then
                             Image.ImageTransparency = IsDisabled and 0.45 or (CardInfo.ImageTransparency or 0)
@@ -5860,28 +5907,6 @@ do
             end
 
             Dropdown.ValueImages = ValueImages
-            Dropdown:BuildDropdownList()
-        end
-
-        function Dropdown:SetCards(Cards)
-            if typeof(Cards) ~= "table" then
-                return
-            end
-
-            Dropdown.Cards = Cards
-            Info.Cards = Cards
-            Dropdown:BuildDropdownList()
-        end
-
-        function Dropdown:AddCards(Cards)
-            if typeof(Cards) ~= "table" then
-                return
-            end
-
-            for key, val in Cards do
-                Dropdown.Cards[key] = val
-            end
-
             Dropdown:BuildDropdownList()
         end
 
@@ -6776,7 +6801,8 @@ do
         }
 
         function DepGroupbox:Resize()
-            DepGroupboxContainer.Size = UDim2.new(1, 0, 0, (DepGroupboxList.AbsoluteContentSize.Y / Library.DPIScale) + 18)
+            DepGroupboxContainer.Size =
+                UDim2.new(1, 0, 0, (DepGroupboxList.AbsoluteContentSize.Y / Library.DPIScale) + 18)
         end
 
         function DepGroupbox:Update(CancelSearch)
@@ -7190,10 +7216,8 @@ function Library:Notify(...)
         local ExtraWidth = BigIconLabel and 32 or 0
         local IconWidth = IconLabel and 21 or 0
         local CloseWidth = CloseButton and 18 or 0
-        local MaxTextWidth = math.max(
-            48,
-            (NotificationArea.AbsoluteSize.X / Library.DPIScale) - 24 - ExtraWidth - CloseWidth
-        )
+        local MaxTextWidth =
+            math.max(48, (NotificationArea.AbsoluteSize.X / Library.DPIScale) - 24 - ExtraWidth - CloseWidth)
         local MaxTitleWidth = math.max(48, MaxTextWidth - IconWidth)
 
         if Title then
@@ -7757,7 +7781,7 @@ function Library:CreateWindow(WindowInfo)
             end,
             Position = UDim2.fromScale(0, 1),
             Size = UDim2.new(1, 0, 0, 20 + WindowInfo.CornerRadius),
-            Parent = MainFrame
+            Parent = MainFrame,
         })
         Library:MakeLine(MainFrame, {
             AnchorPoint = Vector2.new(0, 1),
@@ -8611,7 +8635,7 @@ function Library:CreateWindow(WindowInfo)
 
                 BoxHolder = BoxHolder,
                 Holder = TabboxHolder,
-                Tabs = {}
+                Tabs = {},
             }
 
             function Tabbox:UpdateCorners()
@@ -8745,7 +8769,7 @@ function Library:CreateWindow(WindowInfo)
                     ButtonCovers = {
                         BottomCover = BottomCover,
                         LeftCover = LeftCover,
-                        RightCover = RightCover
+                        RightCover = RightCover,
                     },
 
                     Tab = Tab,
@@ -8841,6 +8865,140 @@ function Library:CreateWindow(WindowInfo)
         function Tab:AddRightTabbox(Name)
             return Tab:AddTabbox({ Side = 2, Name = Name })
         end
+
+        function Tab:AddCard(Info)
+            Info = Info or {}
+            local Side = Info.Side == 2 and 2 or 1
+            local CardHolder = New("TextButton", {
+                AutoButtonColor = false,
+                BackgroundColor3 = "BackgroundColor",
+                BackgroundTransparency = 0.1,
+                ClipsDescendants = true,
+                Size = UDim2.new(1, 0, 0, Info.Height or 132),
+                Text = "",
+                Parent = Side == 1 and TabLeft or TabRight,
+            })
+            table.insert(
+                Library.Corners,
+                New("UICorner", {
+                    CornerRadius = UDim.new(0, math.max(4, WindowInfo.CornerRadius)),
+                    Parent = CardHolder,
+                })
+            )
+            Library:AddOutline(CardHolder, {
+                Color = Info.StrokeColor or "OutlineColor",
+                Thickness = Info.StrokeThickness or 1,
+                Transparency = Info.StrokeTransparency or 0.2,
+                ShadowTransparency = 1,
+            })
+
+            local Thumb = New("ImageLabel", {
+                BackgroundTransparency = 1,
+                Image = Info.Thumbnail or "",
+                ImageTransparency = Info.Thumbnail and (Info.ThumbnailTransparency or 0.15) or 1,
+                ScaleType = Enum.ScaleType.Crop,
+                Size = UDim2.new(1, 0, 0, math.max(56, (Info.Height or 132) - 62)),
+                Parent = CardHolder,
+            })
+            local Bar = New("Frame", {
+                AnchorPoint = Vector2.new(0, 1),
+                BackgroundColor3 = "DarkColor",
+                BackgroundTransparency = Info.BottomBarTransparency or 0.25,
+                Position = UDim2.fromScale(0, 1),
+                Size = UDim2.new(1, 0, 0, 56),
+                Parent = CardHolder,
+            })
+            local Icon = Library:GetCustomIcon(Info.Icon)
+            if Icon then
+                New("ImageLabel", {
+                    BackgroundTransparency = 1,
+                    Image = Icon.Url,
+                    ImageColor3 = Icon.Custom and "WhiteColor" or "AccentColor",
+                    ImageRectOffset = Icon.ImageRectOffset,
+                    ImageRectSize = Icon.ImageRectSize,
+                    Position = UDim2.fromOffset(10, 8),
+                    Size = UDim2.fromOffset(18, 18),
+                    Parent = Bar,
+                })
+            end
+            local Title = New("TextLabel", {
+                BackgroundTransparency = 1,
+                Position = UDim2.fromOffset(Icon and 34 or 10, 8),
+                Size = UDim2.new(1, Icon and -42 or -12, 0, 19),
+                Text = tostring(Info.Title or "Card"),
+                TextSize = 15,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Parent = Bar,
+            })
+            New("TextLabel", {
+                BackgroundTransparency = 1,
+                Position = UDim2.fromOffset(Icon and 34 or 10, 25),
+                Size = UDim2.new(1, Icon and -42 or -12, 0, 24),
+                Text = tostring(Info.Desc or Info.Description or ""),
+                TextSize = 13,
+                TextTransparency = 0.25,
+                TextWrapped = true,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextYAlignment = Enum.TextYAlignment.Top,
+                Parent = Bar,
+            })
+
+            local function SetHover(Hovering)
+                TweenService:Create(CardHolder, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    BackgroundTransparency = Hovering and 0.02 or 0.1,
+                    Size = Hovering and UDim2.new(1, 0, 0, (Info.Height or 132) + 4)
+                        or UDim2.new(1, 0, 0, Info.Height or 132),
+                }):Play()
+                TweenService
+                    :Create(Bar, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        BackgroundTransparency = Hovering and math.max(0, (Info.BottomBarTransparency or 0.25) - 0.08)
+                            or (Info.BottomBarTransparency or 0.25),
+                    })
+                    :Play()
+                TweenService
+                    :Create(Title, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        TextColor3 = Hovering and Library:GetColor("AccentColor") or Library:GetColor("FontColor"),
+                    })
+                    :Play()
+            end
+            CardHolder.MouseEnter:Connect(function()
+                SetHover(true)
+            end)
+            CardHolder.MouseLeave:Connect(function()
+                SetHover(false)
+            end)
+
+            local Card = { Holder = CardHolder }
+            function Card:Button(ButtonInfo)
+                ButtonInfo = ButtonInfo or {}
+                local Btn = New("TextButton", {
+                    AutoButtonColor = false,
+                    BackgroundColor3 = "MainColor",
+                    BackgroundTransparency = 0.1,
+                    Position = UDim2.new(0, 8, 1, -(ButtonInfo.OffsetY or 32)),
+                    Size = UDim2.new(1, -16, 0, 24),
+                    Text = tostring(ButtonInfo.Text or "Button"),
+                    TextSize = 14,
+                    Parent = CardHolder,
+                })
+                table.insert(
+                    Library.Corners,
+                    New("UICorner", {
+                        CornerRadius = UDim.new(0, math.max(4, WindowInfo.CornerRadius - 1)),
+                        Parent = Btn,
+                    })
+                )
+                Btn.MouseButton1Click:Connect(function()
+                    if ButtonInfo.Callback then
+                        ButtonInfo.Callback()
+                    end
+                end)
+                return Btn
+            end
+            return Card
+        end
+
+        Tab.addcard = Tab.AddCard
 
         function Tab:Hover(Hovering)
             if Library.ActiveTab == Tab then
@@ -8991,12 +9149,14 @@ function Library:CreateWindow(WindowInfo)
         Stats:AddHighlightButton({
             Text = "Refresh dashboard status",
             Callback = function()
-                Options.DashboardStats:SetDescription(string.format(
-                    "Tabs loaded: %d\nDevice: %s\nDPI scale: %d%%",
-                    GetTableSize(Library.Tabs),
-                    tostring(Library.DevicePlatform or "Unknown"),
-                    math.floor((Library.DPIScale or 1) * 100)
-                ))
+                Options.DashboardStats:SetDescription(
+                    string.format(
+                        "Tabs loaded: %d\nDevice: %s\nDPI scale: %d%%",
+                        GetTableSize(Library.Tabs),
+                        tostring(Library.DevicePlatform or "Unknown"),
+                        math.floor((Library.DPIScale or 1) * 100)
+                    )
+                )
             end,
         })
         Stats:AddLiquidGlassButton({
@@ -9459,7 +9619,7 @@ function Library:CreateWindow(WindowInfo)
             Parent = DialogFrame,
         })
         TweenService:Create(DialogScale, Library.TweenInfo, {
-            Scale = 1
+            Scale = 1,
         }):Play()
         local _InnerPadding = New("UIPadding", {
             PaddingBottom = UDim.new(0, 15),
@@ -9636,7 +9796,8 @@ function Library:CreateWindow(WindowInfo)
 
             DialogFrame.Size = UDim2.fromOffset(TargetWidth, 0)
 
-            local _DescX, DescY = Library:GetTextBounds(DescriptionLabel.Text, Library.Scheme.Font, 14, TargetWidth - 30)
+            local _DescX, DescY =
+                Library:GetTextBounds(DescriptionLabel.Text, Library.Scheme.Font, 14, TargetWidth - 30)
             DescriptionLabel.Size = UDim2.new(1, 0, 0, DescY)
 
             local HasElements = false
@@ -9745,7 +9906,7 @@ function Library:CreateWindow(WindowInfo)
                 Library.Corners,
                 New("UICorner", {
                     CornerRadius = UDim.new(0, Library.CornerRadius),
-                    Parent = TextBtn
+                    Parent = TextBtn,
                 })
             )
 
@@ -9791,7 +9952,7 @@ function Library:CreateWindow(WindowInfo)
                     Library.Corners,
                     New("UICorner", {
                         CornerRadius = UDim.new(0, Library.CornerRadius),
-                        Parent = ProgressBar
+                        Parent = ProgressBar,
                     })
                 )
             end
@@ -9809,27 +9970,34 @@ function Library:CreateWindow(WindowInfo)
                         TweenService:Create(TextBtn, Library.TweenInfo, { BackgroundTransparency = 0 }):Play()
                         TweenService:Create(BtnLabel, Library.TweenInfo, { TextTransparency = 0 }):Play()
                     end
-                end
+                end,
             }
 
             local ActiveColor = typeof(BtnColor) == "Color3" and BtnColor or Library.Scheme[BtnColor]
-            local HoverColor = Variant == "Ghost" and Library.Scheme.MainColor or Library:GetBetterColor(ActiveColor, 10)
+            local HoverColor = Variant == "Ghost" and Library.Scheme.MainColor
+                or Library:GetBetterColor(ActiveColor, 10)
 
             TextBtn.MouseEnter:Connect(function()
-                if not IsActive then return end
+                if not IsActive then
+                    return
+                end
                 TweenService:Create(TextBtn, Library.TweenInfo, {
-                    BackgroundColor3 = HoverColor
+                    BackgroundColor3 = HoverColor,
                 }):Play()
             end)
             TextBtn.MouseLeave:Connect(function()
-                if not IsActive then return end
+                if not IsActive then
+                    return
+                end
                 TweenService:Create(TextBtn, Library.TweenInfo, {
-                    BackgroundColor3 = ActiveColor
+                    BackgroundColor3 = ActiveColor,
                 }):Play()
             end)
 
             TextBtn.MouseButton1Click:Connect(function()
-                if not IsActive then return end
+                if not IsActive then
+                    return
+                end
                 if ButtonInfo.Callback then
                     ButtonInfo.Callback(Dialog)
                 end
@@ -9840,14 +10008,14 @@ function Library:CreateWindow(WindowInfo)
 
             if WaitTime > 0 then
                 TweenService:Create(ProgressBar, TweenInfo.new(WaitTime, Enum.EasingStyle.Linear), {
-                    Size = UDim2.new(1, 0, 0, 2)
+                    Size = UDim2.new(1, 0, 0, 2),
                 }):Play()
 
                 task.delay(WaitTime, function()
                     ButtonWrap:SetDisabled(false)
                     if ProgressBar then
                         TweenService:Create(ProgressBar, Library.TweenInfo, {
-                            BackgroundTransparency = 1
+                            BackgroundTransparency = 1,
                         }):Play()
                     end
                 end)
@@ -9857,7 +10025,9 @@ function Library:CreateWindow(WindowInfo)
         end
 
         for BIdx, BInfo in Info.FooterButtons do
-            if type(BIdx) == "number" and BInfo.Id then BIdx = BInfo.Id end
+            if type(BIdx) == "number" and BInfo.Id then
+                BIdx = BInfo.Id
+            end
             Dialog:AddFooterButton(BIdx, BInfo)
         end
 
@@ -9930,7 +10100,8 @@ function Library:CreateWindow(WindowInfo)
     end
 
     if WindowInfo.EnableSidebarResize then
-        local Threshold = (WindowInfo.MinSidebarWidth + WindowInfo.SidebarCompactWidth) * WindowInfo.SidebarCollapseThreshold
+        local Threshold = (WindowInfo.MinSidebarWidth + WindowInfo.SidebarCompactWidth)
+            * WindowInfo.SidebarCollapseThreshold
         local StartPos, StartWidth
         local Dragging = false
         local Changed
@@ -10112,7 +10283,7 @@ function Library:CreateLoading(LoadingInfo)
     local ScreenGui = New("ScreenGui", {
         Name = "ObsidianLoading",
         DisplayOrder = 999,
-        ResetOnSpawn = false
+        ResetOnSpawn = false,
     })
     ParentUI(ScreenGui)
     Loading.ScreenGui = ScreenGui
@@ -10129,21 +10300,27 @@ function Library:CreateLoading(LoadingInfo)
             return Library:GetBetterColor(Library.Scheme.BackgroundColor, -1)
         end,
         Position = UDim2.fromScale(0.5, 0.5),
-        Size = UDim2.fromOffset(Loading.ShowSidebar and (Loading.ContentWidth + Loading.SidebarWidth) or Loading.WindowWidth, Loading.WindowHeight),
+        Size = UDim2.fromOffset(
+            Loading.ShowSidebar and (Loading.ContentWidth + Loading.SidebarWidth) or Loading.WindowWidth,
+            Loading.WindowHeight
+        ),
         ClipsDescendants = true,
         Text = "",
         AutoButtonColor = false,
         Parent = ScreenGui,
     })
     Library:AddOutline(MainFrame)
-    table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = MainFrame }))
+    table.insert(
+        Library.Corners,
+        New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = MainFrame })
+    )
 
-	local MainScale = New("UIScale", {
-		Scale = Library.IsMobile and 0.8 or 1,
-		Parent = MainFrame
-	})
-	table.insert(Library.Scales, MainScale)
-	Library.ScalesOffset[MainScale] = Library.IsMobile and 0.2 or 0
+    local MainScale = New("UIScale", {
+        Scale = Library.IsMobile and 0.8 or 1,
+        Parent = MainFrame,
+    })
+    table.insert(Library.Scales, MainScale)
+    Library.ScalesOffset[MainScale] = Library.IsMobile and 0.2 or 0
 
     --// Layout Containers \\--
     local Container = New("Frame", {
@@ -10277,7 +10454,8 @@ function Library:CreateLoading(LoadingInfo)
         Image = LoaderIcon.Url,
         ImageRectOffset = LoaderIcon.ImageRectOffset,
         ImageRectSize = LoaderIcon.ImageRectSize,
-        ImageColor3 = LoadingInfo.LoadingIconColor or ((LoadingInfo.LoadingIcon == Templates.Loading.LoadingIcon) and "AccentColor" or "WhiteColor"),
+        ImageColor3 = LoadingInfo.LoadingIconColor
+            or ((LoadingInfo.LoadingIcon == Templates.Loading.LoadingIcon) and "AccentColor" or "WhiteColor"),
         Parent = IconHolder,
     })
 
@@ -10319,7 +10497,10 @@ function Library:CreateLoading(LoadingInfo)
         Parent = InnerContent,
     })
     Library:AddOutline(SliderBar)
-    table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius / 2), Parent = SliderBar }))
+    table.insert(
+        Library.Corners,
+        New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius / 2), Parent = SliderBar })
+    )
 
     local SliderFill = New("Frame", {
         BackgroundColor3 = "AccentColor",
@@ -10327,7 +10508,10 @@ function Library:CreateLoading(LoadingInfo)
         Size = UDim2.fromScale(0, 1),
         Parent = SliderBar,
     })
-    table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius / 2), Parent = SliderFill }))
+    table.insert(
+        Library.Corners,
+        New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius / 2), Parent = SliderFill })
+    )
 
     local ProgressLabel = New("TextLabel", {
         BackgroundTransparency = 1,
@@ -10477,8 +10661,15 @@ function Library:CreateLoading(LoadingInfo)
         end
 
         TweenService:Create(MainFrame, Library.TweenInfo, { Size = UDim2.fromOffset(FinalWidth, FinalHeight) }):Play()
-        TweenService:Create(SideBar, Library.TweenInfo, { Position = UDim2.fromOffset(Loading.ContentWidth, 0), Size = UDim2.new(0, ShowSidebar and Loading.SidebarWidth or 0, 1, 0) }):Play()
-        TweenService:Create(Container, Library.TweenInfo, { Size = UDim2.new(0, ShowSidebar and Loading.ContentWidth or Loading.WindowWidth, 1, 0) }):Play()
+        TweenService:Create(SideBar, Library.TweenInfo, {
+            Position = UDim2.fromOffset(Loading.ContentWidth, 0),
+            Size = UDim2.new(0, ShowSidebar and Loading.SidebarWidth or 0, 1, 0),
+        }):Play()
+        TweenService:Create(
+            Container,
+            Library.TweenInfo,
+            { Size = UDim2.new(0, ShowSidebar and Loading.ContentWidth or Loading.WindowWidth, 1, 0) }
+        ):Play()
 
         if not ShowSidebar then
             task.delay(Library.TweenInfo.Time, function()
@@ -10496,8 +10687,7 @@ function Library:CreateLoading(LoadingInfo)
             return
         end
 
-        local RequiredHeight =
-              49 -- TopBar
+        local RequiredHeight = 49 -- TopBar
             + 48 -- Padding
             + InnerContent.UIListLayout.AbsoluteContentSize.Y
 
@@ -10612,14 +10802,13 @@ function Library:CreateLoading(LoadingInfo)
         ErrorLabel.Size = UDim2.new(1, -30, 0, ErrorY)
 
         local HasButtons = ErrorButtonsHolder.Visible
-        local RequiredHeight =
-              49                        -- TopBar
-            + 15                        -- Padding Top
-            + 18                        -- Title Height
-            + 6                         -- Padding between Title and Label
-            + ErrorY                    -- Label Height
-            + 15                        -- Padding between Label and Buttons
-            + (HasButtons and 48 or 0)  -- Buttons Area
+        local RequiredHeight = 49 -- TopBar
+            + 15 -- Padding Top
+            + 18 -- Title Height
+            + 6 -- Padding between Title and Label
+            + ErrorY -- Label Height
+            + 15 -- Padding between Label and Buttons
+            + (HasButtons and 48 or 0) -- Buttons Area
 
         Loading.WindowErrorHeight = RequiredHeight -- math.max(Loading.WindowHeight, RequiredHeight)
     end
@@ -10680,7 +10869,7 @@ function Library:CreateLoading(LoadingInfo)
                 Library.Corners,
                 New("UICorner", {
                     CornerRadius = UDim.new(0, Library.CornerRadius),
-                    Parent = TextBtn
+                    Parent = TextBtn,
                 })
             )
 
@@ -10711,16 +10900,17 @@ function Library:CreateLoading(LoadingInfo)
             TextBtn.Size = UDim2.fromOffset(LabelX + 30, 26)
 
             local ActiveColor = typeof(BtnColor) == "Color3" and BtnColor or Library.Scheme[BtnColor]
-            local HoverColor = Variant == "Ghost" and Library.Scheme.MainColor or Library:GetBetterColor(ActiveColor, 10)
+            local HoverColor = Variant == "Ghost" and Library.Scheme.MainColor
+                or Library:GetBetterColor(ActiveColor, 10)
 
             TextBtn.MouseEnter:Connect(function()
                 TweenService:Create(TextBtn, Library.TweenInfo, {
-                    BackgroundColor3 = HoverColor
+                    BackgroundColor3 = HoverColor,
                 }):Play()
             end)
             TextBtn.MouseLeave:Connect(function()
                 TweenService:Create(TextBtn, Library.TweenInfo, {
-                    BackgroundColor3 = ActiveColor
+                    BackgroundColor3 = ActiveColor,
                 }):Play()
             end)
 
@@ -10749,7 +10939,7 @@ function Library:CreateLoading(LoadingInfo)
         end
     end
 
-    Loading.Continue = Loading.Destroy;
+    Loading.Continue = Loading.Destroy
 
     if Library.Toggle and Library.Toggled and Library.Unloaded ~= true then
         Library:Toggle(false)

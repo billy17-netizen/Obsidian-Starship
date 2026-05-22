@@ -169,8 +169,6 @@ export type SliderInfo = {
     Visible: boolean?,
 }
 
-
-
 export type GlassPanelInfo = {
     Title: string?,
     Text: string?,
@@ -363,7 +361,6 @@ export type ColorPicker = {
 }
 
 export type Addon = KeyPicker | ColorPicker
-
 
 export type GlassPanel = {
     Text: string,
@@ -792,12 +789,51 @@ export type Tab = {
     AddTabbox: (self: Tab, Info: { Side: number, Name: string? }) -> Tabbox,
     AddLeftTabbox: (self: Tab, Name: string?) -> Tabbox,
     AddRightTabbox: (self: Tab, Name: string?) -> Tabbox,
+    AddCard: (
+        self: Tab,
+        Info: {
+            Side: number?,
+            Title: string?,
+            Desc: string?,
+            Description: string?,
+            Icon: string?,
+            Thumbnail: string?,
+            Height: number?,
+            BottomBarTransparency: number?,
+            StrokeColor: (Color3 | string)?,
+            StrokeThickness: number?,
+            StrokeTransparency: number?,
+            ThumbnailTransparency: number?,
+        }
+    ) -> {
+        Holder: TextButton,
+        Button: (self: any, Info: { Text: string?, Callback: (() -> ())?, OffsetY: number? }?) -> TextButton,
+    },
+    addcard: (
+        self: Tab,
+        Info: {
+            Side: number?,
+            Title: string?,
+            Desc: string?,
+            Description: string?,
+            Icon: string?,
+            Thumbnail: string?,
+            Height: number?,
+            BottomBarTransparency: number?,
+            StrokeColor: (Color3 | string)?,
+            StrokeThickness: number?,
+            StrokeTransparency: number?,
+            ThumbnailTransparency: number?,
+        }
+    ) -> {
+        Holder: TextButton,
+        Button: (self: any, Info: { Text: string?, Callback: (() -> ())?, OffsetY: number? }?) -> TextButton,
+    },
     Hover: (self: Tab, Hovering: boolean) -> (),
     Show: (self: Tab) -> (),
     Hide: (self: Tab) -> (),
     SetVisible: (self: Tab, Visible: boolean) -> (),
 }
-
 
 export type KeyBox = {
     ExpectedKey: string?,
@@ -814,7 +850,6 @@ export type KeyBox = {
     GetValue: (self: KeyBox) -> string,
     Submit: (self: KeyBox) -> (),
 }
-
 
 export type KeyBoxInfo = {
     ExpectedKey: string?,
@@ -838,9 +873,11 @@ export type KeyTab = BaseGroupbox & {
     IsKeyTab: true,
     Container: ScrollingFrame,
 
-    AddKeyBox: ((self: KeyTab, Callback: (Key: string) -> ()) -> KeyBox)
-        & ((self: KeyTab, ExpectedKey: string?, Callback: (Success: boolean, Key: string, KeyBox: KeyBox) -> ()) -> KeyBox)
-        & ((self: KeyTab, Info: KeyBoxInfo) -> KeyBox),
+    AddKeyBox: ((self: KeyTab, Callback: (Key: string) -> ()) -> KeyBox) & ((
+        self: KeyTab,
+        ExpectedKey: string?,
+        Callback: (Success: boolean, Key: string, KeyBox: KeyBox) -> ()
+    ) -> KeyBox) & ((self: KeyTab, Info: KeyBoxInfo) -> KeyBox),
     Resize: (self: KeyTab) -> (),
     Hover: (self: KeyTab, Hovering: boolean) -> (),
     Show: (self: KeyTab) -> (),
@@ -853,7 +890,7 @@ export type DialogButtonInfo = {
     Variant: string?,
     WaitTime: number?,
     Order: number?,
-    Callback: (() -> ())?
+    Callback: (() -> ())?,
 }
 
 export type Dialog = {
@@ -882,7 +919,18 @@ export type Window = {
         Icon: string?,
         Description: string?
     ) -> KeyTab,
-    AddDashboardTab: (self: Window, Info: { Name: string?, Icon: string?, Description: string?, Title: string?, Text: string?, Badge: string?, AccentColor: Color3 | string? }?) -> Tab,
+    AddDashboardTab: (
+        self: Window,
+        Info: {
+            Name: string?,
+            Icon: string?,
+            Description: string?,
+            Title: string?,
+            Text: string?,
+            Badge: string?,
+            AccentColor: Color3 | string?,
+        }?
+    ) -> Tab,
     AddDialog: (
         self: Window,
         Info: {
@@ -893,7 +941,7 @@ export type Window = {
             DescriptionColor: Color3?,
             AutoDismiss: boolean?,
             OutsideClickDismiss: boolean?,
-            FooterButtons: { [string]: DialogButtonInfo }?
+            FooterButtons: { [string]: DialogButtonInfo }?,
         }
     ) -> Dialog,
     ChangeTitle: (self: Window, Title: string) -> (),
@@ -901,8 +949,27 @@ export type Window = {
     ChangeFooter: (self: Window, Footer: string) -> (),
     SetBackgroundImage: (self: Window, Image: string) -> (),
     SetBackgroundImageTransparency: (self: Window, Transparency: number) -> (),
-    SetGradient: (self: Window, Enabled: boolean, GradientInfo: { Color: ColorSequence?, ColorSequence: ColorSequence?, Rotation: number?, Transparency: NumberSequence? }?) -> (),
-    SetBorder: (self: Window, Info: { Color: (Color3 | string)?, Thickness: number?, Transparency: number?, ShadowColor: (Color3 | string)?, ShadowThickness: number?, ShadowTransparency: number? }?) -> (),
+    SetGradient: (
+        self: Window,
+        Enabled: boolean,
+        GradientInfo: {
+            Color: ColorSequence?,
+            ColorSequence: ColorSequence?,
+            Rotation: number?,
+            Transparency: NumberSequence?,
+        }?
+    ) -> (),
+    SetBorder: (
+        self: Window,
+        Info: {
+            Color: (Color3 | string)?,
+            Thickness: number?,
+            Transparency: number?,
+            ShadowColor: (Color3 | string)?,
+            ShadowThickness: number?,
+            ShadowTransparency: number?,
+        }?
+    ) -> (),
     SetTabsMode: (self: Window, Mode: "Sidebar" | "Topbar") -> (),
 }
 
@@ -962,9 +1029,44 @@ export type Library = {
     UpdateSearch: (self: Library, SearchText: string) -> (),
     AddToRegistry: (self: Library, Instance: GuiObject, Properties: { [string]: string | () -> Color3 }) -> (),
     RemoveFromRegistry: (self: Library, Instance: GuiObject) -> (),
-    AddOutline: (self: Library, Frame: GuiObject, Info: { Color: (Color3 | string)?, Thickness: number?, Transparency: number?, ShadowColor: (Color3 | string)?, ShadowThickness: number?, ShadowTransparency: number? }?) -> (UIStroke, UIStroke),
-    AddGradient: (self: Library, Frame: GuiObject, Info: { Color: ColorSequence?, ColorSequence: ColorSequence?, Offset: Vector2?, Rotation: number?, Transparency: NumberSequence? }?) -> UIGradient,
-    AnimateIconSprite: (self: Library, ImageObject: ImageLabel | ImageButton, AtlasInfo: { Image: string?, AtlasImage: string?, Fps: number?, FPS: number?, Loop: boolean?, Frames: { { Offset: Vector2?, Size: Vector2?, ImageRectOffset: Vector2?, ImageRectSize: Vector2? } }?, FrameSize: Vector2?, FrameCount: number?, Columns: number? }) -> (),
+    AddOutline: (
+        self: Library,
+        Frame: GuiObject,
+        Info: {
+            Color: (Color3 | string)?,
+            Thickness: number?,
+            Transparency: number?,
+            ShadowColor: (Color3 | string)?,
+            ShadowThickness: number?,
+            ShadowTransparency: number?,
+        }?
+    ) -> (UIStroke, UIStroke),
+    AddGradient: (
+        self: Library,
+        Frame: GuiObject,
+        Info: {
+            Color: ColorSequence?,
+            ColorSequence: ColorSequence?,
+            Offset: Vector2?,
+            Rotation: number?,
+            Transparency: NumberSequence?,
+        }?
+    ) -> UIGradient,
+    AnimateIconSprite: (
+        self: Library,
+        ImageObject: ImageLabel | ImageButton,
+        AtlasInfo: {
+            Image: string?,
+            AtlasImage: string?,
+            Fps: number?,
+            FPS: number?,
+            Loop: boolean?,
+            Frames: { { Offset: Vector2?, Size: Vector2?, ImageRectOffset: Vector2?, ImageRectSize: Vector2? } }?,
+            FrameSize: Vector2?,
+            FrameCount: number?,
+            Columns: number?,
+        }
+    ) -> (),
     StopIconSpriteAnimation: (self: Library, ImageObject: ImageLabel | ImageButton) -> (),
     ApplyNewElements: (self: Library, Target: any?) -> any,
     ApplyNewElments: (self: Library, Target: any?) -> any,
@@ -1012,10 +1114,30 @@ export type Library = {
     SetFont: (self: Library, FontFace: Font | Enum.Font) -> (),
     SetNotifySide: (self: Library, Side: "Left" | "Right") -> (),
     Notify: (self: Library, Info: NotificationInfo | string, Time: number?, SoundId: string | number?) -> Notification,
-    NotifyInfo: (self: Library, Info: NotificationInfo | string, Time: number?, SoundId: string | number?) -> Notification,
-    NotifySuccess: (self: Library, Info: NotificationInfo | string, Time: number?, SoundId: string | number?) -> Notification,
-    NotifyWarning: (self: Library, Info: NotificationInfo | string, Time: number?, SoundId: string | number?) -> Notification,
-    NotifyError: (self: Library, Info: NotificationInfo | string, Time: number?, SoundId: string | number?) -> Notification,
+    NotifyInfo: (
+        self: Library,
+        Info: NotificationInfo | string,
+        Time: number?,
+        SoundId: string | number?
+    ) -> Notification,
+    NotifySuccess: (
+        self: Library,
+        Info: NotificationInfo | string,
+        Time: number?,
+        SoundId: string | number?
+    ) -> Notification,
+    NotifyWarning: (
+        self: Library,
+        Info: NotificationInfo | string,
+        Time: number?,
+        SoundId: string | number?
+    ) -> Notification,
+    NotifyError: (
+        self: Library,
+        Info: NotificationInfo | string,
+        Time: number?,
+        SoundId: string | number?
+    ) -> Notification,
     CreateWindow: (
         self: Library,
         WindowInfo: {
