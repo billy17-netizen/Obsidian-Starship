@@ -937,6 +937,8 @@ export type Window = {
             Text: string?,
             Badge: string?,
             AccentColor: Color3 | string?,
+            HubName: string?,
+            PrimaryActionText: string?,
         }?
     ) -> Tab,
     AddDialog: (
@@ -1188,6 +1190,7 @@ export type Library = {
             Font: Font | Enum.Font?,
             ToggleKeybind: Enum.KeyCode?,
             MobileButtonsSide: "Left" | "Right"?,
+            MobileButtonsMode: "Normal" | "DynamicIsland"?,
             UnlockMouseWhileOpen: boolean?,
             EnableSidebarResize: boolean?,
             EnableCompacting: boolean?,

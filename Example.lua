@@ -27,6 +27,7 @@ local Window = Library:CreateWindow({
     Icon = 95816097006870,
     NotifySide = "Right",
     ShowCustomCursor = true,
+    MobileButtonsMode = "DynamicIsland",
 
     -- Modded visuals: background image, gradient overlay, and custom border stroke.
     BackgroundImage = "rbxassetid://14909902842",
@@ -57,8 +58,9 @@ Library:ApplyNewElements() -- Enables/advertises modded elements like glass pane
 local Tabs = {
     -- Creates a special generated dashboard tab with overview cards and new liquid-glass controls
     Dashboard = Window:AddDashboardTab({
+        HubName = "mspaint",
         Badge = "LIVE",
-        Text = "Welcome to the modded Obsidian dashboard. Use this tab as a landing page for script hubs.",
+        Text = "Welcome to the modded Obsidian dashboard. Use this tab as a landing page for script hubs. This text can be very long and the tab info section now scrolls when overflowing.",
     }),
     -- Creates a new tab titled Main
     Main = Window:AddTab("Main", "user"),

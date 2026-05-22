@@ -349,6 +349,7 @@ local Templates = {
 
         ShowMobileButtons = true,
         MobileButtonsSide = "Left",
+        MobileButtonsMode = "Normal", -- Normal, DynamicIsland
 
         UnlockMouseWhileOpen = true,
 
@@ -7384,6 +7385,29 @@ function Library:NotifySuccess(Info, Time, SoundId)
         return Library:Notify(Info)
     end
 
+    return Data
+end
+
+function Library:NotifyInfo(Info, Time, SoundId)
+    if typeof(Info) == "table" then
+        Info.Type = Info.Type or "Info"
+        return Library:Notify(Info)
+    end
+
+    return Library:Notify({
+        Type = "Info",
+        Description = tostring(Info),
+        Time = Time,
+        SoundId = SoundId,
+    })
+end
+
+function Library:NotifySuccess(Info, Time, SoundId)
+    if typeof(Info) == "table" then
+        Info.Type = Info.Type or "Success"
+        return Library:Notify(Info)
+    end
+
     return Library:Notify({
         Type = "Success",
         Description = tostring(Info),
@@ -7478,6 +7502,7 @@ function Library:CreateWindow(WindowInfo)
     local CurrentTabInfo
     local CurrentTabLabel
     local CurrentTabDescription
+    local CurrentTabDescriptionFrame
     local ResizeButton
     local Tabs
     local Container
@@ -7501,6 +7526,8 @@ function Library:CreateWindow(WindowInfo)
         FullscreenBackground.ScaleType = WindowInfo.FullscreenBackgroundImageScaleType
         if WindowInfo.FullscreenBackgroundImage and WindowInfo.FullscreenBackgroundImage ~= "" then
             FullscreenBackground.BackgroundTransparency = math.max(0.95, WindowInfo.FullscreenBackgroundTransparency)
+        elseif WindowInfo.FullscreenBackground == true then
+            FullscreenBackground.BackgroundTransparency = 1
         end
 
         Library.KeybindFrame, Library.KeybindContainer = Library:AddDraggableMenu("Keybinds")
@@ -7705,6 +7732,16 @@ function Library:CreateWindow(WindowInfo)
             Parent = CurrentTabInfo,
         })
 
+        CurrentTabDescriptionFrame = New("ScrollingFrame", {
+            AutomaticCanvasSize = Enum.AutomaticSize.Y,
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            CanvasSize = UDim2.fromScale(0, 0),
+            ScrollBarThickness = 2,
+            ScrollingDirection = Enum.ScrollingDirection.Y,
+            Size = UDim2.new(1, 0, 1, -20),
+            Parent = CurrentTabInfo,
+        })
         CurrentTabDescription = New("TextLabel", {
             BackgroundTransparency = 1,
             Size = UDim2.fromScale(1, 0),
@@ -7714,7 +7751,7 @@ function Library:CreateWindow(WindowInfo)
             TextSize = 14,
             TextXAlignment = Enum.TextXAlignment.Left,
             TextTransparency = 0.5,
-            Parent = CurrentTabInfo,
+            Parent = CurrentTabDescriptionFrame,
         })
 
         SearchBox = New("TextBox", {
@@ -7962,38 +7999,6 @@ function Library:CreateWindow(WindowInfo)
         if Info.ShadowTransparency then
             MainShadowStroke.Transparency = Info.ShadowTransparency
         end
-        if Info.Transparency then
-            MainOutlineStroke.Transparency = Info.Transparency
-        end
-        if Info.ShadowColor then
-            MainShadowStroke.Color = GetSchemeValue(Info.ShadowColor) or Info.ShadowColor
-            if typeof(Info.ShadowColor) == "string" then
-                if not Library.Registry[MainShadowStroke] then
-                    Library:AddToRegistry(MainShadowStroke, {})
-                end
-                Library.Registry[MainShadowStroke].Color = Info.ShadowColor
-            end
-        end
-        if Info.ShadowThickness then
-            MainShadowStroke.Thickness = Info.ShadowThickness
-        end
-        if Info.ShadowTransparency then
-            MainShadowStroke.Transparency = Info.ShadowTransparency
-        end
-    end
-
-    function Window:SetTabsMode(Mode)
-        local NewIsTopbar = tostring(Mode):lower() == "topbar"
-        WindowInfo.TabsMode = NewIsTopbar and "Topbar" or "Sidebar"
-        Library:NotifyWarning({
-            Title = "Tabs mode",
-            Description = "SetTabsMode requires recreating the window to fully re-layout tabs.",
-            Time = 4,
-        })
-    end
-
-    function Window:ChangeFooter(footer: string)
-        return Window:SetFooter(footer)
     end
 
     function Window:SetTabsMode(Mode)
@@ -8108,6 +8113,9 @@ function Library:CreateWindow(WindowInfo)
     function Window:ShowTabInfo(Name, Description)
         CurrentTabLabel.Text = Name
         CurrentTabDescription.Text = Description
+        if CurrentTabDescriptionFrame then
+            CurrentTabDescriptionFrame.CanvasPosition = Vector2.zero
+        end
 
         if IsDefaultSearchbarSize then
             SearchBox.Size = UDim2.fromScale(0.5, 1)
@@ -9128,7 +9136,7 @@ function Library:CreateWindow(WindowInfo)
 
         local Overview = Dashboard:AddLeftGroupbox(Info.OverviewTitle or "Overview", "activity")
         Overview:AddGlassPanel("DashboardWelcome", {
-            Title = Info.Title or "Welcome back",
+            Title = Info.Title or (Info.HubName and (Info.HubName .. " Hub") or "Welcome back"),
             Description = Info.Text
                 or "This dashboard tab is generated by Obsidian Modded and showcases glass panels, liquid controls, and quick actions.",
             Icon = Info.PanelIcon or "sparkles",
@@ -9148,7 +9156,7 @@ function Library:CreateWindow(WindowInfo)
             end,
         })
         Overview:AddShinyButton({
-            Text = "Pulse dashboard shine",
+            Text = Info.PrimaryActionText or "Pulse dashboard shine",
             Icon = "sparkles",
             Callback = function()
                 Library:NotifySuccess({
@@ -10228,7 +10236,64 @@ function Library:CreateWindow(WindowInfo)
             self:SetText(Library.CantDragForced and "Unlock" or "Lock")
         end, true)
 
-        if WindowInfo.MobileButtonsSide == "Right" then
+        if tostring(WindowInfo.MobileButtonsMode):lower() == "dynamicisland" then
+            local Island = New("TextButton", {
+                AnchorPoint = Vector2.new(0.5, 0),
+                AutoButtonColor = false,
+                BackgroundColor3 = "DarkColor",
+                Position = UDim2.new(0.5, 0, 0, 8),
+                Size = UDim2.fromOffset(66, 22),
+                Text = "",
+                Parent = ScreenGui,
+            })
+            table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Island }))
+            Library:AddOutline(Island, { Color = "OutlineColor", ShadowTransparency = 1 })
+            local IslandLayout = New("UIListLayout", {
+                FillDirection = Enum.FillDirection.Horizontal,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                Padding = UDim.new(0, 8),
+                Parent = Island,
+            })
+            local EyeIcon = Library:GetIcon("eye")
+            local LockIcon = Library:GetIcon("lock")
+            New("ImageLabel", {
+                BackgroundTransparency = 1,
+                Image = EyeIcon and EyeIcon.Url or "",
+                ImageRectOffset = EyeIcon and EyeIcon.ImageRectOffset or Vector2.zero,
+                ImageRectSize = EyeIcon and EyeIcon.ImageRectSize or Vector2.zero,
+                Size = UDim2.fromOffset(13, 13),
+                Parent = Island,
+            })
+            New("ImageLabel", {
+                BackgroundTransparency = 1,
+                Image = LockIcon and LockIcon.Url or "",
+                ImageRectOffset = LockIcon and LockIcon.ImageRectOffset or Vector2.zero,
+                ImageRectSize = LockIcon and LockIcon.ImageRectSize or Vector2.zero,
+                Size = UDim2.fromOffset(13, 13),
+                Parent = Island,
+            })
+            local Opened = false
+            local function SetIslandOpen(State)
+                Opened = State
+                ToggleButton.Button.Visible = State
+                LockButton.Button.Visible = State
+                TweenService
+                    :Create(Island, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Size = State and UDim2.fromOffset(152, 28) or UDim2.fromOffset(66, 22),
+                    })
+                    :Play()
+                if State then
+                    ToggleButton.Button.Position = UDim2.new(0.5, -72, 0, 40)
+                    LockButton.Button.Position = UDim2.new(0.5, 6, 0, 40)
+                end
+            end
+            SetIslandOpen(false)
+            Island.MouseButton1Click:Connect(function()
+                SetIslandOpen(not Opened)
+            end)
+            IslandLayout:Destroy()
+        elseif WindowInfo.MobileButtonsSide == "Right" then
             ToggleButton.Button.Position = UDim2.new(1, -6, 0, 6)
             ToggleButton.Button.AnchorPoint = Vector2.new(1, 0)
 
