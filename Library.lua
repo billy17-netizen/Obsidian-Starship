@@ -339,7 +339,7 @@ local Templates = {
         TabStyle = "Default", -- Default, Card
         FullscreenBackground = false,
         FullscreenBackgroundColor = Color3.fromRGB(0, 0, 0),
-        FullscreenBackgroundTransparency = 0.4,
+        FullscreenBackgroundTransparency = 1,
         FullscreenBackgroundImage = nil,
         FullscreenBackgroundImageTransparency = 0.9,
         FullscreenBackgroundImageScaleType = Enum.ScaleType.Crop,
@@ -7499,6 +7499,9 @@ function Library:CreateWindow(WindowInfo)
         FullscreenBackground.Image = WindowInfo.FullscreenBackgroundImage or ""
         FullscreenBackground.ImageTransparency = WindowInfo.FullscreenBackgroundImageTransparency
         FullscreenBackground.ScaleType = WindowInfo.FullscreenBackgroundImageScaleType
+        if WindowInfo.FullscreenBackgroundImage and WindowInfo.FullscreenBackgroundImage ~= "" then
+            FullscreenBackground.BackgroundTransparency = math.max(0.95, WindowInfo.FullscreenBackgroundTransparency)
+        end
 
         Library.KeybindFrame, Library.KeybindContainer = Library:AddDraggableMenu("Keybinds")
         Library.KeybindFrame.AnchorPoint = Vector2.new(0, 0.5)
@@ -7959,6 +7962,38 @@ function Library:CreateWindow(WindowInfo)
         if Info.ShadowTransparency then
             MainShadowStroke.Transparency = Info.ShadowTransparency
         end
+        if Info.Transparency then
+            MainOutlineStroke.Transparency = Info.Transparency
+        end
+        if Info.ShadowColor then
+            MainShadowStroke.Color = GetSchemeValue(Info.ShadowColor) or Info.ShadowColor
+            if typeof(Info.ShadowColor) == "string" then
+                if not Library.Registry[MainShadowStroke] then
+                    Library:AddToRegistry(MainShadowStroke, {})
+                end
+                Library.Registry[MainShadowStroke].Color = Info.ShadowColor
+            end
+        end
+        if Info.ShadowThickness then
+            MainShadowStroke.Thickness = Info.ShadowThickness
+        end
+        if Info.ShadowTransparency then
+            MainShadowStroke.Transparency = Info.ShadowTransparency
+        end
+    end
+
+    function Window:SetTabsMode(Mode)
+        local NewIsTopbar = tostring(Mode):lower() == "topbar"
+        WindowInfo.TabsMode = NewIsTopbar and "Topbar" or "Sidebar"
+        Library:NotifyWarning({
+            Title = "Tabs mode",
+            Description = "SetTabsMode requires recreating the window to fully re-layout tabs.",
+            Time = 4,
+        })
+    end
+
+    function Window:ChangeFooter(footer: string)
+        return Window:SetFooter(footer)
     end
 
     function Window:SetTabsMode(Mode)
@@ -8869,6 +8904,7 @@ function Library:CreateWindow(WindowInfo)
         function Tab:AddCard(Info)
             Info = Info or {}
             local Side = Info.Side == 2 and 2 or 1
+            local TargetTab = Info.TargetTab or Info.Tab
             local CardHolder = New("TextButton", {
                 AutoButtonColor = false,
                 BackgroundColor3 = "BackgroundColor",
@@ -8968,33 +9004,23 @@ function Library:CreateWindow(WindowInfo)
                 SetHover(false)
             end)
 
-            local Card = { Holder = CardHolder }
-            function Card:Button(ButtonInfo)
-                ButtonInfo = ButtonInfo or {}
-                local Btn = New("TextButton", {
-                    AutoButtonColor = false,
-                    BackgroundColor3 = "MainColor",
-                    BackgroundTransparency = 0.1,
-                    Position = UDim2.new(0, 8, 1, -(ButtonInfo.OffsetY or 32)),
-                    Size = UDim2.new(1, -16, 0, 24),
-                    Text = tostring(ButtonInfo.Text or "Button"),
-                    TextSize = 14,
-                    Parent = CardHolder,
-                })
-                table.insert(
-                    Library.Corners,
-                    New("UICorner", {
-                        CornerRadius = UDim.new(0, math.max(4, WindowInfo.CornerRadius - 1)),
-                        Parent = Btn,
-                    })
-                )
-                Btn.MouseButton1Click:Connect(function()
-                    if ButtonInfo.Callback then
-                        ButtonInfo.Callback()
-                    end
-                end)
-                return Btn
+            local Card = { Holder = CardHolder, TargetTab = TargetTab }
+            function Card:SetTargetTab(NewTargetTab)
+                Card.TargetTab = NewTargetTab
             end
+
+            CardHolder.MouseButton1Click:Connect(function()
+                local NextTab = Card.TargetTab
+                if typeof(NextTab) == "string" then
+                    NextTab = Library.Tabs[NextTab]
+                end
+                if NextTab and typeof(NextTab) == "table" and NextTab.Show then
+                    NextTab:Show()
+                elseif Info.Callback then
+                    Info.Callback(Card)
+                end
+            end)
+
             return Card
         end
 

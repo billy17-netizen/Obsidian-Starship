@@ -804,10 +804,14 @@ export type Tab = {
             StrokeThickness: number?,
             StrokeTransparency: number?,
             ThumbnailTransparency: number?,
+            TargetTab: Tab | string?,
+            Tab: Tab | string?,
+            Callback: ((any) -> ())?,
         }
     ) -> {
         Holder: TextButton,
-        Button: (self: any, Info: { Text: string?, Callback: (() -> ())?, OffsetY: number? }?) -> TextButton,
+        TargetTab: Tab | string?,
+        SetTargetTab: (self: any, NewTargetTab: Tab | string?) -> (),
     },
     addcard: (
         self: Tab,
@@ -824,10 +828,14 @@ export type Tab = {
             StrokeThickness: number?,
             StrokeTransparency: number?,
             ThumbnailTransparency: number?,
+            TargetTab: Tab | string?,
+            Tab: Tab | string?,
+            Callback: ((any) -> ())?,
         }
     ) -> {
         Holder: TextButton,
-        Button: (self: any, Info: { Text: string?, Callback: (() -> ())?, OffsetY: number? }?) -> TextButton,
+        TargetTab: Tab | string?,
+        SetTargetTab: (self: any, NewTargetTab: Tab | string?) -> (),
     },
     Hover: (self: Tab, Hovering: boolean) -> (),
     Show: (self: Tab) -> (),

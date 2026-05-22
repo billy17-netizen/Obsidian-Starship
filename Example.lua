@@ -68,20 +68,11 @@ local Tabs = {
 
 local ShowcaseCard = Tabs.Main:addcard({
     Title = "Starter card",
-    Desc = "Card-style section in tab with hover animation and action button.",
+    Desc = "Card-style tab switcher. Click this card to jump to Dashboard tab.",
     Icon = "sparkles",
     Thumbnail = "rbxassetid://139785960036434",
     Side = 1,
-})
-ShowcaseCard:Button({
-    Text = "Card action",
-    Callback = function()
-        Library:NotifyInfo({
-            Title = "Card button",
-            Description = "Card action callback fired.",
-            Time = 3,
-        })
-    end,
+    TargetTab = "Dashboard",
 })
 
 --[[
@@ -564,51 +555,6 @@ DropdownGroupBox:AddDropdown("MyCardDropdown", {
     Callback = function(Value)
         print("[cb] Card dropdown selected:", Value)
     end,
-})
-
-DropdownGroupBox:AddDropdown("MyCardDropdown", {
-	Values = { "Nebula", "Aurora", "Obsidian" },
-	Default = "Nebula",
-	Text = "Advanced card dropdown",
-	Searchable = true,
-	CardDropdown = true,
-	CardHeight = 82,
-	MaxVisibleDropdownItems = 3,
-	ValueImages = {
-		Nebula = "sparkles",
-		Aurora = "zap",
-		Obsidian = "gem",
-	},
-	Cards = {
-		Nebula = {
-			Text = "Nebula Theme",
-			Description = "Purple space cards with glowing accent strokes.",
-			Thumbnail = "rbxassetid://14909902842",
-			Icon = "sparkles",
-			BottomBarTransparency = 0.15,
-			StrokeColor = Color3.fromRGB(125, 85, 255),
-		},
-		Aurora = {
-			Text = "Aurora Theme",
-			Description = "Bright green and blue card with transparent bottom bar.",
-			Thumbnail = "rbxassetid://14909902842",
-			Icon = "zap",
-			BottomBarTransparency = 0.25,
-			StrokeColor = Color3.fromRGB(34, 197, 94),
-		},
-		Obsidian = {
-			Text = "Obsidian Theme",
-			Description = "Dark glass card for premium script hub menus.",
-			Thumbnail = "rbxassetid://14909902842",
-			Icon = "gem",
-			BottomBarTransparency = 0.1,
-			StrokeColor = Color3.fromRGB(255, 255, 255),
-			StrokeTransparency = 0.65,
-		},
-	},
-	Callback = function(Value)
-		print("[cb] Card dropdown selected:", Value)
-	end,
 })
 
 DropdownGroupBox:AddDropdown("MyDisplayFormattedDropdown", {
