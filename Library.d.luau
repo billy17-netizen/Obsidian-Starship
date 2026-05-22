@@ -10,6 +10,7 @@ export type Scheme = {
     FontColor: Color3,
     Font: Font,
     RedColor: Color3,
+    DestructiveColor: Color3,
     DarkColor: Color3,
     WhiteColor: Color3,
 }
@@ -41,22 +42,45 @@ export type Tooltip = {
     Destroy: (self: Tooltip) -> (),
 }
 
-export type Notification = {
+export type NotificationAction = {
+    Text: string,
+    Callback: ((any) -> ())?,
+    Func: ((any) -> ())?,
+    CloseOnClick: boolean?,
+    Risky: boolean?,
+}
+
+export type NotificationVariant = "Info" | "Success" | "Warning" | "Error"
+
+export type NotificationInfo = {
     Title: string?,
-    Description: string,
-    Time: number | Instance,
+    Description: string?,
+    Time: number | Instance?,
     SoundId: string | number?,
     Steps: number?,
     Persist: boolean?,
     Icon: string?,
     BigIcon: string?,
     IconColor: Color3 | string?,
+    AccentColor: Color3 | string?,
+    Type: NotificationVariant?,
+    Variant: NotificationVariant?,
+    Progress: number?,
+    Actions: { NotificationAction }?,
+    CloseButton: boolean?,
+    Dismissible: boolean?,
+}
+
+export type Notification = NotificationInfo & {
+    Description: string?,
+    Time: number | Instance,
     Destroyed: boolean,
 
     Resize: (self: Notification) -> (),
     ChangeTitle: (self: Notification, Text: string) -> (),
     ChangeDescription: (self: Notification, Text: string) -> (),
     ChangeStep: (self: Notification, NewStep: number) -> (),
+    SetProgress: (self: Notification, Progress: number) -> (),
     Destroy: (self: Notification) -> (),
 }
 
@@ -145,13 +169,81 @@ export type SliderInfo = {
     Visible: boolean?,
 }
 
+export type GlassPanelInfo = {
+    Title: string?,
+    Text: string?,
+    Description: string?,
+    Desc: string?,
+    Icon: string?,
+    Badge: string?,
+    Height: number?,
+    AccentColor: Color3 | string?,
+    BackgroundColor: Color3 | string?,
+    Transparency: number?,
+    StrokeColor: Color3 | string?,
+    StrokeThickness: number?,
+    StrokeTransparency: number?,
+    ShadowTransparency: number?,
+    Gradient: boolean?,
+    GradientColorSequence: ColorSequence?,
+    GradientTransparency: NumberSequence?,
+    GradientRotation: number?,
+    Visible: boolean?,
+}
+
+export type NewElementButtonInfo = {
+    Text: string?,
+    Func: ((any) -> ())?,
+    Callback: ((any) -> ())?,
+    Icon: string?,
+    Height: number?,
+    AccentColor: Color3 | string?,
+    BackgroundColor: Color3 | string?,
+    Transparency: number?,
+    HoverTransparency: number?,
+    StrokeColor: Color3 | string?,
+    StrokeThickness: number?,
+    StrokeTransparency: number?,
+    ShadowTransparency: number?,
+    GradientColorSequence: ColorSequence?,
+    GradientTransparency: NumberSequence?,
+    GradientRotation: number?,
+    Shine: boolean?,
+    Disabled: boolean?,
+    Visible: boolean?,
+}
+
+export type DropdownCardInfo = {
+    Text: string?,
+    Description: string?,
+    Desc: string?,
+    Thumbnail: string?,
+    BackgroundImage: string?,
+    Image: string?,
+    Icon: string?,
+    BottomBarColor: Color3 | string?,
+    BottomBarTransparency: number?,
+    BottomBarHeight: number?,
+    ImageTransparency: number?,
+    ScaleType: Enum.ScaleType?,
+    StrokeColor: Color3 | string?,
+    StrokeThickness: number?,
+    StrokeTransparency: number?,
+}
+
 export type DropdownInfo = {
     Text: string?,
     Values: { any },
     Default: any,
     DisabledValues: { any }?,
+    ValueImages: { [any]: string }?,
+    Cards: { [any]: DropdownCardInfo }?,
     Multi: boolean?,
     MaxVisibleDropdownItems: number?,
+    CardDropdown: boolean?,
+    CardHeight: number?,
+    CardBottomBarTransparency: number?,
+    CardImageTransparency: number?,
     SpecialType: "Player" | "Team"?,
     ExcludeLocalPlayer: boolean?,
     AllowNull: boolean?,
@@ -269,6 +361,29 @@ export type ColorPicker = {
 }
 
 export type Addon = KeyPicker | ColorPicker
+
+export type GlassPanel = {
+    Text: string,
+    Title: string,
+    Description: string,
+    Visible: boolean,
+    Type: "GlassPanel",
+    Holder: Frame,
+    SetTitle: (self: GlassPanel, Text: string) -> (),
+    SetDescription: (self: GlassPanel, Text: string) -> (),
+    SetVisible: (self: GlassPanel, Visible: boolean) -> (),
+}
+
+export type NewElementButton = {
+    Text: string,
+    Disabled: boolean,
+    Visible: boolean,
+    Type: "HighlightButton" | "ShinyButton" | "LiquidGlassButton",
+    Holder: TextButton,
+    SetText: (self: NewElementButton, Text: string) -> (),
+    SetDisabled: (self: NewElementButton, Disabled: boolean) -> (),
+    SetVisible: (self: NewElementButton, Visible: boolean) -> (),
+}
 
 --// Base Element Types
 export type Label = {
@@ -428,7 +543,11 @@ export type Dropdown = {
     Value: { [any]: boolean } | any,
     Values: { any },
     DisabledValues: { any },
+    ValueImages: { [any]: string },
+    Cards: { [any]: DropdownCardInfo },
     Multi: boolean,
+    CardDropdown: boolean,
+    CardHeight: number,
     SpecialType: "Player" | "Team"?,
     ExcludeLocalPlayer: boolean?,
     Tooltip: string?,
@@ -453,6 +572,10 @@ export type Dropdown = {
     AddValues: (self: Dropdown, Values: { any } | string) -> (),
     SetDisabledValues: (self: Dropdown, DisabledValues: { any }) -> (),
     AddDisabledValues: (self: Dropdown, DisabledValues: { any } | string) -> (),
+    SetValueImages: (self: Dropdown, ValueImages: { [any]: string }) -> (),
+    AddValueImages: (self: Dropdown, ValueImages: { [any]: string }) -> (),
+    SetCards: (self: Dropdown, Cards: { [any]: DropdownCardInfo }) -> (),
+    AddCards: (self: Dropdown, Cards: { [any]: DropdownCardInfo }) -> (),
     SetDisabled: (self: Dropdown, Disabled: boolean) -> (),
     SetVisible: (self: Dropdown, Visible: boolean) -> (),
     SetText: (self: Dropdown, Text: string) -> (),
@@ -569,6 +692,12 @@ export type BaseGroupbox = {
         Idx: string?
     ) -> Label,
     AddButton: (self: Groupbox, Info: ButtonInfo | string, Func: (() -> ())?, Idx: string?) -> Button,
+    AddGlassPanel: ((self: Groupbox, Info: GlassPanelInfo) -> GlassPanel)
+        & ((self: Groupbox, Idx: string, Info: GlassPanelInfo) -> GlassPanel),
+    AddHighlightButton: (self: Groupbox, Info: NewElementButtonInfo) -> NewElementButton,
+    AddShinyButton: (self: Groupbox, Info: NewElementButtonInfo) -> NewElementButton,
+    AddLiquidGlassButton: (self: Groupbox, Info: NewElementButtonInfo) -> NewElementButton,
+    AddLiquidGlassToggle: (self: Groupbox, Idx: string, Info: ToggleInfo) -> Toggle,
     AddCheckbox: (self: Groupbox, Idx: string, Info: ToggleInfo) -> Toggle,
     AddToggle: (self: Groupbox, Idx: string, Info: ToggleInfo) -> Toggle,
     AddInput: (self: Groupbox, Idx: string, Info: InputInfo) -> Input,
@@ -660,10 +789,91 @@ export type Tab = {
     AddTabbox: (self: Tab, Info: { Side: number, Name: string? }) -> Tabbox,
     AddLeftTabbox: (self: Tab, Name: string?) -> Tabbox,
     AddRightTabbox: (self: Tab, Name: string?) -> Tabbox,
+    AddCard: (
+        self: Tab,
+        Info: {
+            Side: number?,
+            Title: string?,
+            Desc: string?,
+            Description: string?,
+            Icon: string?,
+            Thumbnail: string?,
+            Height: number?,
+            BottomBarTransparency: number?,
+            StrokeColor: (Color3 | string)?,
+            StrokeThickness: number?,
+            StrokeTransparency: number?,
+            ThumbnailTransparency: number?,
+            TargetTab: Tab | string?,
+            Tab: Tab | string?,
+            Callback: ((any) -> ())?,
+        }
+    ) -> {
+        Holder: TextButton,
+        TargetTab: Tab | string?,
+        SetTargetTab: (self: any, NewTargetTab: Tab | string?) -> (),
+    },
+    addcard: (
+        self: Tab,
+        Info: {
+            Side: number?,
+            Title: string?,
+            Desc: string?,
+            Description: string?,
+            Icon: string?,
+            Thumbnail: string?,
+            Height: number?,
+            BottomBarTransparency: number?,
+            StrokeColor: (Color3 | string)?,
+            StrokeThickness: number?,
+            StrokeTransparency: number?,
+            ThumbnailTransparency: number?,
+            TargetTab: Tab | string?,
+            Tab: Tab | string?,
+            Callback: ((any) -> ())?,
+        }
+    ) -> {
+        Holder: TextButton,
+        TargetTab: Tab | string?,
+        SetTargetTab: (self: any, NewTargetTab: Tab | string?) -> (),
+    },
     Hover: (self: Tab, Hovering: boolean) -> (),
     Show: (self: Tab) -> (),
     Hide: (self: Tab) -> (),
     SetVisible: (self: Tab, Visible: boolean) -> (),
+}
+
+export type KeyBox = {
+    ExpectedKey: string?,
+    CaseSensitive: boolean,
+    AutoClear: boolean,
+    ClearOnSuccess: boolean,
+    LastKey: string,
+    LastSuccess: boolean,
+    Type: "KeyBox",
+
+    SetStatus: (self: KeyBox, Text: string, Color: (Color3 | string)?) -> (),
+    SetExpectedKey: (self: KeyBox, ExpectedKey: string?) -> (),
+    SetValue: (self: KeyBox, Value: string?) -> (),
+    GetValue: (self: KeyBox) -> string,
+    Submit: (self: KeyBox) -> (),
+}
+
+export type KeyBoxInfo = {
+    ExpectedKey: string?,
+    Default: string?,
+    Placeholder: string?,
+    ButtonText: string?,
+    StatusText: string?,
+    SuccessText: string?,
+    FailureText: string?,
+    StatusColor: Color3 | string?,
+    CaseSensitive: boolean?,
+    AutoClear: boolean?,
+    ClearOnSuccess: boolean?,
+    ClearTextOnFocus: boolean?,
+    ShowStatus: boolean?,
+    Callback: (Success: boolean, Key: string, KeyBox: KeyBox) -> (),
 }
 
 export type KeyTab = BaseGroupbox & {
@@ -671,7 +881,11 @@ export type KeyTab = BaseGroupbox & {
     IsKeyTab: true,
     Container: ScrollingFrame,
 
-    AddKeyBox: (self: KeyTab, ExpectedKey: string?, Callback: (Success: boolean, Key: string) -> ()) -> (),
+    AddKeyBox: ((self: KeyTab, Callback: (Key: string) -> ()) -> KeyBox) & ((
+        self: KeyTab,
+        ExpectedKey: string?,
+        Callback: (Success: boolean, Key: string, KeyBox: KeyBox) -> ()
+    ) -> KeyBox) & ((self: KeyTab, Info: KeyBoxInfo) -> KeyBox),
     Resize: (self: KeyTab) -> (),
     Hover: (self: KeyTab, Hovering: boolean) -> (),
     Show: (self: KeyTab) -> (),
@@ -684,7 +898,7 @@ export type DialogButtonInfo = {
     Variant: string?,
     WaitTime: number?,
     Order: number?,
-    Callback: (() -> ())?
+    Callback: (() -> ())?,
 }
 
 export type Dialog = {
@@ -713,6 +927,18 @@ export type Window = {
         Icon: string?,
         Description: string?
     ) -> KeyTab,
+    AddDashboardTab: (
+        self: Window,
+        Info: {
+            Name: string?,
+            Icon: string?,
+            Description: string?,
+            Title: string?,
+            Text: string?,
+            Badge: string?,
+            AccentColor: Color3 | string?,
+        }?
+    ) -> Tab,
     AddDialog: (
         self: Window,
         Info: {
@@ -723,12 +949,36 @@ export type Window = {
             DescriptionColor: Color3?,
             AutoDismiss: boolean?,
             OutsideClickDismiss: boolean?,
-            FooterButtons: { [string]: DialogButtonInfo }?
+            FooterButtons: { [string]: DialogButtonInfo }?,
         }
     ) -> Dialog,
     ChangeTitle: (self: Window, Title: string) -> (),
     ChangeBackgroundImage: (self: Window, Image: string) -> (),
     ChangeFooter: (self: Window, Footer: string) -> (),
+    SetBackgroundImage: (self: Window, Image: string) -> (),
+    SetBackgroundImageTransparency: (self: Window, Transparency: number) -> (),
+    SetGradient: (
+        self: Window,
+        Enabled: boolean,
+        GradientInfo: {
+            Color: ColorSequence?,
+            ColorSequence: ColorSequence?,
+            Rotation: number?,
+            Transparency: NumberSequence?,
+        }?
+    ) -> (),
+    SetBorder: (
+        self: Window,
+        Info: {
+            Color: (Color3 | string)?,
+            Thickness: number?,
+            Transparency: number?,
+            ShadowColor: (Color3 | string)?,
+            ShadowThickness: number?,
+            ShadowTransparency: number?,
+        }?
+    ) -> (),
+    SetTabsMode: (self: Window, Mode: "Sidebar" | "Topbar") -> (),
 }
 
 --// Main Library Type
@@ -787,6 +1037,50 @@ export type Library = {
     UpdateSearch: (self: Library, SearchText: string) -> (),
     AddToRegistry: (self: Library, Instance: GuiObject, Properties: { [string]: string | () -> Color3 }) -> (),
     RemoveFromRegistry: (self: Library, Instance: GuiObject) -> (),
+    AddOutline: (
+        self: Library,
+        Frame: GuiObject,
+        Info: {
+            Color: (Color3 | string)?,
+            Thickness: number?,
+            Transparency: number?,
+            ShadowColor: (Color3 | string)?,
+            ShadowThickness: number?,
+            ShadowTransparency: number?,
+        }?
+    ) -> (UIStroke, UIStroke),
+    AddGradient: (
+        self: Library,
+        Frame: GuiObject,
+        Info: {
+            Color: ColorSequence?,
+            ColorSequence: ColorSequence?,
+            Offset: Vector2?,
+            Rotation: number?,
+            Transparency: NumberSequence?,
+        }?
+    ) -> UIGradient,
+    AnimateIconSprite: (
+        self: Library,
+        ImageObject: ImageLabel | ImageButton,
+        AtlasInfo: {
+            Image: string?,
+            AtlasImage: string?,
+            Fps: number?,
+            FPS: number?,
+            Loop: boolean?,
+            Frames: { { Offset: Vector2?, Size: Vector2?, ImageRectOffset: Vector2?, ImageRectSize: Vector2? } }?,
+            FrameSize: Vector2?,
+            FrameCount: number?,
+            Columns: number?,
+        }
+    ) -> (),
+    StopIconSpriteAnimation: (self: Library, ImageObject: ImageLabel | ImageButton) -> (),
+    ApplyNewElements: (self: Library, Target: any?) -> any,
+    ApplyNewElments: (self: Library, Target: any?) -> any,
+    ApplyNewElement: (self: Library, Target: any?) -> any,
+    applynewelments: (self: Library, Target: any?) -> any,
+    applynewelements: (self: Library, Target: any?) -> any,
     UpdateColorsUsingRegistry: (self: Library) -> (),
     UpdateDPI: (self: Library, Instance: GuiObject, Properties: { [string]: any }) -> (),
     SetDPIScale: (self: Library, DPIScale: number) -> (),
@@ -827,16 +1121,28 @@ export type Library = {
     Unload: (self: Library) -> (),
     SetFont: (self: Library, FontFace: Font | Enum.Font) -> (),
     SetNotifySide: (self: Library, Side: "Left" | "Right") -> (),
-    Notify: (
+    Notify: (self: Library, Info: NotificationInfo | string, Time: number?, SoundId: string | number?) -> Notification,
+    NotifyInfo: (
         self: Library,
-        Info: {
-            Title: string,
-            Description: string,
-            Time: number?,
-            SoundId: string | number?,
-            Steps: number?,
-            Persist: boolean?,
-        } | string,
+        Info: NotificationInfo | string,
+        Time: number?,
+        SoundId: string | number?
+    ) -> Notification,
+    NotifySuccess: (
+        self: Library,
+        Info: NotificationInfo | string,
+        Time: number?,
+        SoundId: string | number?
+    ) -> Notification,
+    NotifyWarning: (
+        self: Library,
+        Info: NotificationInfo | string,
+        Time: number?,
+        SoundId: string | number?
+    ) -> Notification,
+    NotifyError: (
+        self: Library,
+        Info: NotificationInfo | string,
         Time: number?,
         SoundId: string | number?
     ) -> Notification,
@@ -850,6 +1156,26 @@ export type Library = {
             Icon: string?,
             IconSize: UDim2?,
             BackgroundImage: string?,
+            BackgroundImageTransparency: number?,
+            BackgroundImageScaleType: Enum.ScaleType?,
+            Gradient: boolean?,
+            GradientColorSequence: ColorSequence?,
+            GradientTransparency: NumberSequence?,
+            GradientRotation: number?,
+            BorderColor: Color3 | string?,
+            BorderThickness: number?,
+            BorderTransparency: number?,
+            ShadowColor: Color3 | string?,
+            ShadowThickness: number?,
+            ShadowTransparency: number?,
+            TabsMode: "Sidebar" | "Topbar"?,
+            TabStyle: "Default" | "Card"?,
+            FullscreenBackground: boolean?,
+            FullscreenBackgroundColor: Color3?,
+            FullscreenBackgroundTransparency: number?,
+            FullscreenBackgroundImage: string?,
+            FullscreenBackgroundImageTransparency: number?,
+            FullscreenBackgroundImageScaleType: Enum.ScaleType?,
             AutoShow: boolean?,
             Center: boolean?,
             Resizable: boolean?,
