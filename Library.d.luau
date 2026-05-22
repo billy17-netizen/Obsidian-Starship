@@ -939,6 +939,14 @@ export type Window = {
             AccentColor: Color3 | string?,
             HubName: string?,
             PrimaryActionText: string?,
+            HubTitle: string?,
+            HubDescription: string?,
+            HubIcon: string?,
+            HubBanner: string?,
+            HubBannerHeight: number?,
+            BannerHeight: number?,
+            DiscordInvite: string?,
+            Socials: { [string]: string }?,
         }?
     ) -> Tab,
     AddDialog: (

@@ -60,6 +60,15 @@ local Tabs = {
     Dashboard = Window:AddDashboardTab({
         HubName = "mspaint",
         Badge = "LIVE",
+        HubTitle = "mspaint Hub",
+        HubDescription = "Modern script hub UI powered by Obsidian Modded. Includes toasts, key-system, and polished components.",
+        HubIcon = "sparkles",
+        HubBanner = "rbxassetid://14909902842",
+        DiscordInvite = "discord.gg/mspaint",
+        Socials = {
+            Telegram = "t.me/mspainthub",
+            YouTube = "youtube.com/@mspaint",
+        },
         Text = "Welcome to the modded Obsidian dashboard. Use this tab as a landing page for script hubs. This text can be very long and the tab info section now scrolls when overflowing.",
     }),
     -- Creates a new tab titled Main
