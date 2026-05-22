@@ -27,7 +27,7 @@ local Window = Library:CreateWindow({
     Icon = 95816097006870,
     NotifySide = "Right",
     ShowCustomCursor = true,
-    MobileButtonsMode = "TopbarPlus",
+    --MobileButtonsMode = "Normal",
 
     -- Modded visuals: background image, gradient overlay, and custom border stroke.
     BackgroundImage = "rbxassetid://14909902842",
@@ -40,8 +40,8 @@ local Window = Library:CreateWindow({
     GradientRotation = 35,
     BorderColor = Color3.fromRGB(125, 85, 255),
     BorderThickness = 1.5,
-    TabStyle = "Card",
-    TabsMode = "Sidebar",
+    --TabStyle = "Card",
+    TabsMode = "Sidebar", -- can change between "Sidebar" And "Topbar"
     FullscreenBackground = true,
     FullscreenBackgroundTransparency = 0.55,
 })
