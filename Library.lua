@@ -7962,6 +7962,38 @@ function Library:CreateWindow(WindowInfo)
         if Info.ShadowTransparency then
             MainShadowStroke.Transparency = Info.ShadowTransparency
         end
+        if Info.Transparency then
+            MainOutlineStroke.Transparency = Info.Transparency
+        end
+        if Info.ShadowColor then
+            MainShadowStroke.Color = GetSchemeValue(Info.ShadowColor) or Info.ShadowColor
+            if typeof(Info.ShadowColor) == "string" then
+                if not Library.Registry[MainShadowStroke] then
+                    Library:AddToRegistry(MainShadowStroke, {})
+                end
+                Library.Registry[MainShadowStroke].Color = Info.ShadowColor
+            end
+        end
+        if Info.ShadowThickness then
+            MainShadowStroke.Thickness = Info.ShadowThickness
+        end
+        if Info.ShadowTransparency then
+            MainShadowStroke.Transparency = Info.ShadowTransparency
+        end
+    end
+
+    function Window:SetTabsMode(Mode)
+        local NewIsTopbar = tostring(Mode):lower() == "topbar"
+        WindowInfo.TabsMode = NewIsTopbar and "Topbar" or "Sidebar"
+        Library:NotifyWarning({
+            Title = "Tabs mode",
+            Description = "SetTabsMode requires recreating the window to fully re-layout tabs.",
+            Time = 4,
+        })
+    end
+
+    function Window:ChangeFooter(footer: string)
+        return Window:SetFooter(footer)
     end
 
     function Window:SetTabsMode(Mode)
