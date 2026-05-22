@@ -5885,6 +5885,28 @@ do
             Dropdown:BuildDropdownList()
         end
 
+        function Dropdown:SetCards(Cards)
+            if typeof(Cards) ~= "table" then
+                return
+            end
+
+            Dropdown.Cards = Cards
+            Info.Cards = Cards
+            Dropdown:BuildDropdownList()
+        end
+
+        function Dropdown:AddCards(Cards)
+            if typeof(Cards) ~= "table" then
+                return
+            end
+
+            for key, val in Cards do
+                Dropdown.Cards[key] = val
+            end
+
+            Dropdown:BuildDropdownList()
+        end
+
         function Dropdown:AddValueImages(ValueImages)
             if typeof(ValueImages) ~= "table" then
                 return
