@@ -672,11 +672,22 @@ function Library:UpdateDependencyBoxes()
     end
 end
 
-local function CheckDepbox(Box, Search)
+local CheckDepbox
+local RestoreDepbox
+local SearchTabbox
+local RestoreTabbox
+
+local function ApplySearchToBoxElements(Box, Search)
     local VisibleElements = 0
 
     for _, ElementInfo in Box.Elements do
-        if ElementInfo.Type == "Divider" then
+        if ElementInfo.Type == "Tabbox" then
+            if SearchTabbox(ElementInfo, Search) > 0 then
+                VisibleElements += 1
+            end
+
+            continue
+        elseif ElementInfo.Type == "Divider" then
             ElementInfo.Holder.Visible = false
             continue
         elseif ElementInfo.SubButton then
@@ -711,6 +722,28 @@ local function CheckDepbox(Box, Search)
         end
     end
 
+    return VisibleElements
+end
+
+local function RestoreBoxElements(Box)
+    for _, ElementInfo in Box.Elements do
+        if ElementInfo.Type == "Tabbox" then
+            RestoreTabbox(ElementInfo)
+            continue
+        end
+
+        ElementInfo.Holder.Visible = typeof(ElementInfo.Visible) == "boolean" and ElementInfo.Visible or true
+
+        if ElementInfo.SubButton then
+            ElementInfo.Base.Visible = ElementInfo.Visible
+            ElementInfo.SubButton.Base.Visible = ElementInfo.SubButton.Visible
+        end
+    end
+end
+
+CheckDepbox = function(Box, Search)
+    local VisibleElements = ApplySearchToBoxElements(Box, Search)
+
     for _, Depbox in Box.DependencyBoxes do
         if not Depbox.Visible then
             continue
@@ -722,15 +755,9 @@ local function CheckDepbox(Box, Search)
     Box.Holder.Visible = VisibleElements > 0
     return VisibleElements
 end
-local function RestoreDepbox(Box)
-    for _, ElementInfo in Box.Elements do
-        ElementInfo.Holder.Visible = typeof(ElementInfo.Visible) == "boolean" and ElementInfo.Visible or true
 
-        if ElementInfo.SubButton then
-            ElementInfo.Base.Visible = ElementInfo.Visible
-            ElementInfo.SubButton.Base.Visible = ElementInfo.SubButton.Visible
-        end
-    end
+RestoreDepbox = function(Box)
+    RestoreBoxElements(Box)
 
     Box:Resize()
     Box.Holder.Visible = true
@@ -744,6 +771,61 @@ local function RestoreDepbox(Box)
     end
 end
 
+SearchTabbox = function(Tabbox, Search)
+    local VisibleTabs = 0
+    local VisibleElements = {}
+
+    for _, SubTab in Tabbox.Tabs do
+        VisibleElements[SubTab] = ApplySearchToBoxElements(SubTab, Search)
+
+        for _, Depbox in SubTab.DependencyBoxes do
+            if not Depbox.Visible then
+                continue
+            end
+
+            VisibleElements[SubTab] += CheckDepbox(Depbox, Search)
+        end
+    end
+
+    for SubTab, Visible in VisibleElements do
+        SubTab.ButtonHolder.Visible = Visible > 0
+        if Visible > 0 then
+            VisibleTabs += 1
+
+            if Tabbox.ActiveTab == SubTab then
+                SubTab:Resize()
+            elseif Tabbox.ActiveTab and VisibleElements[Tabbox.ActiveTab] == 0 then
+                SubTab:Show()
+            end
+        end
+    end
+
+    Tabbox.BoxHolder.Visible = VisibleTabs > 0
+    return VisibleTabs
+end
+
+RestoreTabbox = function(Tabbox)
+    for _, SubTab in Tabbox.Tabs do
+        RestoreBoxElements(SubTab)
+
+        for _, Depbox in SubTab.DependencyBoxes do
+            if not Depbox.Visible then
+                continue
+            end
+
+            RestoreDepbox(Depbox)
+        end
+
+        SubTab.ButtonHolder.Visible = true
+    end
+
+    if Tabbox.ActiveTab then
+        Tabbox.ActiveTab:Resize()
+    end
+
+    Tabbox.BoxHolder.Visible = typeof(Tabbox.Visible) == "boolean" and Tabbox.Visible or true
+end
+
 local function ApplySearchToTab(Tab, Search)
     if not Tab then
         return
@@ -753,43 +835,7 @@ local function ApplySearchToTab(Tab, Search)
 
     --// Loop through Groupboxes to get Elements Info
     for _, Groupbox in Tab.Groupboxes do
-        local VisibleElements = 0
-
-        for _, ElementInfo in Groupbox.Elements do
-            if ElementInfo.Type == "Divider" then
-                ElementInfo.Holder.Visible = false
-                continue
-            elseif ElementInfo.SubButton then
-                --// Check if any of the Buttons Name matches with Search
-                local Visible = false
-
-                --// Check if Search matches Element's Name and if Element is Visible
-                if ElementInfo.Text:lower():match(Search) and ElementInfo.Visible then
-                    Visible = true
-                else
-                    ElementInfo.Base.Visible = false
-                end
-                if ElementInfo.SubButton.Text:lower():match(Search) and ElementInfo.SubButton.Visible then
-                    Visible = true
-                else
-                    ElementInfo.SubButton.Base.Visible = false
-                end
-                ElementInfo.Holder.Visible = Visible
-                if Visible then
-                    VisibleElements += 1
-                end
-
-                continue
-            end
-
-            --// Check if Search matches Element's Name and if Element is Visible
-            if ElementInfo.Text and ElementInfo.Text:lower():match(Search) and ElementInfo.Visible then
-                ElementInfo.Holder.Visible = true
-                VisibleElements += 1
-            else
-                ElementInfo.Holder.Visible = false
-            end
-        end
+        local VisibleElements = ApplySearchToBoxElements(Groupbox, Search)
 
         for _, Depbox in Groupbox.DependencyBoxes do
             if not Depbox.Visible then
@@ -808,73 +854,9 @@ local function ApplySearchToTab(Tab, Search)
     end
 
     for _, Tabbox in Tab.Tabboxes do
-        local VisibleTabs = 0
-        local VisibleElements = {}
-
-        for _, SubTab in Tabbox.Tabs do
-            VisibleElements[SubTab] = 0
-
-            for _, ElementInfo in SubTab.Elements do
-                if ElementInfo.Type == "Divider" then
-                    ElementInfo.Holder.Visible = false
-                    continue
-                elseif ElementInfo.SubButton then
-                    --// Check if any of the Buttons Name matches with Search
-                    local Visible = false
-
-                    --// Check if Search matches Element's Name and if Element is Visible
-                    if ElementInfo.Text:lower():match(Search) and ElementInfo.Visible then
-                        Visible = true
-                    else
-                        ElementInfo.Base.Visible = false
-                    end
-                    if ElementInfo.SubButton.Text:lower():match(Search) and ElementInfo.SubButton.Visible then
-                        Visible = true
-                    else
-                        ElementInfo.SubButton.Base.Visible = false
-                    end
-                    ElementInfo.Holder.Visible = Visible
-                    if Visible then
-                        VisibleElements[SubTab] += 1
-                    end
-
-                    continue
-                end
-
-                --// Check if Search matches Element's Name and if Element is Visible
-                if ElementInfo.Text and ElementInfo.Text:lower():match(Search) and ElementInfo.Visible then
-                    ElementInfo.Holder.Visible = true
-                    VisibleElements[SubTab] += 1
-                else
-                    ElementInfo.Holder.Visible = false
-                end
-            end
-
-            for _, Depbox in SubTab.DependencyBoxes do
-                if not Depbox.Visible then
-                    continue
-                end
-
-                VisibleElements[SubTab] += CheckDepbox(Depbox, Search)
-            end
+        if SearchTabbox(Tabbox, Search) > 0 then
+            HasVisible = true
         end
-
-        for SubTab, Visible in VisibleElements do
-            SubTab.ButtonHolder.Visible = Visible > 0
-            if Visible > 0 then
-                VisibleTabs += 1
-                HasVisible = true
-
-                if Tabbox.ActiveTab == SubTab then
-                    SubTab:Resize()
-                elseif Tabbox.ActiveTab and VisibleElements[Tabbox.ActiveTab] == 0 then
-                    SubTab:Show()
-                end
-            end
-        end
-
-        --// Update Tabbox Visibility if any visible
-        Tabbox.BoxHolder.Visible = VisibleTabs > 0
     end
 
     return HasVisible
@@ -885,14 +867,7 @@ local function ResetTab(Tab)
     end
 
     for _, Groupbox in Tab.Groupboxes do
-        for _, ElementInfo in Groupbox.Elements do
-            ElementInfo.Holder.Visible = typeof(ElementInfo.Visible) == "boolean" and ElementInfo.Visible or true
-
-            if ElementInfo.SubButton then
-                ElementInfo.Base.Visible = ElementInfo.Visible
-                ElementInfo.SubButton.Base.Visible = ElementInfo.SubButton.Visible
-            end
-        end
+        RestoreBoxElements(Groupbox)
 
         for _, Depbox in Groupbox.DependencyBoxes do
             if not Depbox.Visible then
@@ -907,31 +882,7 @@ local function ResetTab(Tab)
     end
 
     for _, Tabbox in Tab.Tabboxes do
-        for _, SubTab in Tabbox.Tabs do
-            for _, ElementInfo in SubTab.Elements do
-                ElementInfo.Holder.Visible = typeof(ElementInfo.Visible) == "boolean" and ElementInfo.Visible or true
-
-                if ElementInfo.SubButton then
-                    ElementInfo.Base.Visible = ElementInfo.Visible
-                    ElementInfo.SubButton.Base.Visible = ElementInfo.SubButton.Visible
-                end
-            end
-
-            for _, Depbox in SubTab.DependencyBoxes do
-                if not Depbox.Visible then
-                    continue
-                end
-
-                RestoreDepbox(Depbox)
-            end
-
-            SubTab.ButtonHolder.Visible = true
-        end
-
-        if Tabbox.ActiveTab then
-            Tabbox.ActiveTab:Resize()
-        end
-        Tabbox.BoxHolder.Visible = true
+        RestoreTabbox(Tabbox)
     end
 end
 
@@ -6646,6 +6597,292 @@ do
         return Passthrough
     end
 
+    function Funcs:AddTabbox(...)
+        local Params = select(1, ...)
+        local Info = if typeof(Params) == "table" then Params else { Name = Params }
+
+        local Groupbox = self
+        local Container = Groupbox.Container
+        local CornerRadius = Library.CornerRadius
+
+        Groupbox.Tabboxes = Groupbox.Tabboxes or {}
+
+        local TabboxHolder = New("Frame", {
+            BackgroundColor3 = "BackgroundColor",
+            Size = UDim2.fromScale(1, 0),
+            Visible = Info.Visible ~= false,
+            Parent = Container,
+        })
+        table.insert(
+            Library.Corners,
+            New("UICorner", {
+                CornerRadius = UDim.new(0, CornerRadius),
+                Parent = TabboxHolder,
+            })
+        )
+        Library:AddOutline(TabboxHolder)
+
+        local TabboxButtons = New("Frame", {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 0, 34),
+            Parent = TabboxHolder,
+        })
+        New("UIListLayout", {
+            FillDirection = Enum.FillDirection.Horizontal,
+            HorizontalFlex = Enum.UIFlexAlignment.Fill,
+            Parent = TabboxButtons,
+        })
+
+        local TotalButtons, TotalTabs = 0, 1
+        local Tabbox = {
+            ActiveTab = nil,
+            BoxHolder = TabboxHolder,
+            Holder = TabboxHolder,
+            Tabs = {},
+            Text = Info.Name,
+            Type = "Tabbox",
+            Visible = Info.Visible ~= false,
+        }
+
+        function Tabbox:Resize()
+            if Tabbox.ActiveTab then
+                Tabbox.ActiveTab:Resize()
+            else
+                TabboxHolder.Size = UDim2.new(1, 0, 0, 34)
+                Groupbox:Resize()
+            end
+        end
+
+        function Tabbox:SetVisible(Visible: boolean)
+            Tabbox.Visible = Visible
+            TabboxHolder.Visible = Visible
+            Groupbox:Resize()
+        end
+
+        function Tabbox:UpdateCorners()
+            for _, Tab in Tabbox.Tabs do
+                Tab:UpdateCorners()
+            end
+        end
+
+        function Tabbox:AddTab(Name, IconName)
+            local TabIndex = TotalTabs
+
+            TotalButtons += 1
+            TotalTabs += 1
+
+            local BoxIcon = Library:GetCustomIcon(IconName)
+
+            local Button = New("TextButton", {
+                BackgroundColor3 = "MainColor",
+                BackgroundTransparency = 0,
+                Size = UDim2.fromOffset(0, 34),
+                Text = "",
+                Parent = TabboxButtons,
+            })
+
+            table.insert(
+                Library.Corners,
+                New("UICorner", {
+                    CornerRadius = UDim.new(0, CornerRadius),
+                    Parent = Button,
+                })
+            )
+
+            local BottomCover = New("Frame", {
+                Name = "BottomCover",
+                BackgroundColor3 = "MainColor",
+                BorderSizePixel = 0,
+                Position = UDim2.new(0, 0, 1, -CornerRadius),
+                Size = UDim2.new(1, 0, 0, CornerRadius),
+                Parent = Button,
+            })
+
+            local LeftCover = New("Frame", {
+                Name = "LeftCover",
+                BackgroundColor3 = "MainColor",
+                BorderSizePixel = 0,
+                Position = UDim2.new(0, 0, 0, 0),
+                Size = UDim2.new(0, CornerRadius, 1, 0),
+                Visible = false,
+                Parent = Button,
+            })
+
+            local RightCover = New("Frame", {
+                Name = "RightCover",
+                AnchorPoint = Vector2.new(1, 0),
+                BackgroundColor3 = "MainColor",
+                BorderSizePixel = 0,
+                Position = UDim2.new(1, 0, 0, 0),
+                Size = UDim2.new(0, CornerRadius, 1, 0),
+                Visible = false,
+                Parent = Button,
+            })
+
+            local ButtonContent = New("Frame", {
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                AutomaticSize = Enum.AutomaticSize.X,
+                BackgroundTransparency = 1,
+                Position = UDim2.fromScale(0.5, 0.5),
+                Size = UDim2.fromOffset(0, 16),
+                Parent = Button,
+            })
+            New("UIListLayout", {
+                FillDirection = Enum.FillDirection.Horizontal,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                Padding = UDim.new(0, 8),
+                Parent = ButtonContent,
+            })
+
+            local ButtonIcon
+            if BoxIcon then
+                ButtonIcon = New("ImageLabel", {
+                    Image = BoxIcon.Url,
+                    ImageColor3 = BoxIcon.Custom and "WhiteColor" or "AccentColor",
+                    ImageRectOffset = BoxIcon.ImageRectOffset,
+                    ImageRectSize = BoxIcon.ImageRectSize,
+                    ImageTransparency = 0.5,
+                    Size = UDim2.fromOffset(16, 16),
+                    Parent = ButtonContent,
+                })
+            end
+
+            local ButtonLabel = New("TextLabel", {
+                AutomaticSize = Enum.AutomaticSize.X,
+                BackgroundTransparency = 1,
+                Size = UDim2.fromOffset(0, 16),
+                Text = Name,
+                TextSize = 15,
+                TextTransparency = 0.5,
+                Parent = ButtonContent,
+            })
+
+            local Line = Library:MakeLine(Button, {
+                AnchorPoint = Vector2.new(0, 1),
+                Position = UDim2.new(0, 0, 1, 1),
+                Size = UDim2.new(1, 0, 0, 1),
+            })
+
+            local TabContainer = New("Frame", {
+                BackgroundTransparency = 1,
+                Position = UDim2.fromOffset(0, 35),
+                Size = UDim2.new(1, 0, 1, -35),
+                Visible = false,
+                Parent = TabboxHolder,
+            })
+            local List = New("UIListLayout", {
+                Padding = UDim.new(0, 8),
+                Parent = TabContainer,
+            })
+            New("UIPadding", {
+                PaddingBottom = UDim.new(0, 7),
+                PaddingLeft = UDim.new(0, 7),
+                PaddingRight = UDim.new(0, 7),
+                PaddingTop = UDim.new(0, 7),
+                Parent = TabContainer,
+            })
+
+            local Tab = {
+                ButtonHolder = Button,
+                Container = TabContainer,
+
+                ButtonCovers = {
+                    BottomCover = BottomCover,
+                    LeftCover = LeftCover,
+                    RightCover = RightCover,
+                },
+
+                Tab = Groupbox.Tab,
+                Elements = {},
+                DependencyBoxes = {},
+                Tabboxes = {},
+            }
+
+            function Tab:Show()
+                if Tabbox.ActiveTab then
+                    Tabbox.ActiveTab:Hide()
+                end
+
+                Button.BackgroundTransparency = 1
+                BottomCover.BackgroundTransparency = 1
+                LeftCover.BackgroundTransparency = 1
+                RightCover.BackgroundTransparency = 1
+
+                ButtonLabel.TextTransparency = 0
+                if ButtonIcon then
+                    ButtonIcon.ImageTransparency = 0
+                end
+                Line.Visible = false
+
+                TabContainer.Visible = true
+
+                Tabbox.ActiveTab = Tab
+                Tab:Resize()
+            end
+
+            function Tab:Hide()
+                Button.BackgroundTransparency = 0
+                BottomCover.BackgroundTransparency = 0
+                LeftCover.BackgroundTransparency = 0
+                RightCover.BackgroundTransparency = 0
+
+                ButtonLabel.TextTransparency = 0.5
+                if ButtonIcon then
+                    ButtonIcon.ImageTransparency = 0.5
+                end
+                Line.Visible = true
+                TabContainer.Visible = false
+
+                Tabbox.ActiveTab = nil
+            end
+
+            function Tab:Resize()
+                if Tabbox.ActiveTab ~= Tab then
+                    return
+                end
+
+                TabboxHolder.Size = UDim2.new(1, 0, 0, (List.AbsoluteContentSize.Y / Library.DPIScale) + 49)
+                Groupbox:Resize()
+            end
+
+            function Tab:UpdateCorners()
+                LeftCover.Visible = TabIndex ~= 1
+                RightCover.Visible = TabIndex ~= TotalButtons
+
+                BottomCover.Position = UDim2.new(0, 0, 1, -Library.CornerRadius)
+                BottomCover.Size = UDim2.new(1, 0, 0, Library.CornerRadius)
+
+                LeftCover.Size = UDim2.new(0, Library.CornerRadius, 1, 0)
+                RightCover.Size = UDim2.new(0, Library.CornerRadius, 1, 0)
+            end
+
+            if not Tabbox.ActiveTab then
+                Tab:Show()
+            end
+
+            Button.MouseButton1Click:Connect(Tab.Show)
+
+            setmetatable(Tab, BaseGroupbox)
+
+            Tabbox.Tabs[Name] = Tab
+            Tabbox:UpdateCorners()
+
+            return Tab
+        end
+
+        Tabbox:Resize()
+        table.insert(Groupbox.Elements, Tabbox)
+
+        if Info.Name then
+            Groupbox.Tabboxes[Info.Name] = Tabbox
+        else
+            table.insert(Groupbox.Tabboxes, Tabbox)
+        end
+
+        return Tabbox
+    end
+
     function Funcs:AddDependencyBox()
         local Groupbox = self
         local Container = Groupbox.Container
@@ -6676,6 +6913,7 @@ do
 
             Elements = {},
             DependencyBoxes = {},
+            Tabboxes = {},
         }
 
         function Depbox:Resize()
@@ -6799,6 +7037,7 @@ do
             Tab = Tab,
             Elements = {},
             DependencyBoxes = {},
+            Tabboxes = {},
         }
 
         function DepGroupbox:Resize()
@@ -8714,6 +8953,7 @@ function Library:CreateWindow(WindowInfo)
 
                 Tab = Tab,
                 DependencyBoxes = {},
+                Tabboxes = {},
                 Elements = {},
             }
 
@@ -8930,6 +9170,7 @@ function Library:CreateWindow(WindowInfo)
                     Tab = Tab,
                     Elements = {},
                     DependencyBoxes = {},
+                    Tabboxes = {},
                 }
 
                 function Tab:Show()

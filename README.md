@@ -16,6 +16,7 @@ This fork keeps the familiar Obsidian/Linoria-style API while adding quality-of-
 - Visual polish: windows support `BackgroundImage`, image transparency, gradient overlays, and custom border/shadow stroke settings.
 - Dashboard tab: `Window:AddDashboardTab()` creates a ready-made landing tab with overview panels, status cards, and quick actions.
 - New element pack: `Library:ApplyNewElements()` exposes glass panels, liquid-glass toggles/buttons, highlight buttons, and shiny animated buttons on groupboxes.
+- Nested tabboxes: `Groupbox:AddTabbox()` creates tabbed sections inside any groupbox, so compact category panels can hold their own sub-tabs.
 - Layout modes: set `TabsMode = "Sidebar"` or `"Topbar"` and `TabStyle = "Card"` for card-like tab buttons.
 - Sprite icon animation: use `Library:AnimateIconSprite(imageLabel, atlasInfo)` with atlas frames/size/columns and stop with `Library:StopIconSpriteAnimation(...)`.
 - Advanced card dropdowns: set `CardDropdown = true` and provide `Cards` with thumbnails, bottom-bar transparency, icon, title, description, and per-card stroke options.

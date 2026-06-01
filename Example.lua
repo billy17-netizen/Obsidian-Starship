@@ -124,6 +124,24 @@ LeftGroupBox:AddShinyButton({
     end,
 })
 
+local GroupboxTabBox = LeftGroupBox:AddTabbox({ Name = "Groupbox nested tabbox" })
+local MiningTab = GroupboxTabBox:AddTab("Mining", "pickaxe")
+MiningTab:AddToggle("GroupboxTabboxAutoMine", {
+    Text = "Auto Mine",
+    Default = false,
+})
+MiningTab:AddDropdown("GroupboxTabboxRockPriority", {
+    Text = "Rock Priority",
+    Values = { "Stone", "Copper", "Iron", "Gold" },
+    Default = "Stone",
+})
+
+local GearTab = GroupboxTabBox:AddTab("Gear", "settings")
+GearTab:AddToggle("GroupboxTabboxAutoEquip", {
+    Text = "Auto Equip Pickaxe",
+    Default = true,
+})
+
 -- We can also get our Main tab via the following code:
 -- local LeftGroupBox = Window.Tabs.Main:AddLeftGroupbox("Groupbox", "boxes")
 

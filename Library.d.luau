@@ -670,6 +670,7 @@ export type Element =
     | Video
     | UIPassthrough
     | Divider
+    | Tabbox
 export type Option =
     Toggle
     | Input
@@ -707,6 +708,7 @@ export type BaseGroupbox = {
     AddImage: (self: Groupbox, Idx: string, Info: ImageInfo) -> Image,
     AddVideo: (self: Groupbox, Idx: string, Info: VideoInfo) -> Video,
     AddUIPassthrough: (self: Groupbox, Idx: string, Info: UIPassthroughInfo) -> UIPassthrough,
+    AddTabbox: (self: Groupbox, Info: { Name: string?, Visible: boolean? } | string?) -> Tabbox,
     AddDependencyBox: (self: Groupbox) -> DependencyBox,
     AddDependencyGroupbox: (self: Groupbox) -> DependencyGroupbox,
 }
@@ -718,6 +720,7 @@ export type DependencyBox = BaseGroupbox & {
     Container: Frame,
     Elements: { [number]: Element },
     DependencyBoxes: { [number]: DependencyBox },
+    Tabboxes: { [string]: Tabbox },
 
     Resize: (self: DependencyBox) -> (),
     Update: (self: DependencyBox, CancelSearch: boolean?) -> (),
@@ -733,6 +736,7 @@ export type DependencyGroupbox = BaseGroupbox & {
     Tab: Tab,
     Elements: { [number]: Element },
     DependencyBoxes: { [number]: DependencyBox },
+    Tabboxes: { [string]: Tabbox },
 
     Resize: (self: DependencyGroupbox) -> (),
     Update: (self: DependencyGroupbox, CancelSearch: boolean?) -> (),
@@ -745,6 +749,7 @@ export type Groupbox = BaseGroupbox & {
     Container: Frame,
     Tab: Tab,
     DependencyBoxes: { [number]: DependencyBox },
+    Tabboxes: { [string]: Tabbox },
     Elements: { [number]: Element },
 
     Resize: (self: Groupbox) -> (),
@@ -756,6 +761,7 @@ export type SubTab = BaseGroupbox & {
     Tab: Tab,
     Elements: { [number]: Element },
     DependencyBoxes: { [number]: DependencyBox },
+    Tabboxes: { [string]: Tabbox },
 
     Show: (self: SubTab) -> (),
     Hide: (self: SubTab) -> (),
@@ -767,8 +773,14 @@ export type Tabbox = {
     BoxHolder: Frame,
     Holder: Frame,
     Tabs: { [string]: SubTab },
+    Text: string?,
+    Type: "Tabbox"?,
+    Visible: boolean?,
 
     AddTab: (self: Tabbox, Name: string, IconName: string?) -> SubTab,
+    Resize: (self: Tabbox) -> (),
+    SetVisible: (self: Tabbox, Visible: boolean) -> (),
+    UpdateCorners: (self: Tabbox) -> (),
 }
 
 export type Tab = {
