@@ -210,6 +210,10 @@ local Library = {
 
     Signals = {},
     UnloadSignals = {},
+    HasBackgroundImage = false,
+    BackgroundImageSurfaces = {},
+    BackgroundImageContentTransparency = 0.35,
+    BackgroundImagePanelTransparency = 0.16,
 
     OriginalMinSize = Vector2.new(480, 360),
     MinSize = Vector2.new(480, 360),
@@ -329,6 +333,8 @@ local Templates = {
         GradientRotation = 35,
         BackgroundImageTransparency = 0.75,
         BackgroundImageScaleType = Enum.ScaleType.Crop,
+        BackgroundImageContentTransparency = 0.35,
+        BackgroundImagePanelTransparency = 0.16,
         BorderColor = "OutlineColor",
         BorderThickness = 1,
         BorderTransparency = 0,
@@ -564,6 +570,38 @@ local function GetSchemeValue(Index)
     end
 
     return Library.Scheme[Index]
+end
+
+local function GetBackgroundImageSurfaceTransparency(DefaultTransparency: number?, Layer: string?)
+    DefaultTransparency = DefaultTransparency or 0
+    if not Library.HasBackgroundImage then
+        return DefaultTransparency
+    end
+
+    local BackgroundTransparency = Layer == "Panel" and Library.BackgroundImagePanelTransparency
+        or Library.BackgroundImageContentTransparency
+    return math.max(DefaultTransparency, BackgroundTransparency or 0)
+end
+
+local function RegisterBackgroundImageSurface(Instance: GuiObject, DefaultTransparency: number?, Layer: string?)
+    Library.BackgroundImageSurfaces[Instance] = {
+        DefaultTransparency = DefaultTransparency or 0,
+        Layer = Layer or "Content",
+    }
+    Instance.BackgroundTransparency = GetBackgroundImageSurfaceTransparency(DefaultTransparency, Layer)
+    return Instance
+end
+
+local function UpdateBackgroundImageSurfaces()
+    for Instance, Info in Library.BackgroundImageSurfaces do
+        if typeof(Instance) ~= "Instance" or not Instance.Parent then
+            Library.BackgroundImageSurfaces[Instance] = nil
+            continue
+        end
+
+        Instance.BackgroundTransparency =
+            GetBackgroundImageSurfaceTransparency(Info.DefaultTransparency, Info.Layer)
+    end
 end
 
 --// Basic Functions \\--
@@ -3896,6 +3934,7 @@ do
             Visible = Panel.Visible,
             Parent = Container,
         })
+        RegisterBackgroundImageSurface(Holder, Info.Transparency or 0.18, "Panel")
         table.insert(
             Library.Corners,
             New("UICorner", {
@@ -4041,6 +4080,7 @@ do
             Visible = Button.Visible,
             Parent = Container,
         })
+        RegisterBackgroundImageSurface(Holder, Info.Transparency or 0.08, "Panel")
         table.insert(
             Library.Corners,
             New("UICorner", { CornerRadius = UDim.new(0, Info.CornerRadius or Library.CornerRadius), Parent = Holder })
@@ -4109,26 +4149,46 @@ do
             })
         end
 
+        local function PlayShine()
+            if not Shine then
+                return
+            end
+
+            Shine.Position = UDim2.fromScale(-0.25, 0.5)
+            TweenService:Create(Shine, TweenInfo.new(0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Position = UDim2.fromScale(1.25, 0.5),
+            }):Play()
+        end
+
+        if Shine and Variant == "ShinyButton" then
+            task.spawn(function()
+                while Holder and Holder.Parent do
+                    if Button.Visible and not Button.Disabled then
+                        PlayShine()
+                    end
+
+                    task.wait(1.8)
+                end
+            end)
+        end
+
         Holder.MouseEnter:Connect(function()
             if Button.Disabled then
                 return
             end
-            TweenService:Create(Holder, Library.TweenInfo, { BackgroundTransparency = Info.HoverTransparency or 0 })
-                :Play()
+            TweenService:Create(Holder, Library.TweenInfo, {
+                BackgroundTransparency = GetBackgroundImageSurfaceTransparency(Info.HoverTransparency or 0, "Panel"),
+            }):Play()
             TweenService:Create(Label, Library.TweenInfo, { TextTransparency = 0 }):Play()
-            if Shine then
-                Shine.Position = UDim2.fromScale(-0.25, 0.5)
-                TweenService:Create(Shine, TweenInfo.new(0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    Position = UDim2.fromScale(1.25, 0.5),
-                }):Play()
-            end
+            PlayShine()
         end)
         Holder.MouseLeave:Connect(function()
             if Button.Disabled then
                 return
             end
-            TweenService:Create(Holder, Library.TweenInfo, { BackgroundTransparency = Info.Transparency or 0.08 })
-                :Play()
+            TweenService:Create(Holder, Library.TweenInfo, {
+                BackgroundTransparency = GetBackgroundImageSurfaceTransparency(Info.Transparency or 0.08, "Panel"),
+            }):Play()
             TweenService:Create(Label, Library.TweenInfo, { TextTransparency = 0.1 }):Play()
         end)
         Holder.MouseButton1Click:Connect(function()
@@ -4170,11 +4230,11 @@ do
         task.spawn(function()
             while Holder and Holder.Parent do
                 TweenService:Create(Holder, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                    BackgroundTransparency = Info.Transparency + 0.06,
+                    BackgroundTransparency = GetBackgroundImageSurfaceTransparency(Info.Transparency + 0.06, "Panel"),
                 }):Play()
                 task.wait(0.9)
                 TweenService:Create(Holder, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                    BackgroundTransparency = Info.Transparency,
+                    BackgroundTransparency = GetBackgroundImageSurfaceTransparency(Info.Transparency, "Panel"),
                 }):Play()
                 task.wait(0.9)
             end
@@ -4221,6 +4281,7 @@ do
             Visible = Toggle.Visible,
             Parent = Container,
         })
+        RegisterBackgroundImageSurface(Holder, 0.2, "Panel")
         table.insert(
             Library.Corners,
             New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = Holder })
@@ -6613,6 +6674,7 @@ do
             Visible = Info.Visible ~= false,
             Parent = Container,
         })
+        RegisterBackgroundImageSurface(TabboxHolder, 0, "Panel")
         table.insert(
             Library.Corners,
             New("UICorner", {
@@ -7004,6 +7066,7 @@ do
                 Visible = false,
                 Parent = BoxHolder,
             })
+            RegisterBackgroundImageSurface(DepGroupboxContainer, 0, "Panel")
             table.insert(
                 Library.Corners,
                 New("UICorner", {
@@ -7839,6 +7902,9 @@ function Library:CreateWindow(WindowInfo)
     Library.Scheme.Font = WindowInfo.Font
     Library.ToggleKeybind = WindowInfo.ToggleKeybind
     Library.GlobalSearch = WindowInfo.GlobalSearch
+    Library.HasBackgroundImage = WindowInfo.BackgroundImage ~= nil and WindowInfo.BackgroundImage ~= ""
+    Library.BackgroundImageContentTransparency = WindowInfo.BackgroundImageContentTransparency
+    Library.BackgroundImagePanelTransparency = WindowInfo.BackgroundImagePanelTransparency
     local IsTopbarTabs = tostring(WindowInfo.TabsMode):lower() == "topbar"
     local IsCardTabs = tostring(WindowInfo.TabStyle):lower() == "card"
 
@@ -8174,6 +8240,7 @@ function Library:CreateWindow(WindowInfo)
             Size = UDim2.new(1, 0, 0, 20 + WindowInfo.CornerRadius),
             Parent = MainFrame,
         })
+        RegisterBackgroundImageSurface(BottomBackground, 0, "Content")
         Library:MakeLine(MainFrame, {
             AnchorPoint = Vector2.new(0, 1),
             Position = UDim2.new(0, 0, 1, -20),
@@ -8245,6 +8312,7 @@ function Library:CreateWindow(WindowInfo)
             Size = IsTopbarTabs and UDim2.new(1, 0, 0, 39) or UDim2.new(0, InitialLeftWidth, 1, -70),
             Parent = MainFrame,
         })
+        RegisterBackgroundImageSurface(Tabs, 0, "Content")
         New("UIListLayout", {
             FillDirection = IsTopbarTabs and Enum.FillDirection.Horizontal or Enum.FillDirection.Vertical,
             Parent = Tabs,
@@ -8261,6 +8329,7 @@ function Library:CreateWindow(WindowInfo)
             Size = IsTopbarTabs and UDim2.new(1, 0, 1, -110) or UDim2.new(1, -InitialLeftWidth - 1, 1, -70),
             Parent = MainFrame,
         })
+        RegisterBackgroundImageSurface(Container, 0, "Content")
         New("UIPadding", {
             PaddingBottom = UDim.new(0, 0),
             PaddingLeft = UDim.new(0, 6),
@@ -8286,6 +8355,8 @@ function Library:CreateWindow(WindowInfo)
         BackgroundImage.Image = Image
         BackgroundImage.Visible = Image ~= ""
         WindowInfo.BackgroundImage = Image
+        Library.HasBackgroundImage = Image ~= ""
+        UpdateBackgroundImageSurfaces()
     end
 
     Window.ChangeBackgroundImage = Window.SetBackgroundImage
@@ -8513,6 +8584,7 @@ function Library:CreateWindow(WindowInfo)
                 Text = "",
                 Parent = Tabs,
             })
+            RegisterBackgroundImageSurface(TabButton, IsCardTabs and 0.1 or 1, "Panel")
             if IsCardTabs then
                 table.insert(
                     Library.Corners,
@@ -8884,6 +8956,7 @@ function Library:CreateWindow(WindowInfo)
                     Size = UDim2.fromScale(1, 0),
                     Parent = BoxHolder,
                 })
+                RegisterBackgroundImageSurface(GroupboxHolder, 0, "Panel")
                 table.insert(
                     Library.Corners,
                     New("UICorner", {
@@ -9003,6 +9076,7 @@ function Library:CreateWindow(WindowInfo)
                     Size = UDim2.fromScale(1, 0),
                     Parent = BoxHolder,
                 })
+                RegisterBackgroundImageSurface(TabboxHolder, 0, "Panel")
                 table.insert(
                     Library.Corners,
                     New("UICorner", {
@@ -9275,6 +9349,7 @@ function Library:CreateWindow(WindowInfo)
                 Text = "",
                 Parent = Side == 1 and TabLeft or TabRight,
             })
+            RegisterBackgroundImageSurface(CardHolder, 0.1, "Panel")
             table.insert(
                 Library.Corners,
                 New("UICorner", {
@@ -9342,7 +9417,7 @@ function Library:CreateWindow(WindowInfo)
 
             local function SetHover(Hovering)
                 TweenService:Create(CardHolder, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    BackgroundTransparency = Hovering and 0.02 or 0.1,
+                    BackgroundTransparency = GetBackgroundImageSurfaceTransparency(Hovering and 0.02 or 0.1, "Panel"),
                     Size = Hovering and UDim2.new(1, 0, 0, (Info.Height or 132) + 4)
                         or UDim2.new(1, 0, 0, Info.Height or 132),
                 }):Play()
@@ -9408,7 +9483,7 @@ function Library:CreateWindow(WindowInfo)
             end
 
             TweenService:Create(TabButton, Library.TweenInfo, {
-                BackgroundTransparency = IsCardTabs and 0.02 or 0,
+                BackgroundTransparency = GetBackgroundImageSurfaceTransparency(IsCardTabs and 0.02 or 0, "Panel"),
             }):Play()
             TweenService:Create(TabLabel, Library.TweenInfo, {
                 TextTransparency = 0,
@@ -9435,7 +9510,7 @@ function Library:CreateWindow(WindowInfo)
 
         function Tab:Hide()
             TweenService:Create(TabButton, Library.TweenInfo, {
-                BackgroundTransparency = IsCardTabs and 0.1 or 1,
+                BackgroundTransparency = GetBackgroundImageSurfaceTransparency(IsCardTabs and 0.1 or 1, "Panel"),
             }):Play()
             TweenService:Create(TabLabel, Library.TweenInfo, {
                 TextTransparency = 0.5,

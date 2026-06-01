@@ -1180,6 +1180,8 @@ export type Library = {
             BackgroundImage: string?,
             BackgroundImageTransparency: number?,
             BackgroundImageScaleType: Enum.ScaleType?,
+            BackgroundImageContentTransparency: number?,
+            BackgroundImagePanelTransparency: number?,
             Gradient: boolean?,
             GradientColorSequence: ColorSequence?,
             GradientTransparency: NumberSequence?,
