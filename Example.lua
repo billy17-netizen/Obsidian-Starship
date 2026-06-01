@@ -2,7 +2,7 @@
 -- You can suggest changes with a pull request or something
 
 local repo = "https://raw.githubusercontent.com/tanhoangviet/Obsidian-UI-Modded/refs/heads/main/"
-local Library = loadstring(game:HttpGet("https://github.com/tanhoangviet/Obsidian-UI-Modded/releases/latest/download/Library.lua"))()
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
 local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 

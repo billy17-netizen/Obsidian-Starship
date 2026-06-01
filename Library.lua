@@ -9354,7 +9354,7 @@ function Library:CreateWindow(WindowInfo)
                     :Play()
                 TweenService
                     :Create(Title, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                        TextColor3 = Hovering and Library:GetColor("AccentColor") or Library:GetColor("FontColor"),
+                        TextColor3 = Hovering and GetSchemeValue("AccentColor") or GetSchemeValue("FontColor"),
                     })
                     :Play()
             end
