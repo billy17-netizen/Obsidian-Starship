@@ -1170,6 +1170,78 @@ local function DownloadFontAsset(AssetUrl: string, FontName: string, FileName: s
     return Success and CustomAsset or AssetUrl
 end
 
+local function AddFontUrlCandidate(Candidates, Url)
+    if typeof(Url) ~= "string" or Url == "" then
+        return
+    end
+
+    for _, ExistingUrl in ipairs(Candidates) do
+        if ExistingUrl == Url then
+            return
+        end
+    end
+
+    table.insert(Candidates, Url)
+end
+
+local function GetGithubRawMainUrl(Url: string): string?
+    if not Url:find("raw.githubusercontent.com", 1, true) then
+        return nil
+    end
+
+    local MainUrl = Url:gsub("/refs/heads/main/", "/main/")
+    return MainUrl ~= Url and MainUrl or nil
+end
+
+local function AddCacheBuster(Url: string): string
+    local Separator = Url:find("?", 1, true) and "&" or "?"
+    return Url .. Separator .. "obsidian_font_cache=" .. tostring(os.time())
+end
+
+local function GetFontResponsePreview(Body): string
+    if typeof(Body) ~= "string" then
+        return tostring(Body)
+    end
+
+    local Preview = Body:gsub("[%c]", " ")
+    return Preview:sub(1, 120)
+end
+
+local function FetchFontManifest(Url: string)
+    local Candidates = {}
+    AddFontUrlCandidate(Candidates, Url)
+
+    local GithubMainUrl = GetGithubRawMainUrl(Url)
+    AddFontUrlCandidate(Candidates, GithubMainUrl)
+
+    if Url:find("raw.githubusercontent.com", 1, true) then
+        AddFontUrlCandidate(Candidates, AddCacheBuster(GithubMainUrl or Url))
+    end
+
+    local LastError = "no response"
+    for _, CandidateUrl in ipairs(Candidates) do
+        local FetchSuccess, Body = pcall(function()
+            return game:HttpGet(CandidateUrl)
+        end)
+
+        if FetchSuccess and typeof(Body) == "string" then
+            local DecodeSuccess, Decoded = pcall(function()
+                return HttpService:JSONDecode(Body)
+            end)
+
+            if DecodeSuccess and typeof(Decoded) == "table" then
+                return Decoded, CandidateUrl
+            end
+
+            LastError = string.format("decode failed at %s; response starts with: %s", CandidateUrl, GetFontResponsePreview(Body))
+        else
+            LastError = string.format("request failed at %s; %s", CandidateUrl, tostring(Body))
+        end
+    end
+
+    return nil, nil, LastError
+end
+
 local function ReadGlyphField(Glyph, ...)
     for _, Key in { ... } do
         if Glyph[Key] ~= nil then
@@ -1287,10 +1359,8 @@ end
 function CustomFontManager:Download(Url: string, Options)
     assert(typeof(Url) == "string", "Font:Download expects a URL string.")
 
-    local Success, Decoded = pcall(function()
-        return HttpService:JSONDecode(game:HttpGet(Url))
-    end)
-    assert(Success and typeof(Decoded) == "table", "Font:Download expects a bitmap font JSON manifest URL.")
+    local Decoded, SourceUrl, ErrorMessage = FetchFontManifest(Url)
+    assert(typeof(Decoded) == "table", "Font:Download expects a bitmap font JSON manifest URL. " .. tostring(ErrorMessage))
 
     if typeof(Options) == "table" then
         for Key, Value in Options do
@@ -1298,7 +1368,7 @@ function CustomFontManager:Download(Url: string, Options)
         end
     end
 
-    return NormalizeCustomFont(Decoded, Url)
+    return NormalizeCustomFont(Decoded, SourceUrl or Url)
 end
 
 function CustomFontManager:Register(FontInfo)
