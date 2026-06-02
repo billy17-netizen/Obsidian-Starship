@@ -17,11 +17,11 @@ This fork keeps the familiar Obsidian/Linoria-style API while adding quality-of-
 - Remote background images: `BackgroundImage`, `Window:SetBackgroundImage(url)`, and `Window:SetFullscreenBackgroundImage(url)` accept direct internet image URLs and cache them through `Library.ImageManager`.
 - Dashboard tab: `Window:AddDashboardTab()` creates a ready-made landing tab with overview panels, status cards, and quick actions.
 - New element pack: `Library:ApplyNewElements()` exposes glass panels, liquid-glass toggles/buttons, highlight buttons, and shiny animated buttons on groupboxes.
-- Shiny image masks: shiny buttons and loading shimmer use bounded PNG alpha masks with `ClipsDescendants`, preventing sweep effects from overflowing rounded UI.
+- Shiny image masks: shiny buttons use bounded PNG alpha masks with `ClipsDescendants`; loading bar media is clipped inside the progress fill instead of overflowing rounded UI.
 - Nested tabboxes: `Groupbox:AddTabbox()` creates tabbed sections inside any groupbox, so compact category panels can hold their own sub-tabs.
 - Full-width tab content: `Tab:AddFullGroupbox()` and `Tab:AddFullTabbox()` span the tab above the normal left/right columns for large previews or viewport-style layouts.
 - Premium loading screen: `Library:CreateLoading()` now supports entrance/exit motion, optional backdrop fade, ambient gradients, floating particles, icon pulse rings, textured progress, and animated text updates.
-- Loading media polish: loading screens include a tiled progress-bar texture and a 32fps black-hole spritesheet ring behind the loader icon, both configurable through `LoadingInfo`.
+- Loading media polish: loading screens include a tiled progress-bar texture and a 32fps black-hole ring spritesheet clipped inside the progress bar, both configurable through `LoadingInfo`.
 - Advanced custom fonts: `Library.Font:Download(url)` / `Library:DownloadFont(url)` loads a bitmap-font JSON manifest from any internet URL, downloads atlas pages, and renders text with `ImageLabel` glyphs through `Library:CreateCustomText()` or `Groupbox:AddCustomFontLabel()` (TTF/OTF files need to be converted to a bitmap atlas manifest first).
 - Keybind menu controls: `Library:AddKeybindMenuButton()` and `Library:AddKeybindMenuToggle()` add actions directly to the keybind menu, and synced keybind toggles now use a liquid-glass pill style.
 - Compact keybind menu: set `KeybindMenuWidth` in `CreateWindow` to resize the draggable keybind menu without it expanding across the screen.

@@ -7,7 +7,7 @@
 + Groupbox:AddSprite(), Library:AddFloatingSprite(), Library:DownloadSprite(), and Library:DownloadVideo()
 + BackgroundImage and fullscreen background image URLs now download through Library.ImageManager
 + Premium Library:CreateLoading() animations with entrance/exit motion, backdrop fade, ambient gradient, particles, icon pulse rings, textured progress, and animated text
-+ Loading progress bar texture and 32fps black-hole spritesheet ring for Library:CreateLoading()
++ Loading progress bar texture and 32fps black-hole ring spritesheet clipped inside the progress fill
 
 [changes]
 + KeyPicker synced keybind toggles now render as liquid-glass pill switches

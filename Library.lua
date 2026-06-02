@@ -79,10 +79,10 @@ local CustomImageManagerAssets = {
         Id = nil,
     },
 
-    BlackHoleLoadingSheet = {
+    BlackHoleBarSheet = {
         RobloxId = 0,
-        Path = "Obsidian/assets/BlackHoleLoadingSheet.png",
-        URL = BaseURL .. "assets/BlackHoleLoadingSheet.png",
+        Path = "Obsidian/assets/BlackHoleBarSheet.png",
+        URL = BaseURL .. "assets/BlackHoleBarSheet.png",
 
         Id = nil,
     },
@@ -507,12 +507,12 @@ local Templates = {
         BackdropTransparency = 0.35,
         IconPulse = true,
         BlackHole = true,
-        BlackHoleImage = CustomImageManager.GetAsset("BlackHoleLoadingSheet"),
+        BlackHoleImage = CustomImageManager.GetAsset("BlackHoleBarSheet"),
         BlackHoleFrameRate = 32,
         BlackHoleFrameCount = 32,
         BlackHoleColumns = 8,
-        BlackHoleFrameSize = Vector2.new(64, 64),
-        BlackHoleTransparency = 0.04,
+        BlackHoleFrameSize = Vector2.new(128, 16),
+        BlackHoleTransparency = 0.08,
         ProgressShine = false,
         ProgressTexture = true,
         ProgressTextureImage = CustomImageManager.GetAsset("LoadingBarTexture"),
@@ -12362,6 +12362,16 @@ function Library:CreateLoading(LoadingInfo)
     local BlackHoleColumns = math.max(1, math.floor(tonumber(LoadingInfo.BlackHoleColumns) or 8))
     local BlackHoleTransparency = math.clamp(tonumber(LoadingInfo.BlackHoleTransparency) or 0.04, 0, 1)
     local UseBlackHole = LoadingInfo.Animated and LoadingInfo.BlackHole
+    local BlackHoleImage = LoadingInfo.BlackHoleImage
+    if tonumber(BlackHoleImage) then
+        BlackHoleImage = string.format("rbxassetid://%s", tostring(BlackHoleImage))
+    elseif IsHttpUrl(BlackHoleImage) then
+        BlackHoleImage = Library:DownloadImage(BlackHoleImage, {
+            AssetName = "LoadingBlackHoleBar_" .. HashString(BlackHoleImage),
+            Extension = "png",
+        })
+    end
+
     local UseProgressTexture = LoadingInfo.ProgressTexture or LoadingInfo.ProgressShine
     local ProgressTextureTransparency = math.clamp(tonumber(LoadingInfo.ProgressTextureTransparency) or 0.28, 0, 1)
     local ProgressTextureSpeed = math.max(0, tonumber(LoadingInfo.ProgressTextureSpeed) or 1.35)
@@ -12645,51 +12655,7 @@ function Library:CreateLoading(LoadingInfo)
         Parent = InnerContent,
     })
 
-    if UseBlackHole then
-        local BlackHoleImage = LoadingInfo.BlackHoleImage
-        if tonumber(BlackHoleImage) then
-            BlackHoleImage = string.format("rbxassetid://%s", tostring(BlackHoleImage))
-        elseif IsHttpUrl(BlackHoleImage) then
-            BlackHoleImage = Library:DownloadImage(BlackHoleImage, {
-                AssetName = "LoadingBlackHole_" .. HashString(BlackHoleImage),
-                Extension = "png",
-            })
-        end
-
-        local BlackHoleSprite = New("ImageLabel", {
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            BackgroundTransparency = 1,
-            Image = BlackHoleImage,
-            ImageRectOffset = Vector2.zero,
-            ImageRectSize = BlackHoleFrameSize,
-            ImageTransparency = BlackHoleTransparency,
-            Position = UDim2.fromScale(0.5, 0.5),
-            ScaleType = Enum.ScaleType.Stretch,
-            Size = UDim2.fromScale(1, 1),
-            ZIndex = 1,
-            Parent = IconHolder,
-        })
-
-        local LastFrame = -1
-        TrackConnection(RunService.RenderStepped:Connect(function()
-            if not LoadingAnimations.Running then
-                return
-            end
-
-            local Frame = math.floor(os.clock() * BlackHoleFrameRate) % BlackHoleFrameCount
-            if Frame == LastFrame then
-                return
-            end
-
-            LastFrame = Frame
-            BlackHoleSprite.ImageRectOffset = Vector2.new(
-                (Frame % BlackHoleColumns) * BlackHoleFrameSize.X,
-                math.floor(Frame / BlackHoleColumns) * BlackHoleFrameSize.Y
-            )
-        end))
-    end
-
-    if LoadingInfo.Animated and LoadingInfo.IconPulse and not UseBlackHole then
+    if LoadingInfo.Animated and LoadingInfo.IconPulse then
         for Index = 1, 2 do
             local Ring = New("Frame", {
                 AnchorPoint = Vector2.new(0.5, 0.5),
@@ -12726,7 +12692,7 @@ function Library:CreateLoading(LoadingInfo)
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundTransparency = 1,
         Position = UDim2.fromScale(0.5, 0.5),
-        Size = UseBlackHole and UDim2.fromScale(0.58, 0.58) or UDim2.fromScale(1, 1),
+        Size = UDim2.fromScale(1, 1),
         Image = LoaderIcon.Url,
         ImageRectOffset = LoaderIcon.ImageRectOffset,
         ImageRectSize = LoaderIcon.ImageRectSize,
@@ -12740,7 +12706,7 @@ function Library:CreateLoading(LoadingInfo)
         TweenObject(
             LoadingIcon,
             TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
-            { Size = UseBlackHole and UDim2.fromScale(0.52, 0.52) or UDim2.fromScale(0.9, 0.9) }
+            { Size = UDim2.fromScale(0.9, 0.9) }
         )
     end
 
@@ -12863,12 +12829,45 @@ function Library:CreateLoading(LoadingInfo)
         end
     end
 
+    if UseBlackHole then
+        local BlackHoleBar = New("ImageLabel", {
+            BackgroundTransparency = 1,
+            Image = BlackHoleImage,
+            ImageRectOffset = Vector2.zero,
+            ImageRectSize = BlackHoleFrameSize,
+            ImageTransparency = BlackHoleTransparency,
+            Position = UDim2.fromScale(0, 0),
+            ScaleType = Enum.ScaleType.Stretch,
+            Size = UDim2.fromScale(1, 1),
+            ZIndex = 2,
+            Parent = SliderFill,
+        })
+
+        local LastFrame = -1
+        TrackConnection(RunService.RenderStepped:Connect(function()
+            if not LoadingAnimations.Running then
+                return
+            end
+
+            local Frame = math.floor(os.clock() * BlackHoleFrameRate) % BlackHoleFrameCount
+            if Frame == LastFrame then
+                return
+            end
+
+            LastFrame = Frame
+            BlackHoleBar.ImageRectOffset = Vector2.new(
+                (Frame % BlackHoleColumns) * BlackHoleFrameSize.X,
+                math.floor(Frame / BlackHoleColumns) * BlackHoleFrameSize.Y
+            )
+        end))
+    end
+
     local ProgressLabel = New("TextLabel", {
         BackgroundTransparency = 1,
         Size = UDim2.fromScale(1, 1),
         Text = "",
         TextSize = 14,
-        ZIndex = 2,
+        ZIndex = 4,
         Parent = SliderBar,
     })
     New("UIStroke", {
