@@ -110,6 +110,59 @@ UISettingsTab:UpdateWarningBox({
 -- except Tabboxes you have to call the functions on a tab (Tabbox:AddTab(Name))
 local LeftGroupBox = Tabs.Main:AddLeftGroupbox("Groupbox", "boxes")
 local CustomFontBox = Tabs.Main:AddRightGroupbox("Custom Fonts", "type")
+local FullMediaBox = Tabs.Main:AddFullGroupbox("Full Width Media + Sprite", "sparkles")
+local ArisuDanceSpriteUrl = RepoAsset("assets/sprites/ArisuDanceSheet.png")
+
+FullMediaBox:AddLabel({
+    Text = "Full-width groupboxes sit above the normal left/right columns. Sprite sheets can be loaded from any direct image URL and animated with frame metadata.",
+    DoesWrap = true,
+})
+FullMediaBox:AddSprite("ArisuDanceSprite", {
+    Image = ArisuDanceSpriteUrl,
+    FileName = "ArisuDanceSheet.png",
+    FrameSize = Vector2.new(64, 64),
+    FrameCount = 8,
+    Columns = 8,
+    Fps = 10,
+    Loop = true,
+    Playing = true,
+    Height = 92,
+})
+
+-- Direct MP4 URL example:
+-- FullMediaBox:AddVideo("RemoteVideo", {
+--     Video = "https://your-site.com/video.mp4",
+--     FileName = "RemoteVideo.mp4",
+--     Playing = true,
+--     Looped = true,
+-- })
+
+local FloatingArisu = Library:AddFloatingSprite({
+    Image = ArisuDanceSpriteUrl,
+    FileName = "ArisuDanceSheet.png",
+    FrameSize = Vector2.new(64, 64),
+    FrameCount = 8,
+    Columns = 8,
+    Fps = 10,
+    Position = UDim2.new(0.5, 0, 0, 118),
+    Size = UDim2.fromOffset(86, 86),
+    Visible = false,
+})
+
+Library:AddKeybindMenuButton({
+    Text = "Notify from menu",
+    Callback = function()
+        Library:NotifySuccess({ Title = "Keybind menu", Description = "Button callback fired.", Time = 2 })
+    end,
+})
+
+Library:AddKeybindMenuToggle("FloatingArisuSprite", {
+    Text = "Show Arisu sprite",
+    Default = false,
+    Callback = function(Value)
+        FloatingArisu:SetVisible(Value)
+    end,
+})
 
 -- Advanced custom font examples.
 -- Font:Download expects a bitmap-font JSON manifest with atlas page image URLs and glyph metrics.

@@ -49,6 +49,14 @@ export type CustomFontManager = {
     Register: (self: CustomFontManager, FontInfo: { [string]: any }) -> CustomFont,
 }
 
+export type DownloadAssetInfo = {
+    FileName: string?,
+    Name: string?,
+    Folder: string?,
+    Extension: string?,
+    ForceRedownload: boolean?,
+}
+
 export type CustomFontText = {
     Font: CustomFont,
     Text: string,
@@ -139,6 +147,8 @@ export type KeybindToggle = {
     Holder: TextButton,
     Label: TextLabel,
     Checkbox: Frame,
+    Track: Frame?,
+    Knob: Frame?,
     Loaded: boolean,
 
     Display: (self: KeybindToggle, State: boolean) -> (),
@@ -156,6 +166,65 @@ export type DraggableLabel = {
 export type DraggableButton = {
     Button: TextButton,
     SetText: (self: DraggableButton, Text: string) -> (),
+}
+
+export type KeybindMenuButtonInfo = {
+    Text: string?,
+    Func: ((any) -> ())?,
+    Callback: ((any) -> ())?,
+    Height: number?,
+    TextSize: number?,
+    Transparency: number?,
+    StrokeColor: Color3 | string?,
+    StrokeTransparency: number?,
+    GradientRotation: number?,
+    GradientTransparency: NumberSequence?,
+    Disabled: boolean?,
+    Visible: boolean?,
+}
+
+export type KeybindMenuButton = {
+    Text: string,
+    Disabled: boolean,
+    Visible: boolean,
+    Callback: (any) -> (),
+    Type: "KeybindMenuButton",
+    Holder: TextButton,
+    Label: TextLabel,
+    SetText: (self: KeybindMenuButton, Text: string) -> (),
+    SetDisabled: (self: KeybindMenuButton, Disabled: boolean) -> (),
+    SetVisible: (self: KeybindMenuButton, Visible: boolean) -> (),
+}
+
+export type KeybindMenuToggleInfo = {
+    Text: string?,
+    Default: boolean?,
+    Callback: ((boolean) -> ())?,
+    Changed: ((boolean) -> ())?,
+    Height: number?,
+    TextSize: number?,
+    Disabled: boolean?,
+    Visible: boolean?,
+}
+
+export type KeybindMenuToggle = {
+    Text: string,
+    Value: boolean,
+    Disabled: boolean,
+    Visible: boolean,
+    Callback: (boolean) -> (),
+    Changed: (boolean) -> (),
+    Type: "KeybindMenuToggle",
+    Holder: TextButton,
+    Track: Frame,
+    Knob: Frame,
+    Label: TextLabel,
+    Display: (self: KeybindMenuToggle) -> (),
+    SetValue: (self: KeybindMenuToggle, Value: boolean) -> (),
+    OnChanged: (self: KeybindMenuToggle, Func: (boolean) -> ()) -> (),
+    SetText: (self: KeybindMenuToggle, Text: string) -> (),
+    SetDisabled: (self: KeybindMenuToggle, Disabled: boolean) -> (),
+    SetVisible: (self: KeybindMenuToggle, Visible: boolean) -> (),
 }
 
 --// Element Creation Info Types
@@ -333,6 +402,7 @@ export type ViewportInfo = {
 export type ImageInfo = {
     Image: string,
     Transparency: number?,
+    BackgroundTransparency: number?,
     Color: Color3?,
     RectOffset: Vector2?,
     RectSize: Vector2?,
@@ -343,9 +413,34 @@ export type ImageInfo = {
 
 export type VideoInfo = {
     Video: string,
+    FileName: string?,
+    Folder: string?,
+    Extension: string?,
+    ForceRedownload: boolean?,
     Looped: boolean?,
     Playing: boolean?,
     Volume: number?,
+    Height: number?,
+    Visible: boolean?,
+}
+
+export type SpriteInfo = {
+    Image: string,
+    FileName: string?,
+    Folder: string?,
+    ForceRedownload: boolean?,
+    Frames: { { Offset: Vector2?, Size: Vector2?, ImageRectOffset: Vector2?, ImageRectSize: Vector2? } }?,
+    FrameSize: Vector2?,
+    FrameCount: number?,
+    Columns: number?,
+    Fps: number?,
+    FPS: number?,
+    Loop: boolean?,
+    Playing: boolean?,
+    Transparency: number?,
+    BackgroundTransparency: number?,
+    Color: Color3?,
+    ScaleType: Enum.ScaleType?,
     Height: number?,
     Visible: boolean?,
 }
@@ -685,6 +780,7 @@ export type Image = {
 
 export type Video = {
     Video: string,
+    SourceUrl: string,
     Looped: boolean,
     Playing: boolean,
     Volume: number,
@@ -695,13 +791,62 @@ export type Video = {
     VideoFrame: VideoFrame,
 
     SetHeight: (self: Video, Height: number) -> (),
-    SetVideo: (self: Video, NewVideo: string) -> (),
+    SetVideo: (self: Video, NewVideo: string, FileName: string?) -> (),
     SetLooped: (self: Video, Looped: boolean) -> (),
     SetVolume: (self: Video, Volume: number) -> (),
     SetPlaying: (self: Video, Playing: boolean) -> (),
     Play: (self: Video) -> (),
     Pause: (self: Video) -> (),
     SetVisible: (self: Video, Visible: boolean) -> (),
+}
+
+export type Sprite = {
+    Image: string,
+    Frames: { any },
+    FrameSize: Vector2?,
+    FrameCount: number?,
+    Columns: number?,
+    Fps: number,
+    Loop: boolean,
+    Playing: boolean,
+    Height: number,
+    Transparency: number,
+    BackgroundTransparency: number,
+    Color: Color3,
+    ScaleType: Enum.ScaleType,
+    Visible: boolean,
+    Type: "Sprite",
+    Holder: Frame,
+    ImageLabel: ImageLabel,
+
+    Play: (self: Sprite) -> (),
+    Stop: (self: Sprite) -> (),
+    SetHeight: (self: Sprite, Height: number) -> (),
+    SetImage: (self: Sprite, NewImage: string) -> (),
+    SetColor: (self: Sprite, Color: Color3) -> (),
+    SetTransparency: (self: Sprite, Transparency: number) -> (),
+    SetVisible: (self: Sprite, Visible: boolean) -> (),
+}
+
+export type FloatingSpriteInfo = SpriteInfo & {
+    AnchorPoint: Vector2?,
+    Position: UDim2?,
+    Size: UDim2?,
+    ZIndex: number?,
+}
+
+export type FloatingSprite = {
+    Image: string,
+    Visible: boolean,
+    Playing: boolean,
+    Type: "FloatingSprite",
+    ImageObject: ImageLabel,
+
+    Play: (self: FloatingSprite) -> (),
+    Stop: (self: FloatingSprite) -> (),
+    SetImage: (self: FloatingSprite, NewImage: string) -> (),
+    SetVisible: (self: FloatingSprite, Visible: boolean) -> (),
+    Destroy: (self: FloatingSprite) -> (),
 }
 
 export type UIPassthrough = {
@@ -731,6 +876,7 @@ export type Element =
     | Viewport
     | Image
     | Video
+    | Sprite
     | UIPassthrough
     | Divider
     | Tabbox
@@ -743,8 +889,10 @@ export type Option =
     | Viewport
     | Image
     | Video
+    | Sprite
     | UIPassthrough
     | KeyPicker
+    | KeybindMenuToggle
     | ColorPicker
 
 --// Container Types
@@ -792,6 +940,7 @@ export type BaseGroupbox = {
     AddViewport: (self: Groupbox, Idx: string, Info: ViewportInfo) -> Viewport,
     AddImage: (self: Groupbox, Idx: string, Info: ImageInfo) -> Image,
     AddVideo: (self: Groupbox, Idx: string, Info: VideoInfo) -> Video,
+    AddSprite: (self: Groupbox, Idx: string, Info: SpriteInfo) -> Sprite,
     AddUIPassthrough: (self: Groupbox, Idx: string, Info: UIPassthroughInfo) -> UIPassthrough,
     AddTabbox: (self: Groupbox, Info: { Name: string?, Visible: boolean? } | string?) -> Tabbox,
     AddDependencyBox: (self: Groupbox) -> DependencyBox,
@@ -880,12 +1029,14 @@ export type Tab = {
         Info: { IsNormal: boolean?, LockSize: boolean?, Visible: boolean?, Title: string?, Text: string? }
     ) -> (),
     Resize: (self: Tab, ResizeWarningBox: boolean?) -> (),
-    AddGroupbox: (self: Tab, Info: { Side: number, Name: string, IconName: string? }) -> Groupbox,
+    AddGroupbox: (self: Tab, Info: { Side: number | string, Name: string, IconName: string? }) -> Groupbox,
     AddLeftGroupbox: (self: Tab, Name: string, IconName: string?) -> Groupbox,
     AddRightGroupbox: (self: Tab, Name: string, IconName: string?) -> Groupbox,
-    AddTabbox: (self: Tab, Info: { Side: number, Name: string? }) -> Tabbox,
+    AddFullGroupbox: (self: Tab, Name: string, IconName: string?) -> Groupbox,
+    AddTabbox: (self: Tab, Info: { Side: number | string, Name: string? }) -> Tabbox,
     AddLeftTabbox: (self: Tab, Name: string?) -> Tabbox,
     AddRightTabbox: (self: Tab, Name: string?) -> Tabbox,
+    AddFullTabbox: (self: Tab, Name: string?) -> Tabbox,
     AddCard: (
         self: Tab,
         Info: {
@@ -1124,7 +1275,7 @@ export type Library = {
     Unloaded: boolean,
     Labels: { [string | number]: Label | CustomFontText },
     Buttons: { [string | number]: Button | SubButton },
-    Toggles: { [string | number]: Toggle },
+    Toggles: { [string | number]: Toggle | KeybindMenuToggle },
     Options: { [string | number]: Option },
     Font: CustomFontManager,
     CustomFont: CustomFont?,
@@ -1194,9 +1345,14 @@ export type Library = {
             FrameSize: Vector2?,
             FrameCount: number?,
             Columns: number?,
+            FileName: string?,
+            Name: string?,
+            Folder: string?,
+            ForceRedownload: boolean?,
         }
-    ) -> (),
+    ) -> string?,
     StopIconSpriteAnimation: (self: Library, ImageObject: ImageLabel | ImageButton) -> (),
+    AddFloatingSprite: (self: Library, Info: FloatingSpriteInfo) -> FloatingSprite,
     ApplyNewElements: (self: Library, Target: any?) -> any,
     ApplyNewElments: (self: Library, Target: any?) -> any,
     ApplyNewElement: (self: Library, Target: any?) -> any,
@@ -1227,6 +1383,9 @@ export type Library = {
     SetDPIScale: (self: Library, DPIScale: number) -> (),
     GiveSignal: (self: Library, Connection: RBXScriptConnection) -> RBXScriptConnection,
     GetIcon: (self: Library, IconName: string) -> Icon?,
+    DownloadUrlAsset: (self: Library, Url: string, Info: DownloadAssetInfo?) -> string,
+    DownloadVideo: (self: Library, Url: string, Info: DownloadAssetInfo | string?) -> string,
+    DownloadSprite: (self: Library, Url: string, Info: DownloadAssetInfo | string?) -> string,
     Validate: (self: Library, Table: { [string]: any }, Template: { [string]: any }) -> { [string]: any },
     GetBetterColor: (self: Library, Color: Color3, Add: number) -> Color3,
     GetDarkerColor: (self: Library, Color: Color3) -> Color3,
@@ -1249,6 +1408,10 @@ export type Library = {
     MakeOutline: (self: Library, Frame: GuiObject, Corner: number?, ZIndex: number?) -> Frame,
     AddDraggableButton: (self: Library, Text: string, Func: (DraggableButton) -> ()) -> DraggableButton,
     AddDraggableMenu: (self: Library, Name: string) -> (Frame, Frame),
+    AddKeybindMenuButton: (self: Library, Info: KeybindMenuButtonInfo | string) -> KeybindMenuButton,
+    AddKeybindMenuToggle: (
+        (self: Library, Idx: string, Info: KeybindMenuToggleInfo) -> KeybindMenuToggle
+    ) & ((self: Library, Info: KeybindMenuToggleInfo) -> KeybindMenuToggle),
     SetWatermarkVisibility: (self: Library, Visible: boolean) -> (),
     SetWatermark: (self: Library, Text: string) -> (),
     AddContextMenu: (

@@ -159,6 +159,81 @@ do
     end
 end
 
+local function IsHttpUrl(Value)
+    return typeof(Value) == "string" and Value:match("^https?://") ~= nil
+end
+
+local function SanitizeAssetPathSegment(Value: string): string
+    local Cleaned = tostring(Value or ""):gsub("[?#].*$", ""):gsub("[^%w_%-%.]", "_")
+    Cleaned = Cleaned:gsub("_+", "_"):gsub("^_+", ""):gsub("_+$", "")
+    return Cleaned ~= "" and Cleaned or "asset"
+end
+
+local function EnsureDownloadFolder(Path: string)
+    if not isfolder or not makefolder then
+        return
+    end
+
+    local Current = ""
+    for Segment in Path:gmatch("[^/]+") do
+        Current ..= Segment
+        if not isfolder(Current) then
+            makefolder(Current)
+        end
+        Current ..= "/"
+    end
+end
+
+local function GetUrlFileName(Url: string, DefaultName: string?, Extension: string?): string
+    local CleanUrl = Url:gsub("[?#].*$", "")
+    local FileName = CleanUrl:match("[^/]+$") or DefaultName or "asset"
+    FileName = SanitizeAssetPathSegment(FileName)
+
+    if DefaultName and DefaultName ~= "" then
+        FileName = SanitizeAssetPathSegment(DefaultName)
+    end
+
+    if Extension and not FileName:match("%.[%w]+$") then
+        FileName ..= "." .. Extension:gsub("^%.", "")
+    end
+
+    return FileName
+end
+
+local function DownloadUrlToCustomAsset(Url: string, Info)
+    assert(typeof(Url) == "string", "DownloadUrlAsset expects a URL string.")
+    if not IsHttpUrl(Url) then
+        return Url, true
+    end
+
+    if not (writefile and isfile and getcustomasset) then
+        return Url, false, "missing writefile/isfile/getcustomasset"
+    end
+
+    Info = typeof(Info) == "table" and Info or {}
+    local Folder = Info.Folder or "Obsidian/downloads"
+    local FileName = GetUrlFileName(Url, Info.FileName or Info.Name, Info.Extension)
+    local Path = string.format("%s/%s", Folder, FileName)
+
+    EnsureDownloadFolder(Folder)
+
+    if Info.ForceRedownload == true or not isfile(Path) then
+        local Success, ErrorMessage = pcall(function()
+            writefile(Path, game:HttpGet(Url))
+        end)
+        if not Success then
+            return Url, false, ErrorMessage
+        end
+    end
+
+    local Success, CustomAsset = pcall(getcustomasset, Path)
+    if not Success or not CustomAsset then
+        return Url, false, CustomAsset
+    end
+
+    return CustomAsset, true, Path
+end
+
 local Library = {
     LocalPlayer = LocalPlayer,
     DevicePlatform = nil,
@@ -489,10 +564,34 @@ local Templates = {
     },
     Video = {
         Video = "",
+        FileName = nil,
+        Folder = nil,
+        Extension = "mp4",
+        ForceRedownload = false,
         Looped = false,
         Playing = false,
         Volume = 1,
         Height = 200,
+        Visible = true,
+    },
+    Sprite = {
+        Image = "",
+        FileName = nil,
+        Folder = nil,
+        ForceRedownload = false,
+        Frames = {},
+        FrameSize = nil,
+        FrameCount = nil,
+        Columns = nil,
+        Fps = 24,
+        FPS = nil,
+        Loop = true,
+        Playing = true,
+        Transparency = 0,
+        BackgroundTransparency = 0,
+        Color = Color3.new(1, 1, 1),
+        ScaleType = Enum.ScaleType.Fit,
+        Height = 96,
         Visible = true,
     },
     UIPassthrough = {
@@ -1121,6 +1220,29 @@ function Library:GetCustomIcon(IconName: string): any
     return nil
 end
 
+function Library:DownloadUrlAsset(Url: string, Info)
+    local Asset, Success, ErrorMessage = DownloadUrlToCustomAsset(Url, Info)
+    if not Success and IsHttpUrl(Url) then
+        warn(string.format("Failed to download custom asset %q: %s", Url, tostring(ErrorMessage)))
+    end
+
+    return Asset
+end
+
+function Library:DownloadVideo(Url: string, Info)
+    Info = typeof(Info) == "table" and Info or { FileName = Info }
+    Info.Folder = Info.Folder or "Obsidian/videos"
+    Info.Extension = Info.Extension or "mp4"
+    return Library:DownloadUrlAsset(Url, Info)
+end
+
+function Library:DownloadSprite(Url: string, Info)
+    Info = typeof(Info) == "table" and Info or { FileName = Info }
+    Info.Folder = Info.Folder or "Obsidian/sprites"
+    Info.Extension = Info.Extension or "png"
+    return Library:DownloadUrlAsset(Url, Info)
+end
+
 local CustomFontManager = {}
 
 local function ResolveFontAssetUrl(BaseUrl: string?, AssetUrl: string): string
@@ -1541,13 +1663,26 @@ function Library:AnimateIconSprite(ImageObject: ImageLabel | ImageButton, AtlasI
     assert(ImageObject and ImageObject:IsA("GuiObject"), "AnimateIconSprite expected an image gui object.")
     assert(typeof(AtlasInfo) == "table", "AnimateIconSprite expected atlas info table.")
 
-    local Frames = AtlasInfo.Frames or {}
+    local Frames = table.clone(AtlasInfo.Frames or {})
     local Fps = math.max(1, AtlasInfo.Fps or AtlasInfo.FPS or 24)
     local Loop = AtlasInfo.Loop ~= false
     local AtlasImage = AtlasInfo.Image or AtlasInfo.AtlasImage
 
     if AtlasImage then
-        ImageObject.Image = AtlasImage
+        local Icon = Library:GetCustomIcon(AtlasImage)
+        if Icon then
+            ImageObject.Image = Icon.Url
+            ImageObject.ImageRectOffset = Icon.ImageRectOffset or Vector2.zero
+            ImageObject.ImageRectSize = Icon.ImageRectSize or Vector2.zero
+        elseif IsHttpUrl(AtlasImage) then
+            ImageObject.Image = Library:DownloadSprite(AtlasImage, {
+                FileName = AtlasInfo.FileName or AtlasInfo.Name,
+                Folder = AtlasInfo.Folder,
+                ForceRedownload = AtlasInfo.ForceRedownload,
+            })
+        else
+            ImageObject.Image = AtlasImage
+        end
     end
 
     if #Frames == 0 and AtlasInfo.FrameSize and AtlasInfo.FrameCount then
@@ -1561,6 +1696,10 @@ function Library:AnimateIconSprite(ImageObject: ImageLabel | ImageButton, AtlasI
                 Size = FrameSize,
             })
         end
+    end
+
+    if #Frames == 0 then
+        return nil
     end
 
     local AnimationId = string.sub(tostring({}), 10)
@@ -1585,12 +1724,104 @@ function Library:AnimateIconSprite(ImageObject: ImageLabel | ImageButton, AtlasI
             end
         end
     end)
+
+    return AnimationId
 end
 
 function Library:StopIconSpriteAnimation(ImageObject: ImageLabel | ImageButton)
     if ImageObject then
         ImageObject:SetAttribute("ObsidianSpriteAnimation", nil)
     end
+end
+
+function Library:AddFloatingSprite(Info)
+    Info = Info or {}
+
+    local Sprite = {
+        Image = Info.Image or Info.AtlasImage or "",
+        Visible = Info.Visible ~= false,
+        Playing = Info.Playing ~= false,
+        Type = "FloatingSprite",
+    }
+
+    local ImageObject = New("ImageLabel", {
+        AnchorPoint = Info.AnchorPoint or Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 1,
+        ImageTransparency = Info.Transparency or 0,
+        Position = Info.Position or UDim2.new(0.5, 0, 0, 96),
+        ScaleType = Info.ScaleType or Enum.ScaleType.Fit,
+        Size = Info.Size or UDim2.fromOffset(96, 96),
+        Visible = Sprite.Visible,
+        ZIndex = Info.ZIndex or 12000,
+        Parent = ScreenGui,
+    })
+
+    local function ApplyImage(NewImage)
+        if NewImage and NewImage ~= "" then
+            local Icon = Library:GetCustomIcon(NewImage)
+            if Icon then
+                ImageObject.Image = Icon.Url
+                ImageObject.ImageRectOffset = Icon.ImageRectOffset or Vector2.zero
+                ImageObject.ImageRectSize = Icon.ImageRectSize or Vector2.zero
+            elseif IsHttpUrl(NewImage) then
+                ImageObject.Image = Library:DownloadSprite(NewImage, {
+                    FileName = Info.FileName or Info.Name,
+                    Folder = Info.Folder,
+                    ForceRedownload = Info.ForceRedownload,
+                })
+            else
+                ImageObject.Image = NewImage
+            end
+        end
+    end
+
+    function Sprite:Play()
+        Sprite.Playing = true
+        Library:AnimateIconSprite(ImageObject, {
+            Image = Sprite.Image,
+            FileName = Info.FileName or Info.Name,
+            Folder = Info.Folder,
+            ForceRedownload = Info.ForceRedownload,
+            Frames = Info.Frames,
+            FrameSize = Info.FrameSize,
+            FrameCount = Info.FrameCount,
+            Columns = Info.Columns,
+            Fps = Info.Fps or Info.FPS,
+            Loop = Info.Loop,
+        })
+    end
+
+    function Sprite:Stop()
+        Sprite.Playing = false
+        Library:StopIconSpriteAnimation(ImageObject)
+    end
+
+    function Sprite:SetImage(NewImage)
+        assert(typeof(NewImage) == "string", "SetImage expects a string.")
+        Sprite.Image = NewImage
+        ApplyImage(NewImage)
+        if Sprite.Playing then
+            Sprite:Play()
+        end
+    end
+
+    function Sprite:SetVisible(Visible: boolean)
+        Sprite.Visible = Visible
+        ImageObject.Visible = Visible
+    end
+
+    function Sprite:Destroy()
+        Sprite:Stop()
+        ImageObject:Destroy()
+    end
+
+    Sprite.ImageObject = ImageObject
+    ApplyImage(Sprite.Image)
+    if Sprite.Playing then
+        Sprite:Play()
+    end
+
+    return Sprite
 end
 
 function Library:Validate(Table: { [string]: any }, Template: { [string]: any }): { [string]: any }
@@ -2260,6 +2491,206 @@ function Library:AddDraggableMenu(Name: string)
     return Holder, Container
 end
 
+function Library:AddKeybindMenuButton(Info)
+    assert(Library.KeybindContainer, "Create a window before adding keybind menu controls.")
+    Info = typeof(Info) == "table" and Info or { Text = tostring(Info or "Button") }
+
+    local Button = {
+        Text = Info.Text or "Button",
+        Disabled = Info.Disabled == true,
+        Visible = Info.Visible ~= false,
+        Callback = Info.Callback or Info.Func or function() end,
+        Type = "KeybindMenuButton",
+    }
+
+    local Holder = New("TextButton", {
+        Active = not Button.Disabled,
+        BackgroundColor3 = "MainColor",
+        BackgroundTransparency = Info.Transparency or 0.16,
+        ClipsDescendants = true,
+        Size = UDim2.new(1, 0, 0, Info.Height or 26),
+        Text = "",
+        Visible = Button.Visible,
+        Parent = Library.KeybindContainer,
+    })
+    table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = Holder }))
+    Library:AddOutline(Holder, {
+        Color = Info.StrokeColor or "AccentColor",
+        Transparency = Info.StrokeTransparency or 0.55,
+        ShadowTransparency = 1,
+    })
+    Library:AddGradient(Holder, {
+        Rotation = Info.GradientRotation or 10,
+        Transparency = Info.GradientTransparency or NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.65),
+            NumberSequenceKeypoint.new(1, 0.95),
+        }),
+    })
+
+    local Label = New("TextLabel", {
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(1, 1),
+        Text = Button.Text,
+        TextSize = Info.TextSize or 13,
+        TextTransparency = Button.Disabled and 0.75 or 0.08,
+        Parent = Holder,
+    })
+
+    Holder.MouseButton1Click:Connect(function()
+        if Button.Disabled then
+            return
+        end
+
+        Library:SafeCallback(Button.Callback, Button)
+    end)
+
+    function Button:SetText(Text)
+        Button.Text = tostring(Text)
+        Label.Text = Button.Text
+    end
+
+    function Button:SetDisabled(Disabled)
+        Button.Disabled = Disabled == true
+        Holder.Active = not Button.Disabled
+        Label.TextTransparency = Button.Disabled and 0.75 or 0.08
+    end
+
+    function Button:SetVisible(Visible)
+        Button.Visible = Visible == true
+        Holder.Visible = Button.Visible
+    end
+
+    Button.Holder = Holder
+    Button.Label = Label
+    return Button
+end
+
+function Library:AddKeybindMenuToggle(Idx, Info)
+    assert(Library.KeybindContainer, "Create a window before adding keybind menu controls.")
+    if typeof(Idx) == "table" then
+        Info = Idx
+        Idx = nil
+    end
+    Info = Info or {}
+
+    local Toggle = {
+        Text = Info.Text or tostring(Idx or "Toggle"),
+        Value = Info.Default == true,
+        Disabled = Info.Disabled == true,
+        Visible = Info.Visible ~= false,
+        Callback = Info.Callback or function() end,
+        Changed = Info.Changed or function() end,
+        Type = "KeybindMenuToggle",
+    }
+
+    local Holder = New("TextButton", {
+        Active = not Toggle.Disabled,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 0, 0, Info.Height or 24),
+        Text = "",
+        Visible = Toggle.Visible,
+        Parent = Library.KeybindContainer,
+    })
+
+    local Track = New("Frame", {
+        AnchorPoint = Vector2.new(0, 0.5),
+        BackgroundColor3 = "OutlineColor",
+        BackgroundTransparency = 0.22,
+        Position = UDim2.fromScale(0, 0.5),
+        Size = UDim2.fromOffset(40, 20),
+        Parent = Holder,
+    })
+    table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Track }))
+    Library:AddOutline(Track, { Color = "AccentColor", Transparency = 0.55, ShadowTransparency = 1 })
+    Library:AddGradient(Track, {
+        Rotation = 0,
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.55),
+            NumberSequenceKeypoint.new(1, 0.92),
+        }),
+    })
+
+    local Knob = New("Frame", {
+        AnchorPoint = Vector2.new(0, 0.5),
+        BackgroundColor3 = "WhiteColor",
+        Position = UDim2.new(0, 4, 0.5, 0),
+        Size = UDim2.fromOffset(12, 12),
+        Parent = Track,
+    })
+    table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Knob }))
+
+    local Label = New("TextLabel", {
+        BackgroundTransparency = 1,
+        Position = UDim2.fromOffset(48, 0),
+        Size = UDim2.new(1, -48, 1, 0),
+        Text = Toggle.Text,
+        TextSize = Info.TextSize or 13,
+        TextTransparency = 0.4,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = Holder,
+    })
+
+    function Toggle:Display()
+        TweenService:Create(Track, Library.TweenInfo, {
+            BackgroundColor3 = Toggle.Value and Library.Scheme.AccentColor or Library.Scheme.OutlineColor,
+            BackgroundTransparency = Toggle.Value and 0.04 or 0.22,
+        }):Play()
+        TweenService:Create(Knob, Library.TweenInfo, {
+            Position = Toggle.Value and UDim2.new(1, -16, 0.5, 0) or UDim2.new(0, 4, 0.5, 0),
+        }):Play()
+        Label.TextTransparency = Toggle.Disabled and 0.8 or Toggle.Value and 0 or 0.4
+    end
+
+    function Toggle:SetValue(Value)
+        if Toggle.Disabled then
+            return
+        end
+
+        Toggle.Value = Value == true
+        Toggle:Display()
+        Library:UpdateDependencyBoxes()
+        Library:SafeCallback(Toggle.Callback, Toggle.Value)
+        Library:SafeCallback(Toggle.Changed, Toggle.Value)
+    end
+
+    function Toggle:OnChanged(Func)
+        Toggle.Changed = Func
+    end
+
+    function Toggle:SetText(Text)
+        Toggle.Text = tostring(Text)
+        Label.Text = Toggle.Text
+    end
+
+    function Toggle:SetDisabled(Disabled)
+        Toggle.Disabled = Disabled == true
+        Holder.Active = not Toggle.Disabled
+        Toggle:Display()
+    end
+
+    function Toggle:SetVisible(Visible)
+        Toggle.Visible = Visible == true
+        Holder.Visible = Toggle.Visible
+    end
+
+    Holder.MouseButton1Click:Connect(function()
+        Toggle:SetValue(not Toggle.Value)
+    end)
+
+    Toggle.Holder = Holder
+    Toggle.Track = Track
+    Toggle.Knob = Knob
+    Toggle.Label = Label
+    Toggle:Display()
+
+    if Idx then
+        Toggles[Idx] = Toggle
+        Options[Idx] = Toggle
+    end
+
+    return Toggle
+end
+
 --// Watermark - Deprecated \\--
 do
     local WatermarkLabel = Library:AddDraggableLabel("")
@@ -2842,7 +3273,7 @@ do
         do
             local Holder = New("TextButton", {
                 BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 16),
+                Size = UDim2.new(1, 0, 0, 24),
                 Text = "",
                 Visible = not Info.NoUI,
                 Parent = Library.KeybindContainer,
@@ -2858,40 +3289,65 @@ do
                 Parent = Holder,
             })
 
-            local Checkbox = New("Frame", {
+            local Track = New("Frame", {
                 AnchorPoint = Vector2.new(0, 0.5),
                 BackgroundColor3 = "MainColor",
+                BackgroundTransparency = 0.2,
                 Position = UDim2.fromScale(0, 0.5),
-                Size = UDim2.fromOffset(14, 14),
-                SizeConstraint = Enum.SizeConstraint.RelativeYY,
+                Size = UDim2.fromOffset(40, 20),
                 Parent = Holder,
             })
             table.insert(
                 Library.Corners,
                 New("UICorner", {
-                    CornerRadius = UDim.new(0, Library.CornerRadius / 2),
-                    Parent = Checkbox,
+                    CornerRadius = UDim.new(1, 0),
+                    Parent = Track,
                 })
             )
-            New("UIStroke", {
-                Color = "OutlineColor",
-                Parent = Checkbox,
+            Library:AddOutline(Track, {
+                Color = "AccentColor",
+                Transparency = 0.55,
+                ShadowTransparency = 1,
+            })
+            Library:AddGradient(Track, {
+                Rotation = 0,
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.55),
+                    NumberSequenceKeypoint.new(1, 0.92),
+                }),
             })
 
-            local CheckImage = New("ImageLabel", {
-                Image = CheckIcon and CheckIcon.Url or "",
-                ImageColor3 = "FontColor",
-                ImageRectOffset = CheckIcon and CheckIcon.ImageRectOffset or Vector2.zero,
-                ImageRectSize = CheckIcon and CheckIcon.ImageRectSize or Vector2.zero,
-                ImageTransparency = 1,
-                Position = UDim2.fromOffset(2, 2),
-                Size = UDim2.new(1, -4, 1, -4),
-                Parent = Checkbox,
+            local Knob = New("Frame", {
+                AnchorPoint = Vector2.new(0, 0.5),
+                BackgroundColor3 = "WhiteColor",
+                Position = UDim2.new(0, 4, 0.5, 0),
+                Size = UDim2.fromOffset(12, 12),
+                Parent = Track,
+            })
+            table.insert(
+                Library.Corners,
+                New("UICorner", {
+                    CornerRadius = UDim.new(1, 0),
+                    Parent = Knob,
+                })
+            )
+
+            local KnobGlow = New("UIStroke", {
+                Color = "FontColor",
+                Transparency = 0.75,
+                Parent = Knob,
             })
 
             function KeybindsToggle:Display(State)
+                TweenService:Create(Track, Library.TweenInfo, {
+                    BackgroundColor3 = State and Library.Scheme.AccentColor or Library.Scheme.MainColor,
+                    BackgroundTransparency = State and 0.04 or 0.2,
+                }):Play()
+                TweenService:Create(Knob, Library.TweenInfo, {
+                    Position = State and UDim2.new(1, -16, 0.5, 0) or UDim2.new(0, 4, 0.5, 0),
+                }):Play()
+                KnobGlow.Transparency = State and 0.25 or 0.75
                 Label.TextTransparency = State and 0 or 0.5
-                CheckImage.ImageTransparency = State and 0 or 1
             end
 
             function KeybindsToggle:SetText(Text)
@@ -2906,8 +3362,8 @@ do
                 KeybindsToggle.Normal = Normal
 
                 Holder.Active = not Normal
-                Label.Position = Normal and UDim2.fromOffset(0, 0) or UDim2.fromOffset(22, 0)
-                Checkbox.Visible = not Normal
+                Label.Position = Normal and UDim2.fromOffset(0, 0) or UDim2.fromOffset(48, 0)
+                Track.Visible = not Normal
             end
 
             KeyPicker.DoClick = function(...) end --// make luau lsp shut up
@@ -2922,7 +3378,9 @@ do
 
             KeybindsToggle.Holder = Holder
             KeybindsToggle.Label = Label
-            KeybindsToggle.Checkbox = Checkbox
+            KeybindsToggle.Checkbox = Track
+            KeybindsToggle.Track = Track
+            KeybindsToggle.Knob = Knob
             KeybindsToggle.Loaded = true
             table.insert(Library.KeybindToggles, KeybindsToggle)
         end
@@ -7121,8 +7579,22 @@ do
         local Groupbox = self
         local Container = Groupbox.Container
 
+        local function ResolveVideoAsset(VideoUrl: string, FileName: string?)
+            if IsHttpUrl(VideoUrl) then
+                return Library:DownloadVideo(VideoUrl, {
+                    FileName = FileName or Info.FileName or tostring(Idx),
+                    Folder = Info.Folder,
+                    Extension = Info.Extension,
+                    ForceRedownload = Info.ForceRedownload,
+                })
+            end
+
+            return VideoUrl
+        end
+
         local Video = {
-            Video = Info.Video,
+            Video = ResolveVideoAsset(Info.Video, Info.FileName),
+            SourceUrl = Info.Video,
             Looped = Info.Looped,
             Playing = Info.Playing,
             Volume = Info.Volume,
@@ -7176,11 +7648,13 @@ do
             Groupbox:Resize()
         end
 
-        function Video:SetVideo(NewVideo: string)
+        function Video:SetVideo(NewVideo: string, FileName: string?)
             assert(typeof(NewVideo) == "string", "Video must be a string.")
 
-            VideoFrameInstance.Video = NewVideo
-            Video.Video = NewVideo
+            local ResolvedVideo = ResolveVideoAsset(NewVideo, FileName)
+            VideoFrameInstance.Video = ResolvedVideo
+            Video.Video = ResolvedVideo
+            Video.SourceUrl = NewVideo
         end
 
         function Video:SetLooped(Looped: boolean)
@@ -7230,6 +7704,158 @@ do
         Options[Idx] = Video
 
         return Video
+    end
+
+    function Funcs:AddSprite(Idx, Info)
+        Info = Library:Validate(Info, Templates.Sprite)
+
+        local Groupbox = self
+        local Container = Groupbox.Container
+
+        local Sprite = {
+            Image = Info.Image,
+            Frames = Info.Frames,
+            FrameSize = Info.FrameSize,
+            FrameCount = Info.FrameCount,
+            Columns = Info.Columns,
+            Fps = Info.Fps or Info.FPS,
+            Loop = Info.Loop,
+            Playing = Info.Playing,
+            Height = Info.Height,
+            Transparency = Info.Transparency,
+            BackgroundTransparency = Info.BackgroundTransparency,
+            Color = Info.Color,
+            ScaleType = Info.ScaleType,
+            Visible = Info.Visible,
+            Type = "Sprite",
+        }
+
+        local Holder = New("Frame", {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 0, Sprite.Height),
+            Visible = Sprite.Visible,
+            Parent = Container,
+        })
+
+        local Box = New("Frame", {
+            AnchorPoint = Vector2.new(0, 1),
+            BackgroundColor3 = "MainColor",
+            BackgroundTransparency = Sprite.BackgroundTransparency,
+            BorderColor3 = "OutlineColor",
+            BorderSizePixel = 1,
+            Position = UDim2.fromScale(0, 1),
+            Size = UDim2.fromScale(1, 1),
+            Parent = Holder,
+        })
+
+        New("UIPadding", {
+            PaddingBottom = UDim.new(0, 3),
+            PaddingLeft = UDim.new(0, 8),
+            PaddingRight = UDim.new(0, 8),
+            PaddingTop = UDim.new(0, 4),
+            Parent = Box,
+        })
+
+        local ImageLabel = New("ImageLabel", {
+            BackgroundTransparency = 1,
+            ImageColor3 = Sprite.Color,
+            ImageTransparency = Sprite.Transparency,
+            ScaleType = Sprite.ScaleType,
+            Size = UDim2.fromScale(1, 1),
+            Parent = Box,
+        })
+
+        local function ApplyImage(NewImage: string)
+            local Icon = Library:GetCustomIcon(NewImage)
+            if Icon then
+                ImageLabel.Image = Icon.Url
+                ImageLabel.ImageRectOffset = Icon.ImageRectOffset or Vector2.zero
+                ImageLabel.ImageRectSize = Icon.ImageRectSize or Vector2.zero
+            elseif IsHttpUrl(NewImage) then
+                ImageLabel.Image = Library:DownloadSprite(NewImage, {
+                    FileName = Info.FileName or tostring(Idx),
+                    Folder = Info.Folder,
+                    ForceRedownload = Info.ForceRedownload,
+                })
+            else
+                ImageLabel.Image = NewImage
+            end
+        end
+
+        function Sprite:Play()
+            Sprite.Playing = true
+            Library:AnimateIconSprite(ImageLabel, {
+                Image = Sprite.Image,
+                FileName = Info.FileName or tostring(Idx),
+                Folder = Info.Folder,
+                ForceRedownload = Info.ForceRedownload,
+                Frames = Sprite.Frames,
+                FrameSize = Sprite.FrameSize,
+                FrameCount = Sprite.FrameCount,
+                Columns = Sprite.Columns,
+                Fps = Sprite.Fps,
+                Loop = Sprite.Loop,
+            })
+        end
+
+        function Sprite:Stop()
+            Sprite.Playing = false
+            Library:StopIconSpriteAnimation(ImageLabel)
+        end
+
+        function Sprite:SetHeight(Height: number)
+            assert(Height > 0, "Height must be greater than 0.")
+
+            Sprite.Height = Height
+            Holder.Size = UDim2.new(1, 0, 0, Height)
+            Groupbox:Resize()
+        end
+
+        function Sprite:SetImage(NewImage: string)
+            assert(typeof(NewImage) == "string", "Image must be a string.")
+
+            Sprite.Image = NewImage
+            ApplyImage(NewImage)
+            if Sprite.Playing then
+                Sprite:Play()
+            end
+        end
+
+        function Sprite:SetColor(Color: Color3)
+            assert(typeof(Color) == "Color3", "Color must be a Color3 value.")
+
+            ImageLabel.ImageColor3 = Color
+            Sprite.Color = Color
+        end
+
+        function Sprite:SetTransparency(Transparency: number)
+            assert(typeof(Transparency) == "number", "Transparency must be a number between 0 and 1.")
+            assert(Transparency >= 0 and Transparency <= 1, "Transparency must be between 0 and 1.")
+
+            ImageLabel.ImageTransparency = Transparency
+            Sprite.Transparency = Transparency
+        end
+
+        function Sprite:SetVisible(Visible: boolean)
+            Sprite.Visible = Visible
+            Holder.Visible = Sprite.Visible
+            Groupbox:Resize()
+        end
+
+        ApplyImage(Sprite.Image)
+        if Sprite.Playing then
+            Sprite:Play()
+        end
+
+        Groupbox:Resize()
+
+        Sprite.Holder = Holder
+        Sprite.ImageLabel = ImageLabel
+        table.insert(Groupbox.Elements, Sprite)
+
+        Options[Idx] = Sprite
+
+        return Sprite
     end
 
     function Funcs:AddUIPassthrough(Idx, Info)
@@ -9253,6 +9879,8 @@ function Library:CreateWindow(WindowInfo)
         local TabIcon
 
         local TabContainer
+        local TabFull
+        local TabFullList
         local TabLeft
         local TabRight
 
@@ -9326,6 +9954,25 @@ function Library:CreateWindow(WindowInfo)
                 Size = UDim2.fromScale(1, 1),
                 Visible = false,
                 Parent = Container,
+            })
+
+            TabFull = New("Frame", {
+                BackgroundTransparency = 1,
+                Position = UDim2.fromOffset(0, 0),
+                Size = UDim2.new(1, 0, 0, 0),
+                Visible = false,
+                Parent = TabContainer,
+            })
+            TabFullList = New("UIListLayout", {
+                Padding = UDim.new(0, 2),
+                Parent = TabFull,
+            })
+            New("UIPadding", {
+                PaddingBottom = UDim.new(0, 2),
+                PaddingLeft = UDim.new(0, 2),
+                PaddingRight = UDim.new(0, 2),
+                PaddingTop = UDim.new(0, 2),
+                Parent = TabFull,
             })
 
             TabLeft = New("ScrollingFrame", {
@@ -9484,6 +10131,8 @@ function Library:CreateWindow(WindowInfo)
             })
         end
 
+        local HasFullContent = false
+
         --// Tab Table \\--
         local Tab = {
             Groupboxes = {},
@@ -9502,6 +10151,25 @@ function Library:CreateWindow(WindowInfo)
                 Text = "",
             },
         }
+
+        local function IsFullSide(Side)
+            local SideText = tostring(Side):lower()
+            return Side == 0
+                or Side == 3
+                or SideText == "full"
+                or SideText == "wide"
+                or SideText == "center"
+                or SideText == "middle"
+        end
+
+        local function GetSideParent(Side)
+            if IsFullSide(Side) then
+                HasFullContent = true
+                return TabFull
+            end
+
+            return Side == 1 and TabLeft or TabRight
+        end
 
         function Tab:UpdateWarningBox(Info)
             if typeof(Info.IsNormal) == "boolean" then
@@ -9576,7 +10244,14 @@ function Library:CreateWindow(WindowInfo)
         end
 
         function Tab:RefreshSides()
-            local Offset = WarningBoxHolder.Visible and WarningBox.Size.Y.Offset + 8 or 0
+            local WarningOffset = WarningBoxHolder.Visible and WarningBox.Size.Y.Offset + 8 or 0
+            local FullHeight = HasFullContent and (TabFullList.AbsoluteContentSize.Y / Library.DPIScale) + 4 or 0
+            local Offset = WarningOffset + FullHeight
+
+            TabFull.Visible = HasFullContent
+            TabFull.Position = UDim2.fromOffset(0, WarningOffset)
+            TabFull.Size = UDim2.new(1, 0, 0, FullHeight)
+
             for _, Side in Tab.Sides do
                 Side.Position = UDim2.new(Side.Position.X.Scale, 0, 0, Offset)
                 Side.Size = UDim2.new(0.5, -3, 1, -Offset)
@@ -9608,12 +10283,19 @@ function Library:CreateWindow(WindowInfo)
             Tab:RefreshSides()
         end
 
+        Library:GiveSignal(TabFullList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            Tab:RefreshSides()
+        end))
+
         function Tab:AddGroupbox(Info)
+            Info = typeof(Info) == "table" and Info or { Name = tostring(Info or "Groupbox") }
+            Info.Name = Info.Name or "Groupbox"
+
             local BoxHolder = New("Frame", {
                 AutomaticSize = Enum.AutomaticSize.Y,
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0),
-                Parent = Info.Side == 1 and TabLeft or TabRight,
+                Parent = GetSideParent(Info.Side),
             })
             New("UIListLayout", {
                 Padding = UDim.new(0, 6),
@@ -9713,6 +10395,7 @@ function Library:CreateWindow(WindowInfo)
 
             function Groupbox:Resize()
                 GroupboxHolder.Size = UDim2.new(1, 0, 0, (GroupboxList.AbsoluteContentSize.Y / Library.DPIScale) + 49)
+                Tab:RefreshSides()
             end
 
             setmetatable(Groupbox, BaseGroupbox)
@@ -9731,12 +10414,18 @@ function Library:CreateWindow(WindowInfo)
             return Tab:AddGroupbox({ Side = 2, Name = Name, IconName = IconName })
         end
 
+        function Tab:AddFullGroupbox(Name, IconName)
+            return Tab:AddGroupbox({ Side = "Full", Name = Name, IconName = IconName })
+        end
+
         function Tab:AddTabbox(Info)
+            Info = typeof(Info) == "table" and Info or { Name = Info }
+
             local BoxHolder = New("Frame", {
                 AutomaticSize = Enum.AutomaticSize.Y,
                 BackgroundTransparency = 1,
                 Size = UDim2.fromScale(1, 0),
-                Parent = Info.Side == 1 and TabLeft or TabRight,
+                Parent = GetSideParent(Info.Side),
             })
             New("UIListLayout", {
                 Padding = UDim.new(0, 6),
@@ -9785,6 +10474,7 @@ function Library:CreateWindow(WindowInfo)
 
                 BoxHolder = BoxHolder,
                 Holder = TabboxHolder,
+                GroupTab = Tab,
                 Tabs = {},
             }
 
@@ -9972,6 +10662,7 @@ function Library:CreateWindow(WindowInfo)
                     end
 
                     TabboxHolder.Size = UDim2.new(1, 0, 0, (List.AbsoluteContentSize.Y / Library.DPIScale) + 49)
+                    Tabbox.GroupTab:RefreshSides()
                 end
 
                 function Tab:UpdateCorners()
@@ -10015,6 +10706,10 @@ function Library:CreateWindow(WindowInfo)
 
         function Tab:AddRightTabbox(Name)
             return Tab:AddTabbox({ Side = 2, Name = Name })
+        end
+
+        function Tab:AddFullTabbox(Name)
+            return Tab:AddTabbox({ Side = "Full", Name = Name })
         end
 
         function Tab:AddCard(Info)

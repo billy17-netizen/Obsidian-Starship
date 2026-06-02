@@ -1,3 +1,15 @@
+## 02.06.2026
+
+```diff
+[features]
++ Tab:AddFullGroupbox() and Tab:AddFullTabbox() for full-width tab content above the left/right columns
++ Library:AddKeybindMenuButton() and Library:AddKeybindMenuToggle()
++ Groupbox:AddSprite(), Library:AddFloatingSprite(), Library:DownloadSprite(), and Library:DownloadVideo()
+
+[changes]
++ KeyPicker synced keybind toggles now render as liquid-glass pill switches
+```
+
 ## 21.04.2026
 
 ```diff
