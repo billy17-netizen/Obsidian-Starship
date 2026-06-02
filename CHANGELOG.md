@@ -9,6 +9,8 @@
 
 [changes]
 + KeyPicker synced keybind toggles now render as liquid-glass pill switches
++ Keybind menu now uses a compact fixed width via WindowInfo.KeybindMenuWidth
++ Example sprite animation now renders as a floating sprite near the top search area instead of inside the groupbox
 ```
 
 ## 21.04.2026

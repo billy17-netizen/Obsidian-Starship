@@ -21,6 +21,7 @@ This fork keeps the familiar Obsidian/Linoria-style API while adding quality-of-
 - Full-width tab content: `Tab:AddFullGroupbox()` and `Tab:AddFullTabbox()` span the tab above the normal left/right columns for large previews or viewport-style layouts.
 - Advanced custom fonts: `Library.Font:Download(url)` / `Library:DownloadFont(url)` loads a bitmap-font JSON manifest from any internet URL, downloads atlas pages, and renders text with `ImageLabel` glyphs through `Library:CreateCustomText()` or `Groupbox:AddCustomFontLabel()` (TTF/OTF files need to be converted to a bitmap atlas manifest first).
 - Keybind menu controls: `Library:AddKeybindMenuButton()` and `Library:AddKeybindMenuToggle()` add actions directly to the keybind menu, and synced keybind toggles now use a liquid-glass pill style.
+- Compact keybind menu: set `KeybindMenuWidth` in `CreateWindow` to resize the draggable keybind menu without it expanding across the screen.
 - Layout modes: set `TabsMode = "Sidebar"` or `"Topbar"` and `TabStyle = "Card"` for card-like tab buttons.
 - Sprite/video URL media: `Library:DownloadSprite(url)` and `Library:DownloadVideo(url)` download direct URLs through `getcustomasset`; `Groupbox:AddSprite()` and `Library:AddFloatingSprite()` animate sprite sheets with atlas frames/size/columns.
 - Advanced card dropdowns: set `CardDropdown = true` and provide `Cards` with thumbnails or code-native preview colors/gradients, bottom-bar transparency, icon, title, description, and per-card stroke options.

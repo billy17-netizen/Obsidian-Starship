@@ -170,6 +170,10 @@ export type DraggableButton = {
     SetText: (self: DraggableButton, Text: string) -> (),
 }
 
+export type DraggableMenuInfo = {
+    Width: number?,
+}
+
 export type KeybindMenuButtonInfo = {
     Text: string?,
     Func: ((any) -> ())?,
@@ -1411,7 +1415,7 @@ export type Library = {
     MakeLine: (self: Library, Frame: GuiObject, Info: { AnchorPoint: Vector2?, Position: UDim2, Size: UDim2 }) -> Frame,
     MakeOutline: (self: Library, Frame: GuiObject, Corner: number?, ZIndex: number?) -> Frame,
     AddDraggableButton: (self: Library, Text: string, Func: (DraggableButton) -> ()) -> DraggableButton,
-    AddDraggableMenu: (self: Library, Name: string) -> (Frame, Frame),
+    AddDraggableMenu: (self: Library, Name: string, Info: DraggableMenuInfo?) -> (Frame, Frame),
     AddKeybindMenuButton: (self: Library, Info: KeybindMenuButtonInfo | string) -> KeybindMenuButton,
     AddKeybindMenuToggle: (
         (self: Library, Idx: string, Info: KeybindMenuToggleInfo) -> KeybindMenuToggle
@@ -1501,6 +1505,7 @@ export type Library = {
             ShowCustomCursor: boolean?,
             Font: Font | Enum.Font | CustomFont?,
             ToggleKeybind: Enum.KeyCode?,
+            KeybindMenuWidth: number?,
             MobileButtonsSide: "Left" | "Right"?,
             MobileButtonsMode: "Normal" | "TopbarPlus"?,
             UnlockMouseWhileOpen: boolean?,

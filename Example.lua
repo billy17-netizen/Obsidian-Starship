@@ -110,23 +110,12 @@ UISettingsTab:UpdateWarningBox({
 -- except Tabboxes you have to call the functions on a tab (Tabbox:AddTab(Name))
 local LeftGroupBox = Tabs.Main:AddLeftGroupbox("Groupbox", "boxes")
 local CustomFontBox = Tabs.Main:AddRightGroupbox("Custom Fonts", "type")
-local FullMediaBox = Tabs.Main:AddFullGroupbox("Full Width Media + Sprite", "sparkles")
+local FullMediaBox = Tabs.Main:AddFullGroupbox("Full Width Media", "sparkles")
 local ArisuDanceSpriteUrl = RepoAsset("assets/sprites/ArisuDanceSheet.png")
 
 FullMediaBox:AddLabel({
-    Text = "Full-width groupboxes sit above the normal left/right columns. Sprite sheets can be loaded from any direct image URL and animated with frame metadata.",
+    Text = "Full-width groupboxes sit above the normal left/right columns. The animated sprite demo is floating above the UI near the search bar.",
     DoesWrap = true,
-})
-FullMediaBox:AddSprite("ArisuDanceSprite", {
-    Image = ArisuDanceSpriteUrl,
-    FileName = "ArisuDanceSheet.png",
-    FrameSize = Vector2.new(64, 64),
-    FrameCount = 8,
-    Columns = 8,
-    Fps = 10,
-    Loop = true,
-    Playing = true,
-    Height = 92,
 })
 
 -- Direct MP4 URL example:
@@ -144,9 +133,10 @@ local FloatingArisu = Library:AddFloatingSprite({
     FrameCount = 8,
     Columns = 8,
     Fps = 10,
-    Position = UDim2.new(0.68, 0, 0, 72),
-    Size = UDim2.fromOffset(74, 74),
+    Position = UDim2.new(0.7, 0, 0, 70),
+    Size = UDim2.fromOffset(90, 90),
     Visible = true,
+    ZIndex = 12050,
 })
 
 Library:AddKeybindMenuButton({

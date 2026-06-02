@@ -442,6 +442,7 @@ local Templates = {
         ShowMobileButtons = true,
         MobileButtonsSide = "Left",
         MobileButtonsMode = "Normal", -- Normal, TopbarPlus
+        KeybindMenuWidth = 300,
 
         UnlockMouseWhileOpen = true,
 
@@ -1740,11 +1741,11 @@ function Library:AnimateIconSprite(ImageObject: ImageLabel | ImageButton, AtlasI
     end
 
     local AnimationId = string.sub(tostring({}), 10)
-    ImageObject:SetAttribute("ObsidianSpriteAnimation", AnimationId)
+    ImageObject:SetAttribute("ObsidianSpriteId", AnimationId)
 
     task.spawn(function()
         local Index = 1
-        while ImageObject.Parent and ImageObject:GetAttribute("ObsidianSpriteAnimation") == AnimationId do
+        while ImageObject.Parent and ImageObject:GetAttribute("ObsidianSpriteId") == AnimationId do
             local Frame = Frames[Index]
             if Frame then
                 ImageObject.ImageRectOffset = Frame.Offset or Frame.ImageRectOffset or Vector2.zero
@@ -1767,7 +1768,7 @@ end
 
 function Library:StopIconSpriteAnimation(ImageObject: ImageLabel | ImageButton)
     if ImageObject then
-        ImageObject:SetAttribute("ObsidianSpriteAnimation", nil)
+        ImageObject:SetAttribute("ObsidianSpriteId", nil)
     end
 end
 
@@ -2463,12 +2464,15 @@ function Library:AddDraggableButton(Text: string, Func, ExcludeScaling: boolean?
     return Table
 end
 
-function Library:AddDraggableMenu(Name: string)
+function Library:AddDraggableMenu(Name: string, Info)
+    Info = typeof(Info) == "table" and Info or {}
+    local Width = math.max(180, Info.Width or 280)
+
     local Holder = New("Frame", {
-        AutomaticSize = Enum.AutomaticSize.XY,
+        AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundColor3 = "BackgroundColor",
         Position = UDim2.fromOffset(6, 6),
-        Size = UDim2.fromOffset(0, 0),
+        Size = UDim2.fromOffset(Width, 0),
         ZIndex = 10,
         Parent = ScreenGui,
     })
@@ -2507,9 +2511,10 @@ function Library:AddDraggableMenu(Name: string)
     })
 
     local Container = New("Frame", {
+        AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
         Position = UDim2.fromOffset(0, 35),
-        Size = UDim2.new(1, 0, 1, -35),
+        Size = UDim2.new(1, 0, 0, 0),
         Parent = Holder,
     })
     New("UIListLayout", {
@@ -2570,6 +2575,7 @@ function Library:AddKeybindMenuButton(Info)
         Text = Button.Text,
         TextSize = Info.TextSize or 13,
         TextTransparency = Button.Disabled and 0.75 or 0.08,
+        TextTruncate = Enum.TextTruncate.AtEnd,
         Parent = Holder,
     })
 
@@ -2663,6 +2669,7 @@ function Library:AddKeybindMenuToggle(Idx, Info)
         Text = Toggle.Text,
         TextSize = Info.TextSize or 13,
         TextTransparency = 0.4,
+        TextTruncate = Enum.TextTruncate.AtEnd,
         TextXAlignment = Enum.TextXAlignment.Left,
         Parent = Holder,
     })
@@ -3310,6 +3317,7 @@ do
         do
             local Holder = New("TextButton", {
                 BackgroundTransparency = 1,
+                ClipsDescendants = true,
                 Size = UDim2.new(1, 0, 0, 24),
                 Text = "",
                 Visible = not Info.NoUI,
@@ -3317,12 +3325,13 @@ do
             })
 
             local Label = New("TextLabel", {
-                AutomaticSize = Enum.AutomaticSize.X,
                 BackgroundTransparency = 1,
-                Size = UDim2.fromScale(0, 1),
+                Size = UDim2.fromScale(1, 1),
                 Text = "",
                 TextSize = 14,
                 TextTransparency = 0.5,
+                TextTruncate = Enum.TextTruncate.AtEnd,
+                TextXAlignment = Enum.TextXAlignment.Left,
                 Parent = Holder,
             })
 
@@ -3400,6 +3409,7 @@ do
 
                 Holder.Active = not Normal
                 Label.Position = Normal and UDim2.fromOffset(0, 0) or UDim2.fromOffset(48, 0)
+                Label.Size = Normal and UDim2.fromScale(1, 1) or UDim2.new(1, -48, 1, 0)
                 Track.Visible = not Normal
             end
 
@@ -9271,7 +9281,9 @@ function Library:CreateWindow(WindowInfo)
             FullscreenBackground.BackgroundTransparency = math.max(0.95, WindowInfo.FullscreenBackgroundTransparency)
         end
 
-        Library.KeybindFrame, Library.KeybindContainer = Library:AddDraggableMenu("Keybinds")
+        Library.KeybindFrame, Library.KeybindContainer = Library:AddDraggableMenu("Keybinds", {
+            Width = WindowInfo.KeybindMenuWidth,
+        })
         Library.KeybindFrame.AnchorPoint = Vector2.new(0, 0.5)
         Library.KeybindFrame.Position = UDim2.new(0, 6, 0.5, 0)
         Library.KeybindFrame.Visible = false
