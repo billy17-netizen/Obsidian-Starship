@@ -6,7 +6,8 @@
 + Library:AddKeybindMenuButton() and Library:AddKeybindMenuToggle()
 + Groupbox:AddSprite(), Library:AddFloatingSprite(), Library:DownloadSprite(), and Library:DownloadVideo()
 + BackgroundImage and fullscreen background image URLs now download through Library.ImageManager
-+ Premium Library:CreateLoading() animations with entrance/exit motion, backdrop fade, ambient gradient, particles, icon pulse rings, progress shimmer, and animated text
++ Premium Library:CreateLoading() animations with entrance/exit motion, backdrop fade, ambient gradient, particles, icon pulse rings, textured progress, and animated text
++ Loading progress bar texture and 32fps black-hole spritesheet ring for Library:CreateLoading()
 
 [changes]
 + KeyPicker synced keybind toggles now render as liquid-glass pill switches
@@ -14,6 +15,7 @@
 + Example sprite animation now renders as a floating sprite near the top search area instead of inside the groupbox
 + Example.lua adds a premium loading preview button for testing the new loading animation stack
 + Shiny button and loading shimmer effects now use bounded PNG image masks with clipping instead of oversized rotated frames
++ Loading no longer uses the old full-panel shine sweep; progress animation now stays clipped inside the bar texture
 ```
 
 ## 21.04.2026

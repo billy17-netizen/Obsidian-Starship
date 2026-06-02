@@ -71,10 +71,18 @@ local CustomImageManagerAssets = {
         Id = nil,
     },
 
-    LoadingShine = {
+    LoadingBarTexture = {
         RobloxId = 0,
-        Path = "Obsidian/assets/LoadingShine.png",
-        URL = BaseURL .. "assets/LoadingShine.png",
+        Path = "Obsidian/assets/LoadingBarTexture.png",
+        URL = BaseURL .. "assets/LoadingBarTexture.png",
+
+        Id = nil,
+    },
+
+    BlackHoleLoadingSheet = {
+        RobloxId = 0,
+        Path = "Obsidian/assets/BlackHoleLoadingSheet.png",
+        URL = BaseURL .. "assets/BlackHoleLoadingSheet.png",
 
         Id = nil,
     },
@@ -498,7 +506,18 @@ local Templates = {
         Backdrop = true,
         BackdropTransparency = 0.35,
         IconPulse = true,
-        ProgressShine = true,
+        BlackHole = true,
+        BlackHoleImage = CustomImageManager.GetAsset("BlackHoleLoadingSheet"),
+        BlackHoleFrameRate = 32,
+        BlackHoleFrameCount = 32,
+        BlackHoleColumns = 8,
+        BlackHoleFrameSize = Vector2.new(64, 64),
+        BlackHoleTransparency = 0.04,
+        ProgressShine = false,
+        ProgressTexture = true,
+        ProgressTextureImage = CustomImageManager.GetAsset("LoadingBarTexture"),
+        ProgressTextureTransparency = 0.28,
+        ProgressTextureSpeed = 1.35,
         Particles = true,
         ParticleCount = 16,
 
@@ -12336,6 +12355,25 @@ function Library:CreateLoading(LoadingInfo)
 
     local BackdropTransparency = math.clamp(tonumber(LoadingInfo.BackdropTransparency) or 0.35, 0, 1)
     local ParticleCount = math.clamp(math.floor(tonumber(LoadingInfo.ParticleCount) or 0), 0, 48)
+    local BlackHoleFrameSize = typeof(LoadingInfo.BlackHoleFrameSize) == "Vector2" and LoadingInfo.BlackHoleFrameSize
+        or Vector2.new(64, 64)
+    local BlackHoleFrameRate = math.max(1, tonumber(LoadingInfo.BlackHoleFrameRate) or 32)
+    local BlackHoleFrameCount = math.max(1, math.floor(tonumber(LoadingInfo.BlackHoleFrameCount) or 32))
+    local BlackHoleColumns = math.max(1, math.floor(tonumber(LoadingInfo.BlackHoleColumns) or 8))
+    local BlackHoleTransparency = math.clamp(tonumber(LoadingInfo.BlackHoleTransparency) or 0.04, 0, 1)
+    local UseBlackHole = LoadingInfo.Animated and LoadingInfo.BlackHole
+    local UseProgressTexture = LoadingInfo.ProgressTexture or LoadingInfo.ProgressShine
+    local ProgressTextureTransparency = math.clamp(tonumber(LoadingInfo.ProgressTextureTransparency) or 0.28, 0, 1)
+    local ProgressTextureSpeed = math.max(0, tonumber(LoadingInfo.ProgressTextureSpeed) or 1.35)
+    local ProgressTextureImage = LoadingInfo.ProgressTextureImage
+    if tonumber(ProgressTextureImage) then
+        ProgressTextureImage = string.format("rbxassetid://%s", tostring(ProgressTextureImage))
+    elseif IsHttpUrl(ProgressTextureImage) then
+        ProgressTextureImage = Library:DownloadImage(ProgressTextureImage, {
+            AssetName = "LoadingBarTexture_" .. HashString(ProgressTextureImage),
+            Extension = "png",
+        })
+    end
 
     --// ScreenGui \\--
     local ScreenGui = New("ScreenGui", {
@@ -12437,22 +12475,6 @@ function Library:CreateLoading(LoadingInfo)
             { Rotation = 380 }
         )
 
-        local Sweep = New("ImageLabel", {
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            BackgroundTransparency = 1,
-            Image = CustomImageManager.GetAsset("LoadingShine"),
-            ImageTransparency = 0.08,
-            Position = UDim2.new(-0.2, 0, 0.5, 0),
-            ScaleType = Enum.ScaleType.Stretch,
-            Size = UDim2.new(0.24, 0, 1, 0),
-            ZIndex = 1,
-            Parent = MainFrame,
-        })
-        TweenObject(
-            Sweep,
-            TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1),
-            { Position = UDim2.new(1.22, 0, 0.5, 0) }
-        )
     end
 
     if LoadingInfo.Animated and LoadingInfo.Particles and ParticleCount > 0 then
@@ -12623,13 +12645,58 @@ function Library:CreateLoading(LoadingInfo)
         Parent = InnerContent,
     })
 
-    if LoadingInfo.Animated and LoadingInfo.IconPulse then
+    if UseBlackHole then
+        local BlackHoleImage = LoadingInfo.BlackHoleImage
+        if tonumber(BlackHoleImage) then
+            BlackHoleImage = string.format("rbxassetid://%s", tostring(BlackHoleImage))
+        elseif IsHttpUrl(BlackHoleImage) then
+            BlackHoleImage = Library:DownloadImage(BlackHoleImage, {
+                AssetName = "LoadingBlackHole_" .. HashString(BlackHoleImage),
+                Extension = "png",
+            })
+        end
+
+        local BlackHoleSprite = New("ImageLabel", {
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            BackgroundTransparency = 1,
+            Image = BlackHoleImage,
+            ImageRectOffset = Vector2.zero,
+            ImageRectSize = BlackHoleFrameSize,
+            ImageTransparency = BlackHoleTransparency,
+            Position = UDim2.fromScale(0.5, 0.5),
+            ScaleType = Enum.ScaleType.Stretch,
+            Size = UDim2.fromScale(1, 1),
+            ZIndex = 1,
+            Parent = IconHolder,
+        })
+
+        local LastFrame = -1
+        TrackConnection(RunService.RenderStepped:Connect(function()
+            if not LoadingAnimations.Running then
+                return
+            end
+
+            local Frame = math.floor(os.clock() * BlackHoleFrameRate) % BlackHoleFrameCount
+            if Frame == LastFrame then
+                return
+            end
+
+            LastFrame = Frame
+            BlackHoleSprite.ImageRectOffset = Vector2.new(
+                (Frame % BlackHoleColumns) * BlackHoleFrameSize.X,
+                math.floor(Frame / BlackHoleColumns) * BlackHoleFrameSize.Y
+            )
+        end))
+    end
+
+    if LoadingInfo.Animated and LoadingInfo.IconPulse and not UseBlackHole then
         for Index = 1, 2 do
             local Ring = New("Frame", {
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 BackgroundTransparency = 1,
                 Position = UDim2.fromScale(0.5, 0.5),
                 Size = UDim2.fromScale(0.58, 0.58),
+                ZIndex = 2,
                 Parent = IconHolder,
             })
             table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Ring }))
@@ -12659,12 +12726,13 @@ function Library:CreateLoading(LoadingInfo)
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundTransparency = 1,
         Position = UDim2.fromScale(0.5, 0.5),
-        Size = UDim2.fromScale(1, 1),
+        Size = UseBlackHole and UDim2.fromScale(0.58, 0.58) or UDim2.fromScale(1, 1),
         Image = LoaderIcon.Url,
         ImageRectOffset = LoaderIcon.ImageRectOffset,
         ImageRectSize = LoaderIcon.ImageRectSize,
         ImageColor3 = LoadingInfo.LoadingIconColor
             or ((LoadingInfo.LoadingIcon == Templates.Loading.LoadingIcon) and "AccentColor" or "WhiteColor"),
+        ZIndex = 3,
         Parent = IconHolder,
     })
 
@@ -12672,7 +12740,7 @@ function Library:CreateLoading(LoadingInfo)
         TweenObject(
             LoadingIcon,
             TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
-            { Size = UDim2.fromScale(0.9, 0.9) }
+            { Size = UseBlackHole and UDim2.fromScale(0.52, 0.52) or UDim2.fromScale(0.9, 0.9) }
         )
     end
 
@@ -12763,7 +12831,7 @@ function Library:CreateLoading(LoadingInfo)
         New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius / 2), Parent = SliderFill })
     )
 
-    if LoadingInfo.Animated and LoadingInfo.ProgressShine then
+    if UseProgressTexture then
         Library:AddGradient(SliderFill, {
             Rotation = 0,
             Transparency = NumberSequence.new({
@@ -12773,21 +12841,26 @@ function Library:CreateLoading(LoadingInfo)
             }),
         })
 
-        local SliderShine = New("ImageLabel", {
-            AnchorPoint = Vector2.new(0.5, 0.5),
+        local ProgressTexture = New("ImageLabel", {
             BackgroundTransparency = 1,
-            Image = CustomImageManager.GetAsset("ShinyEffect"),
-            ImageTransparency = 0,
-            Position = UDim2.new(-0.25, 0, 0.5, 0),
-            ScaleType = Enum.ScaleType.Stretch,
-            Size = UDim2.new(0.38, 0, 1, 0),
+            Image = ProgressTextureImage,
+            ImageColor3 = "WhiteColor",
+            ImageTransparency = ProgressTextureTransparency,
+            Position = UDim2.fromOffset(0, 0),
+            ScaleType = Enum.ScaleType.Tile,
+            Size = UDim2.new(1, 64, 1, 0),
+            TileSize = UDim2.fromOffset(64, 16),
+            ZIndex = 1,
             Parent = SliderFill,
         })
-        TweenObject(
-            SliderShine,
-            TweenInfo.new(1.25, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1),
-            { Position = UDim2.new(1.25, 0, 0.5, 0) }
-        )
+
+        if LoadingInfo.Animated and ProgressTextureSpeed > 0 then
+            TweenObject(
+                ProgressTexture,
+                TweenInfo.new(ProgressTextureSpeed, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1),
+                { Position = UDim2.fromOffset(-64, 0) }
+            )
+        end
     end
 
     local ProgressLabel = New("TextLabel", {
