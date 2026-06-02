@@ -20,7 +20,8 @@ This fork keeps the familiar Obsidian/Linoria-style API while adding quality-of-
 - Advanced custom fonts: `Library.Font:Download(url)` / `Library:DownloadFont(url)` loads a bitmap-font JSON manifest from any internet URL, downloads atlas pages, and renders text with `ImageLabel` glyphs through `Library:CreateCustomText()` or `Groupbox:AddCustomFontLabel()` (TTF/OTF files need to be converted to a bitmap atlas manifest first).
 - Layout modes: set `TabsMode = "Sidebar"` or `"Topbar"` and `TabStyle = "Card"` for card-like tab buttons.
 - Sprite icon animation: use `Library:AnimateIconSprite(imageLabel, atlasInfo)` with atlas frames/size/columns and stop with `Library:StopIconSpriteAnimation(...)`.
-- Advanced card dropdowns: set `CardDropdown = true` and provide `Cards` with thumbnails, bottom-bar transparency, icon, title, description, and per-card stroke options.
+- Advanced card dropdowns: set `CardDropdown = true` and provide `Cards` with thumbnails or code-native preview colors/gradients, bottom-bar transparency, icon, title, description, and per-card stroke options.
+- Gradient themes: ThemeManager includes 17 new gradient presets and the built-in theme picker renders as searchable preview cards in UI Settings.
 - The original `Library:Notify({...})` API still works and now accepts `Type`/`Variant`, `AccentColor`, `Progress`, `Actions`, `CloseButton`, and `Dismissible` fields.
 
-See `Example.lua` for a complete notification and key-system showcase alongside the standard Obsidian element examples. The example loads this fork from `https://raw.githubusercontent.com/tanhoangviet/Obsidian-UI-Modded/refs/heads/main/`.
+See `Example.lua` for a complete notification and key-system showcase alongside the standard Obsidian element examples. The example loads this fork from `https://raw.githubusercontent.com/tanhoangviet/Obsidian-UI-Modded/main/`.

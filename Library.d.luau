@@ -279,6 +279,19 @@ export type DropdownCardInfo = {
     StrokeColor: Color3 | string?,
     StrokeThickness: number?,
     StrokeTransparency: number?,
+    GradientColorSequence: ColorSequence?,
+    Gradient: ColorSequence?,
+    PreviewGradient: ColorSequence?,
+    GradientTransparency: NumberSequence?,
+    PreviewGradientTransparency: NumberSequence?,
+    GradientRotation: number?,
+    PreviewGradientRotation: number?,
+    PreviewBackgroundColor: Color3 | string?,
+    PreviewMainColor: Color3 | string?,
+    PreviewAccentColor: Color3 | string?,
+    PreviewOutlineColor: Color3 | string?,
+    PreviewFontColor: Color3 | string?,
+    PreviewSwatches: { Color3 | string }?,
 }
 
 export type DropdownInfo = {
@@ -1105,6 +1118,8 @@ export type Library = {
     Options: { [string | number]: Option },
     Font: CustomFontManager,
     CustomFont: CustomFont?,
+    Window: Window?,
+    Windows: { Window },
     NotifySide: "Right" | "Left",
     ShowCustomCursor: boolean,
     ForceCheckbox: boolean,
@@ -1178,6 +1193,26 @@ export type Library = {
     applynewelments: (self: Library, Target: any?) -> any,
     applynewelements: (self: Library, Target: any?) -> any,
     UpdateColorsUsingRegistry: (self: Library) -> (),
+    SetGradient: (
+        self: Library,
+        Enabled: boolean,
+        GradientInfo: {
+            Color: ColorSequence?,
+            ColorSequence: ColorSequence?,
+            Rotation: number?,
+            Transparency: NumberSequence?,
+        }?
+    ) -> (),
+    SetWindowGradient: (
+        self: Library,
+        Enabled: boolean,
+        GradientInfo: {
+            Color: ColorSequence?,
+            ColorSequence: ColorSequence?,
+            Rotation: number?,
+            Transparency: NumberSequence?,
+        }?
+    ) -> (),
     UpdateDPI: (self: Library, Instance: GuiObject, Properties: { [string]: any }) -> (),
     SetDPIScale: (self: Library, DPIScale: number) -> (),
     GiveSignal: (self: Library, Connection: RBXScriptConnection) -> RBXScriptConnection,

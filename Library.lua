@@ -214,6 +214,8 @@ local Library = {
     BackgroundImageSurfaces = {},
     BackgroundImageContentTransparency = 0.35,
     BackgroundImagePanelTransparency = 0.16,
+    Window = nil,
+    Windows = {},
 
     OriginalMinSize = Vector2.new(480, 360),
     MinSize = Vector2.new(480, 360),
@@ -5987,6 +5989,14 @@ do
             Card.Icon = ResolveImage(Card.Icon or (Dropdown.ValueImages and Dropdown.ValueImages[Value]))
             Card.BottomBarTransparency = Card.BottomBarTransparency or Info.CardBottomBarTransparency
             Card.ImageTransparency = Card.ImageTransparency or Info.CardImageTransparency
+            Card.GradientColorSequence = Card.GradientColorSequence or Card.Gradient or Card.PreviewGradient
+            Card.GradientTransparency = Card.GradientTransparency or Card.PreviewGradientTransparency
+            Card.GradientRotation = Card.GradientRotation or Card.PreviewGradientRotation
+            Card.PreviewBackgroundColor = Card.PreviewBackgroundColor or Card.BackgroundColor
+            Card.PreviewMainColor = Card.PreviewMainColor or Card.MainColor
+            Card.PreviewAccentColor = Card.PreviewAccentColor or Card.AccentColor
+            Card.PreviewOutlineColor = Card.PreviewOutlineColor or Card.OutlineColor
+            Card.PreviewFontColor = Card.PreviewFontColor or Card.FontColor
 
             return Card
         end
@@ -6164,6 +6174,144 @@ do
                         Transparency = CardInfo.StrokeTransparency or 0.35,
                         ShadowTransparency = 1,
                     })
+
+                    local HasPreviewCard = not CardInfo.Thumbnail
+                        and (
+                            CardInfo.GradientColorSequence
+                            or CardInfo.PreviewBackgroundColor
+                            or CardInfo.PreviewMainColor
+                            or CardInfo.PreviewAccentColor
+                            or CardInfo.PreviewSwatches
+                        )
+
+                    if HasPreviewCard then
+                        local ResolvePreviewColor = function(Color, Default)
+                            local SchemeColor = GetSchemeValue(Color)
+                            if SchemeColor then
+                                return SchemeColor
+                            end
+
+                            if typeof(Color) == "Color3" then
+                                return Color
+                            end
+
+                            return GetSchemeValue(Default) or Library.Scheme[Default]
+                        end
+
+                        local PreviewBackgroundColor = ResolvePreviewColor(CardInfo.PreviewBackgroundColor, "BackgroundColor")
+                        local PreviewMainColor = ResolvePreviewColor(CardInfo.PreviewMainColor, "MainColor")
+                        local PreviewAccentColor = ResolvePreviewColor(CardInfo.PreviewAccentColor, "AccentColor")
+                        local PreviewOutlineColor = ResolvePreviewColor(CardInfo.PreviewOutlineColor, "OutlineColor")
+                        local PreviewFontColor = ResolvePreviewColor(CardInfo.PreviewFontColor, "FontColor")
+
+                        Container.BackgroundColor3 = PreviewBackgroundColor
+                        Container.BackgroundTransparency = 0.15
+
+                        if CardInfo.GradientColorSequence then
+                            Library:AddGradient(Container, {
+                                Color = CardInfo.GradientColorSequence,
+                                Rotation = CardInfo.GradientRotation or 35,
+                                Transparency = CardInfo.GradientTransparency or NumberSequence.new({
+                                    NumberSequenceKeypoint.new(0, 0.05),
+                                    NumberSequenceKeypoint.new(1, 0.35),
+                                }),
+                            })
+                        end
+
+                        local PreviewPanel = New("Frame", {
+                            BackgroundColor3 = PreviewMainColor,
+                            BackgroundTransparency = 0.16,
+                            Position = UDim2.fromOffset(8, 8),
+                            Size = UDim2.new(1, -16, 0, math.max(26, Dropdown.CardHeight - 47)),
+                            Parent = Container,
+                        })
+                        table.insert(
+                            Library.Corners,
+                            New("UICorner", {
+                                CornerRadius = UDim.new(0, math.max(2, Library.CornerRadius - 1)),
+                                Parent = PreviewPanel,
+                            })
+                        )
+                        Library:AddOutline(PreviewPanel, {
+                            Color = PreviewOutlineColor,
+                            Transparency = 0.45,
+                            ShadowTransparency = 1,
+                        })
+
+                        local AccentPill = New("Frame", {
+                            BackgroundColor3 = PreviewAccentColor,
+                            BackgroundTransparency = 0,
+                            Position = UDim2.fromOffset(7, 7),
+                            Size = UDim2.fromOffset(34, 6),
+                            Parent = PreviewPanel,
+                        })
+                        table.insert(
+                            Library.Corners,
+                            New("UICorner", {
+                                CornerRadius = UDim.new(1, 0),
+                                Parent = AccentPill,
+                            })
+                        )
+
+                        for Index = 1, 2 do
+                            local TextLine = New("Frame", {
+                                BackgroundColor3 = PreviewFontColor,
+                                BackgroundTransparency = Index == 1 and 0.2 or 0.55,
+                                Position = UDim2.new(0, 7, 0, 15 + (Index * 7)),
+                                Size = UDim2.new(Index == 1 and 0.72 or 0.52, -7, 0, 4),
+                                Parent = PreviewPanel,
+                            })
+                            table.insert(
+                                Library.Corners,
+                                New("UICorner", {
+                                    CornerRadius = UDim.new(1, 0),
+                                    Parent = TextLine,
+                                })
+                            )
+                        end
+
+                        local Swatches = CardInfo.PreviewSwatches
+                            or {
+                                PreviewBackgroundColor,
+                                PreviewMainColor,
+                                PreviewAccentColor,
+                                PreviewOutlineColor,
+                                PreviewFontColor,
+                            }
+                        local SwatchHolder = New("Frame", {
+                            AnchorPoint = Vector2.new(1, 0),
+                            BackgroundTransparency = 1,
+                            Position = UDim2.new(1, -7, 0, 7),
+                            Size = UDim2.fromOffset(52, 8),
+                            Parent = PreviewPanel,
+                        })
+                        New("UIListLayout", {
+                            FillDirection = Enum.FillDirection.Horizontal,
+                            Padding = UDim.new(0, 3),
+                            Parent = SwatchHolder,
+                        })
+
+                        for _, SwatchColor in ipairs(Swatches) do
+                            local Swatch = New("Frame", {
+                                BackgroundColor3 = ResolvePreviewColor(SwatchColor, "AccentColor"),
+                                BackgroundTransparency = 0,
+                                Size = UDim2.fromOffset(8, 8),
+                                Parent = SwatchHolder,
+                            })
+                            table.insert(
+                                Library.Corners,
+                                New("UICorner", {
+                                    CornerRadius = UDim.new(1, 0),
+                                    Parent = Swatch,
+                                })
+                            )
+                            Library:AddOutline(Swatch, {
+                                Color = PreviewOutlineColor,
+                                Transparency = 0.45,
+                                ShadowTransparency = 1,
+                            })
+                        end
+                    end
 
                     Image = CardInfo.Thumbnail
                         and New("ImageLabel", {
@@ -8873,9 +9021,14 @@ function Library:CreateWindow(WindowInfo)
 
     function Window:SetGradient(Enabled: boolean, GradientInfo)
         WindowInfo.Gradient = Enabled == true
+        if GradientInfo then
+            WindowInfo.GradientColorSequence = GradientInfo.Color or GradientInfo.ColorSequence or WindowInfo.GradientColorSequence
+            WindowInfo.GradientRotation = GradientInfo.Rotation or WindowInfo.GradientRotation
+            WindowInfo.GradientTransparency = GradientInfo.Transparency or WindowInfo.GradientTransparency
+        end
 
         if not WindowGradient and WindowInfo.Gradient then
-            WindowGradient = Library:AddGradient(MainFrame, GradientInfo or {
+            WindowGradient = Library:AddGradient(MainFrame, {
                 Color = WindowInfo.GradientColorSequence,
                 Rotation = WindowInfo.GradientRotation,
                 Transparency = WindowInfo.GradientTransparency,
@@ -8885,9 +9038,9 @@ function Library:CreateWindow(WindowInfo)
         end
 
         if WindowGradient and GradientInfo then
-            WindowGradient.Color = GradientInfo.Color or GradientInfo.ColorSequence or WindowGradient.Color
-            WindowGradient.Rotation = GradientInfo.Rotation or WindowGradient.Rotation
-            WindowGradient.Transparency = GradientInfo.Transparency or WindowGradient.Transparency
+            WindowGradient.Color = WindowInfo.GradientColorSequence
+            WindowGradient.Rotation = WindowInfo.GradientRotation
+            WindowGradient.Transparency = WindowInfo.GradientTransparency
         end
     end
 
@@ -11278,8 +11431,20 @@ function Library:CreateWindow(WindowInfo)
         Library.IsRobloxFocused = false
     end))
 
+    Library.Window = Window
+    table.insert(Library.Windows, Window)
+
     return Window
 end
+
+function Library:SetGradient(Enabled: boolean, GradientInfo)
+    local Window = Library.Window
+    if Window and Window.SetGradient then
+        return Window:SetGradient(Enabled, GradientInfo)
+    end
+end
+
+Library.SetWindowGradient = Library.SetGradient
 
 function Library:CreateLoading(LoadingInfo)
     if Library.ActiveLoading then
