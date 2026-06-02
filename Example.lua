@@ -36,7 +36,9 @@ local Window = Library:CreateWindow({
 
     -- Modded visuals: background image, gradient overlay, and custom border stroke.
     BackgroundImage = "rbxassetid://14909902842",
-    BackgroundImageTransparency = 0.82,
+    BackgroundImageTransparency = 0.9,
+    BackgroundImageContentTransparency = 0.2,
+    BackgroundImagePanelTransparency = 0.08,
     Gradient = true,
     GradientColorSequence = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(125, 85, 255)),

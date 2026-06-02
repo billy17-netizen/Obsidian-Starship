@@ -13,7 +13,7 @@ This fork keeps the familiar Obsidian/Linoria-style API while adding quality-of-
 - Progress notifications: pass `Progress = 0` and update it later with `Notification:SetProgress(0.5)` for long-running jobs.
 - Dismissible toasts: notifications include a close button by default; use `CloseButton = false` or `Dismissible = false` to hide it.
 - Improved key tabs: `AddKeyBox` now supports expected-key validation, Enter-to-submit, status text, auto-clear behavior, and dynamic `SetExpectedKey` updates.
-- Visual polish: windows support `BackgroundImage`, image transparency, gradient overlays, and custom border/shadow stroke settings.
+- Visual polish: windows support `BackgroundImage`, image transparency, content/panel image overlay transparency, gradient overlays, and custom border/shadow stroke settings.
 - Dashboard tab: `Window:AddDashboardTab()` creates a ready-made landing tab with overview panels, status cards, and quick actions.
 - New element pack: `Library:ApplyNewElements()` exposes glass panels, liquid-glass toggles/buttons, highlight buttons, and shiny animated buttons on groupboxes.
 - Nested tabboxes: `Groupbox:AddTabbox()` creates tabbed sections inside any groupbox, so compact category panels can hold their own sub-tabs.

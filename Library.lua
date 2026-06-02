@@ -212,8 +212,8 @@ local Library = {
     UnloadSignals = {},
     HasBackgroundImage = false,
     BackgroundImageSurfaces = {},
-    BackgroundImageContentTransparency = 0.35,
-    BackgroundImagePanelTransparency = 0.16,
+    BackgroundImageContentTransparency = 0.2,
+    BackgroundImagePanelTransparency = 0.08,
     Window = nil,
     Windows = {},
 
@@ -333,10 +333,10 @@ local Templates = {
             NumberSequenceKeypoint.new(1, 1),
         }),
         GradientRotation = 35,
-        BackgroundImageTransparency = 0.75,
+        BackgroundImageTransparency = 0.88,
         BackgroundImageScaleType = Enum.ScaleType.Crop,
-        BackgroundImageContentTransparency = 0.35,
-        BackgroundImagePanelTransparency = 0.16,
+        BackgroundImageContentTransparency = 0.2,
+        BackgroundImagePanelTransparency = 0.08,
         BorderColor = "OutlineColor",
         BorderThickness = 1,
         BorderTransparency = 0,
@@ -9018,6 +9018,33 @@ function Library:CreateWindow(WindowInfo)
         WindowInfo.BackgroundImageTransparency = math.clamp(Transparency, 0, 1)
         BackgroundImage.ImageTransparency = WindowInfo.BackgroundImageTransparency
     end
+
+    function Window:SetBackgroundImageSurfaceTransparency(ContentTransparency: number?, PanelTransparency: number?)
+        if ContentTransparency ~= nil then
+            assert(
+                typeof(ContentTransparency) == "number",
+                "Expected number for ContentTransparency got: " .. typeof(ContentTransparency)
+            )
+            WindowInfo.BackgroundImageContentTransparency = math.clamp(ContentTransparency, 0, 1)
+            Library.BackgroundImageContentTransparency = WindowInfo.BackgroundImageContentTransparency
+        end
+
+        if PanelTransparency ~= nil then
+            assert(
+                typeof(PanelTransparency) == "number",
+                "Expected number for PanelTransparency got: " .. typeof(PanelTransparency)
+            )
+            WindowInfo.BackgroundImagePanelTransparency = math.clamp(PanelTransparency, 0, 1)
+            Library.BackgroundImagePanelTransparency = WindowInfo.BackgroundImagePanelTransparency
+        elseif ContentTransparency ~= nil then
+            WindowInfo.BackgroundImagePanelTransparency = math.clamp(ContentTransparency, 0, 1)
+            Library.BackgroundImagePanelTransparency = WindowInfo.BackgroundImagePanelTransparency
+        end
+
+        UpdateBackgroundImageSurfaces()
+    end
+
+    Window.SetBackgroundImageLayerTransparency = Window.SetBackgroundImageSurfaceTransparency
 
     function Window:SetGradient(Enabled: boolean, GradientInfo)
         WindowInfo.Gradient = Enabled == true

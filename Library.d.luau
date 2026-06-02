@@ -1064,6 +1064,16 @@ export type Window = {
     ChangeFooter: (self: Window, Footer: string) -> (),
     SetBackgroundImage: (self: Window, Image: string) -> (),
     SetBackgroundImageTransparency: (self: Window, Transparency: number) -> (),
+    SetBackgroundImageSurfaceTransparency: (
+        self: Window,
+        ContentTransparency: number?,
+        PanelTransparency: number?
+    ) -> (),
+    SetBackgroundImageLayerTransparency: (
+        self: Window,
+        ContentTransparency: number?,
+        PanelTransparency: number?
+    ) -> (),
     SetGradient: (
         self: Window,
         Enabled: boolean,
