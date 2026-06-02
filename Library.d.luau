@@ -1165,6 +1165,73 @@ export type Dialog = {
     Dismiss: (self: Dialog) -> (),
 }
 
+export type LoadingErrorButtonInfo = {
+    Title: string?,
+    Variant: "Primary" | "Secondary" | "Destructive" | "Ghost"?,
+    Callback: ((Loading) -> ())?,
+}
+
+export type LoadingInfo = {
+    Title: string?,
+    Icon: string | number?,
+    IconSize: UDim2?,
+    LoadingIcon: string | number?,
+    LoadingIconColor: Color3 | string?,
+    LoadingIconTweenTime: number?,
+    Animated: boolean?,
+    EntranceAnimation: boolean?,
+    ExitAnimation: boolean?,
+    AmbientGradient: boolean?,
+    Backdrop: boolean?,
+    BackdropTransparency: number?,
+    IconPulse: boolean?,
+    ProgressShine: boolean?,
+    Particles: boolean?,
+    ParticleCount: number?,
+    CurrentStep: number?,
+    TotalSteps: number?,
+    ShowSidebar: boolean?,
+    AutoResizeHeight: boolean?,
+    WindowWidth: number?,
+    WindowHeight: number?,
+    ContentWidth: number?,
+    SidebarWidth: number?,
+}
+
+export type Loading = {
+    CurrentStep: number,
+    TotalSteps: number,
+    ShowSidebar: boolean,
+    AutoResizeHeight: boolean,
+    IsError: boolean,
+    Destroyed: boolean,
+    WindowWidth: number,
+    WindowHeight: number,
+    ContentWidth: number,
+    SidebarWidth: number,
+    ScreenGui: ScreenGui,
+    Sidebar: BaseGroupbox,
+
+    UpdateLayout: (self: Loading) -> (),
+    SetMessage: (self: Loading, Text: string) -> (),
+    SetDescription: (self: Loading, Text: string) -> (),
+    SetLoadingIcon: (self: Loading, Icon: string | number) -> (),
+    SetLoadingIconTweenTime: (self: Loading, TweenTime: number) -> (),
+    SetLoadingIconColor: (self: Loading, Color: Color3 | string) -> (),
+    SetCurrentStep: (self: Loading, Step: number) -> (),
+    SetTotalSteps: (self: Loading, Steps: number) -> (),
+    SetWindowHeight: (self: Loading, Height: number) -> (),
+    SetWindowWidth: (self: Loading, Width: number) -> (),
+    SetContentWidth: (self: Loading, Width: number) -> (),
+    SetSidebarWidth: (self: Loading, Width: number) -> (),
+    ShowSidebarPage: (self: Loading, Bool: boolean) -> (),
+    ShowErrorPage: (self: Loading, Enabled: boolean) -> (),
+    SetErrorMessage: (self: Loading, Text: string) -> (),
+    SetErrorButtons: (self: Loading, Buttons: { [string]: LoadingErrorButtonInfo }) -> (),
+    Destroy: (self: Loading) -> (),
+    Continue: (self: Loading) -> (),
+}
+
 export type Window = {
     IsSidebarCompacted: (self: Window) -> boolean,
     GetSidebarWidth: (self: Window) -> number,
@@ -1519,6 +1586,7 @@ export type Library = {
             CompactWidthActivation: number?,
         }
     ) -> Window,
+    CreateLoading: (self: Library, LoadingInfo: LoadingInfo?) -> Loading,
     Toggle: (self: Library, Value: boolean?) -> (),
 }
 

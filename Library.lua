@@ -475,6 +475,16 @@ local Templates = {
         LoadingIcon = CustomImageManager.GetAsset("LoadingIcon"),
         LoadingIconColor = nil,
         LoadingIconTweenTime = 1,
+        Animated = true,
+        EntranceAnimation = true,
+        ExitAnimation = true,
+        AmbientGradient = true,
+        Backdrop = true,
+        BackdropTransparency = 0.35,
+        IconPulse = true,
+        ProgressShine = true,
+        Particles = true,
+        ParticleCount = 16,
 
         CurrentStep = 0,
         TotalSteps = 10,
@@ -12256,7 +12266,7 @@ function Library:CreateLoading(LoadingInfo)
 
     local Loading = {
         CurrentStep = LoadingInfo.CurrentStep,
-        TotalSteps = LoadingInfo.TotalSteps,
+        TotalSteps = math.max(1, LoadingInfo.TotalSteps),
 
         ShowSidebar = LoadingInfo.ShowSidebar,
         AutoResizeHeight = LoadingInfo.AutoResizeHeight,
@@ -12272,6 +12282,48 @@ function Library:CreateLoading(LoadingInfo)
         SidebarWidth = LoadingInfo.SidebarWidth,
     }
 
+    local LoadingAnimations = {
+        Tweens = {},
+        Connections = {},
+        Running = true,
+    }
+
+    local function TrackTween(TweenObjectInstance: Tween)
+        table.insert(LoadingAnimations.Tweens, TweenObjectInstance)
+        TweenObjectInstance:Play()
+        return TweenObjectInstance
+    end
+
+    local function TrackConnection(Connection: RBXScriptConnection)
+        table.insert(LoadingAnimations.Connections, Connection)
+        return Connection
+    end
+
+    local function TweenObject(Object, Info, Properties)
+        return TrackTween(TweenService:Create(Object, Info, Properties))
+    end
+
+    local function StopLoadingAnimations()
+        LoadingAnimations.Running = false
+        for _, TweenObjectInstance in LoadingAnimations.Tweens do
+            pcall(function()
+                TweenObjectInstance:Cancel()
+                TweenObjectInstance:Destroy()
+            end)
+        end
+        table.clear(LoadingAnimations.Tweens)
+
+        for _, Connection in LoadingAnimations.Connections do
+            if Connection.Connected then
+                Connection:Disconnect()
+            end
+        end
+        table.clear(LoadingAnimations.Connections)
+    end
+
+    local BackdropTransparency = math.clamp(tonumber(LoadingInfo.BackdropTransparency) or 0.35, 0, 1)
+    local ParticleCount = math.clamp(math.floor(tonumber(LoadingInfo.ParticleCount) or 0), 0, 48)
+
     --// ScreenGui \\--
     local ScreenGui = New("ScreenGui", {
         Name = "ObsidianLoading",
@@ -12285,14 +12337,35 @@ function Library:CreateLoading(LoadingInfo)
         Library:RemoveFromRegistry(Instance)
     end)
 
+    local Backdrop
+    if LoadingInfo.Backdrop then
+        Backdrop = New("Frame", {
+            BackgroundColor3 = "DarkColor",
+            BackgroundTransparency = LoadingInfo.Animated and 1 or BackdropTransparency,
+            Size = UDim2.fromScale(1, 1),
+            ZIndex = 0,
+            Parent = ScreenGui,
+        })
+        if LoadingInfo.Animated then
+            TweenObject(
+                Backdrop,
+                TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                { BackgroundTransparency = BackdropTransparency }
+            )
+        end
+    end
+
     --// Main Frame \\--
+    local TargetScale = Library.IsMobile and 0.8 or 1
+    local UseEntranceAnimation = LoadingInfo.Animated and LoadingInfo.EntranceAnimation
     local MainFrame = New("TextButton", {
         Name = "Main",
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundColor3 = function()
             return Library:GetBetterColor(Library.Scheme.BackgroundColor, -1)
         end,
-        Position = UDim2.fromScale(0.5, 0.5),
+        BackgroundTransparency = UseEntranceAnimation and 1 or 0,
+        Position = UseEntranceAnimation and UDim2.new(0.5, 0, 0.5, 18) or UDim2.fromScale(0.5, 0.5),
         Size = UDim2.fromOffset(
             Loading.ShowSidebar and (Loading.ContentWidth + Loading.SidebarWidth) or Loading.WindowWidth,
             Loading.WindowHeight
@@ -12309,11 +12382,117 @@ function Library:CreateLoading(LoadingInfo)
     )
 
     local MainScale = New("UIScale", {
-        Scale = Library.IsMobile and 0.8 or 1,
+        Scale = UseEntranceAnimation and TargetScale * 0.94 or TargetScale,
         Parent = MainFrame,
     })
     table.insert(Library.Scales, MainScale)
     Library.ScalesOffset[MainScale] = Library.IsMobile and 0.2 or 0
+
+    if UseEntranceAnimation then
+        TweenObject(
+            MainFrame,
+            TweenInfo.new(0.48, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+            {
+                BackgroundTransparency = 0,
+                Position = UDim2.fromScale(0.5, 0.5),
+            }
+        )
+        TweenObject(
+            MainScale,
+            TweenInfo.new(0.48, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+            { Scale = TargetScale }
+        )
+    end
+
+    if LoadingInfo.Animated and LoadingInfo.AmbientGradient then
+        local AmbientGradient = Library:AddGradient(MainFrame, {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Library.Scheme.AccentColor),
+                ColorSequenceKeypoint.new(0.52, Library:GetBetterColor(Library.Scheme.BackgroundColor, -2)),
+                ColorSequenceKeypoint.new(1, Library.Scheme.MainColor),
+            }),
+            Rotation = 20,
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0.78),
+                NumberSequenceKeypoint.new(0.5, 0.94),
+                NumberSequenceKeypoint.new(1, 0.82),
+            }),
+        })
+        TweenObject(
+            AmbientGradient,
+            TweenInfo.new(8, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1),
+            { Rotation = 380 }
+        )
+
+        local Sweep = New("Frame", {
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            BackgroundColor3 = "WhiteColor",
+            BackgroundTransparency = 0.88,
+            Position = UDim2.new(-0.2, 0, 0.45, 0),
+            Rotation = 14,
+            Size = UDim2.new(0.18, 0, 1.45, 0),
+            ZIndex = 1,
+            Parent = MainFrame,
+        })
+        Library:AddGradient(Sweep, {
+            Rotation = 90,
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 1),
+                NumberSequenceKeypoint.new(0.5, 0.35),
+                NumberSequenceKeypoint.new(1, 1),
+            }),
+        })
+        TweenObject(
+            Sweep,
+            TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1),
+            { Position = UDim2.new(1.22, 0, 0.48, 0) }
+        )
+    end
+
+    if LoadingInfo.Animated and LoadingInfo.Particles and ParticleCount > 0 then
+        local ParticleLayer = New("Frame", {
+            BackgroundTransparency = 1,
+            Size = UDim2.fromScale(1, 1),
+            ZIndex = 1,
+            Parent = MainFrame,
+        })
+        local Particles = {}
+        for Index = 1, ParticleCount do
+            local Dot = New("Frame", {
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                BackgroundColor3 = Index % 3 == 0 and "FontColor" or "AccentColor",
+                BackgroundTransparency = 0.68,
+                Position = UDim2.fromScale(0.5, 0.5),
+                Size = UDim2.fromOffset(2 + (Index % 3), 2 + (Index % 3)),
+                Parent = ParticleLayer,
+            })
+            table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Dot }))
+            table.insert(Particles, {
+                Dot = Dot,
+                Angle = (Index / ParticleCount) * math.pi * 2,
+                RadiusX = 0.2 + ((Index % 5) * 0.055),
+                RadiusY = 0.12 + ((Index % 4) * 0.045),
+                Speed = 0.25 + ((Index % 6) * 0.035),
+                Phase = Index * 0.41,
+            })
+        end
+
+        TrackConnection(RunService.RenderStepped:Connect(function()
+            if not LoadingAnimations.Running then
+                return
+            end
+
+            local Time = os.clock()
+            for _, Particle in Particles do
+                local Angle = Particle.Angle + (Time * Particle.Speed)
+                Particle.Dot.Position = UDim2.fromScale(
+                    0.5 + math.cos(Angle) * Particle.RadiusX,
+                    0.52 + math.sin(Angle + Particle.Phase) * Particle.RadiusY
+                )
+                Particle.Dot.BackgroundTransparency = 0.58 + (math.sin(Time * 2.4 + Particle.Phase) + 1) * 0.18
+            end
+        end))
+    end
 
     --// Layout Containers \\--
     local Container = New("Frame", {
@@ -12437,6 +12616,36 @@ function Library:CreateLoading(LoadingInfo)
         Parent = InnerContent,
     })
 
+    if LoadingInfo.Animated and LoadingInfo.IconPulse then
+        for Index = 1, 2 do
+            local Ring = New("Frame", {
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                BackgroundTransparency = 1,
+                Position = UDim2.fromScale(0.5, 0.5),
+                Size = UDim2.fromScale(0.86, 0.86),
+                Parent = IconHolder,
+            })
+            table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Ring }))
+            local RingStroke = New("UIStroke", {
+                Color = "AccentColor",
+                Thickness = Index == 1 and 1.5 or 1,
+                Transparency = Index == 1 and 0.28 or 0.55,
+                Parent = Ring,
+            })
+            local Delay = (Index - 1) * 0.45
+            TweenObject(
+                Ring,
+                TweenInfo.new(1.35, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, -1, true, Delay),
+                { Size = UDim2.fromScale(1.25, 1.25) }
+            )
+            TweenObject(
+                RingStroke,
+                TweenInfo.new(1.35, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, -1, true, Delay),
+                { Transparency = 0.94 }
+            )
+        end
+    end
+
     local LoaderIcon = Library:GetCustomIcon(LoadingInfo.LoadingIcon)
     local LoadingIcon = New("ImageLabel", {
         Name = "LoaderIcon",
@@ -12451,6 +12660,14 @@ function Library:CreateLoading(LoadingInfo)
             or ((LoadingInfo.LoadingIcon == Templates.Loading.LoadingIcon) and "AccentColor" or "WhiteColor"),
         Parent = IconHolder,
     })
+
+    if LoadingInfo.Animated and LoadingInfo.IconPulse then
+        TweenObject(
+            LoadingIcon,
+            TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+            { Size = UDim2.fromScale(0.9, 0.9) }
+        )
+    end
 
     local RotationTween
     if LoadingInfo.LoadingIconTweenTime > 0 then
@@ -12483,9 +12700,27 @@ function Library:CreateLoading(LoadingInfo)
         Parent = InnerContent,
     })
 
+    local function SetAnimatedText(Label, Text, RestTransparency)
+        Text = tostring(Text or "")
+
+        if LoadingInfo.Animated and Label.Text ~= Text then
+            Label.TextTransparency = 1
+            Label.Text = Text
+            TweenService:Create(
+                Label,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                { TextTransparency = RestTransparency }
+            ):Play()
+        else
+            Label.Text = Text
+            Label.TextTransparency = RestTransparency
+        end
+    end
+
     --// Progress Bar \\--
     local SliderBar = New("Frame", {
         BackgroundColor3 = "MainColor",
+        ClipsDescendants = true,
         Size = UDim2.new(0.7, 0, 0, 15),
         Parent = InnerContent,
     })
@@ -12495,9 +12730,24 @@ function Library:CreateLoading(LoadingInfo)
         New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius / 2), Parent = SliderBar })
     )
 
+    local SliderGlow = New("Frame", {
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundColor3 = "AccentColor",
+        BackgroundTransparency = 0.88,
+        BorderSizePixel = 0,
+        Position = UDim2.fromScale(0.5, 0.5),
+        Size = UDim2.new(1, 10, 1, 10),
+        Parent = SliderBar,
+    })
+    table.insert(
+        Library.Corners,
+        New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = SliderGlow })
+    )
+
     local SliderFill = New("Frame", {
         BackgroundColor3 = "AccentColor",
         BorderSizePixel = 0,
+        ClipsDescendants = true,
         Size = UDim2.fromScale(0, 1),
         Parent = SliderBar,
     })
@@ -12505,6 +12755,40 @@ function Library:CreateLoading(LoadingInfo)
         Library.Corners,
         New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius / 2), Parent = SliderFill })
     )
+
+    if LoadingInfo.Animated and LoadingInfo.ProgressShine then
+        Library:AddGradient(SliderFill, {
+            Rotation = 0,
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0.02),
+                NumberSequenceKeypoint.new(0.55, 0.18),
+                NumberSequenceKeypoint.new(1, 0.02),
+            }),
+        })
+
+        local SliderShine = New("Frame", {
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            BackgroundColor3 = "WhiteColor",
+            BackgroundTransparency = 0.55,
+            Position = UDim2.new(-0.25, 0, 0.5, 0),
+            Rotation = 12,
+            Size = UDim2.new(0.28, 0, 1.8, 0),
+            Parent = SliderFill,
+        })
+        Library:AddGradient(SliderShine, {
+            Rotation = 90,
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 1),
+                NumberSequenceKeypoint.new(0.5, 0.2),
+                NumberSequenceKeypoint.new(1, 1),
+            }),
+        })
+        TweenObject(
+            SliderShine,
+            TweenInfo.new(1.25, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1),
+            { Position = UDim2.new(1.25, 0, 0.5, 0) }
+        )
+    end
 
     local ProgressLabel = New("TextLabel", {
         BackgroundTransparency = 1,
@@ -12563,9 +12847,9 @@ function Library:CreateLoading(LoadingInfo)
         },
     }
 
-    SidebarList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    TrackConnection(SidebarList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         SidebarObject:Resize()
-    end)
+    end))
 
     setmetatable(SidebarObject, BaseGroupbox)
     Loading.Sidebar = SidebarObject
@@ -12688,7 +12972,7 @@ function Library:CreateLoading(LoadingInfo)
     end
 
     function Loading:SetMessage(Text)
-        MessageLabel.Text = Text
+        SetAnimatedText(MessageLabel, Text, 0)
 
         if Loading.AutoResizeHeight then
             Loading:RecalculateLoadingHeight()
@@ -12697,7 +12981,7 @@ function Library:CreateLoading(LoadingInfo)
     end
 
     function Loading:SetDescription(Text)
-        DescriptionLabel.Text = Text
+        SetAnimatedText(DescriptionLabel, Text, 0.5)
 
         if Loading.AutoResizeHeight then
             Loading:RecalculateLoadingHeight()
@@ -12737,14 +13021,20 @@ function Library:CreateLoading(LoadingInfo)
     function Loading:SetCurrentStep(Step)
         Loading.CurrentStep = math.clamp(Step, 0, Loading.TotalSteps)
 
-        local Progress = Loading.CurrentStep / Loading.TotalSteps
+        local Progress = Loading.TotalSteps > 0 and (Loading.CurrentStep / Loading.TotalSteps) or 1
         TweenService:Create(SliderFill, Library.TweenInfo, { Size = UDim2.fromScale(Progress, 1) }):Play()
+        if LoadingInfo.Animated then
+            ProgressLabel.TextTransparency = 0.35
+            SliderGlow.BackgroundTransparency = 0.72
+            TweenService:Create(ProgressLabel, Library.TweenInfo, { TextTransparency = 0 }):Play()
+            TweenService:Create(SliderGlow, Library.TweenInfo, { BackgroundTransparency = 0.88 }):Play()
+        end
 
         ProgressLabel.Text = string.format("%d/%d", Loading.CurrentStep, Loading.TotalSteps)
     end
 
     function Loading:SetTotalSteps(Steps)
-        Loading.TotalSteps = Steps
+        Loading.TotalSteps = math.max(1, Steps)
         Loading:SetCurrentStep(Loading.CurrentStep)
     end
 
@@ -12919,16 +13209,67 @@ function Library:CreateLoading(LoadingInfo)
 
     --// Destroy/Continue \\--
     function Loading:Destroy()
-        if RotationTween then
-            RotationTween:Cancel()
+        if Loading.Destroyed then
+            return
         end
 
-        ScreenGui:Destroy()
         Loading.Destroyed = true
-        Library.ActiveLoading = nil
+        local ShouldRestoreLibrary = Library.ActiveLoading == Loading
+        if ShouldRestoreLibrary then
+            Library.ActiveLoading = nil
+        end
 
-        if Library.Toggle and Library.Toggled == false and Library.Unloaded ~= true then
-            Library:Toggle(true)
+        StopLoadingAnimations()
+
+        if RotationTween then
+            RotationTween:Cancel()
+            RotationTween:Destroy()
+            RotationTween = nil
+        end
+
+        local function FinishDestroy()
+            if ScreenGui.Parent then
+                ScreenGui:Destroy()
+            end
+
+            if
+                ShouldRestoreLibrary
+                and not Library.ActiveLoading
+                and Library.Toggle
+                and Library.Toggled == false
+                and Library.Unloaded ~= true
+            then
+                Library:Toggle(true)
+            end
+        end
+
+        if LoadingInfo.Animated and LoadingInfo.ExitAnimation and ScreenGui.Parent then
+            MainFrame.Active = false
+            TweenService:Create(
+                MainFrame,
+                TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                {
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(0.5, 0, 0.5, 14),
+                }
+            ):Play()
+            TweenService:Create(
+                MainScale,
+                TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                { Scale = TargetScale * 0.96 }
+            ):Play()
+
+            if Backdrop then
+                TweenService:Create(
+                    Backdrop,
+                    TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                    { BackgroundTransparency = 1 }
+                ):Play()
+            end
+
+            task.delay(0.2, FinishDestroy)
+        else
+            FinishDestroy()
         end
     end
 

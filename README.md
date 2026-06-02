@@ -19,6 +19,7 @@ This fork keeps the familiar Obsidian/Linoria-style API while adding quality-of-
 - New element pack: `Library:ApplyNewElements()` exposes glass panels, liquid-glass toggles/buttons, highlight buttons, and shiny animated buttons on groupboxes.
 - Nested tabboxes: `Groupbox:AddTabbox()` creates tabbed sections inside any groupbox, so compact category panels can hold their own sub-tabs.
 - Full-width tab content: `Tab:AddFullGroupbox()` and `Tab:AddFullTabbox()` span the tab above the normal left/right columns for large previews or viewport-style layouts.
+- Premium loading screen: `Library:CreateLoading()` now supports entrance/exit motion, optional backdrop fade, ambient gradient sweep, floating particles, icon pulse rings, progress shimmer, and animated text updates.
 - Advanced custom fonts: `Library.Font:Download(url)` / `Library:DownloadFont(url)` loads a bitmap-font JSON manifest from any internet URL, downloads atlas pages, and renders text with `ImageLabel` glyphs through `Library:CreateCustomText()` or `Groupbox:AddCustomFontLabel()` (TTF/OTF files need to be converted to a bitmap atlas manifest first).
 - Keybind menu controls: `Library:AddKeybindMenuButton()` and `Library:AddKeybindMenuToggle()` add actions directly to the keybind menu, and synced keybind toggles now use a liquid-glass pill style.
 - Compact keybind menu: set `KeybindMenuWidth` in `CreateWindow` to resize the draggable keybind menu without it expanding across the screen.

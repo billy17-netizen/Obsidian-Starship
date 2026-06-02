@@ -6,11 +6,13 @@
 + Library:AddKeybindMenuButton() and Library:AddKeybindMenuToggle()
 + Groupbox:AddSprite(), Library:AddFloatingSprite(), Library:DownloadSprite(), and Library:DownloadVideo()
 + BackgroundImage and fullscreen background image URLs now download through Library.ImageManager
++ Premium Library:CreateLoading() animations with entrance/exit motion, backdrop fade, ambient gradient, particles, icon pulse rings, progress shimmer, and animated text
 
 [changes]
 + KeyPicker synced keybind toggles now render as liquid-glass pill switches
 + Keybind menu now uses a compact fixed width via WindowInfo.KeybindMenuWidth
 + Example sprite animation now renders as a floating sprite near the top search area instead of inside the groupbox
++ Example.lua adds a premium loading preview button for testing the new loading animation stack
 ```
 
 ## 21.04.2026

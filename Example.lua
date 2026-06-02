@@ -220,6 +220,64 @@ LeftGroupBox:AddShinyButton({
         Library:NotifySuccess({ Title = "Shiny", Description = "The new shiny button was clicked!", Time = 3 })
     end,
 })
+LeftGroupBox:AddLiquidGlassButton({
+    Text = "Preview premium loading",
+    Icon = "loader-circle",
+    Callback = function()
+        local Loading = Library:CreateLoading({
+            Title = "mspaint",
+            Icon = 95816097006870,
+            AutoResizeHeight = true,
+            ShowSidebar = true,
+            WindowWidth = 460,
+            WindowHeight = 285,
+            ContentWidth = 460,
+            SidebarWidth = 230,
+            BackdropTransparency = 0.28,
+            ParticleCount = 22,
+        })
+
+        Loading:SetTotalSteps(6)
+        Loading:SetMessage("Booting mspaint")
+        Loading:SetDescription("Preparing premium loading animations...")
+        Loading.Sidebar:AddLabel({
+            Text = "Live preview: backdrop fade, ambient gradient, particles, icon pulse, progress shimmer, and exit fade.",
+            DoesWrap = true,
+        })
+        Loading.Sidebar:AddGlassPanel("LoadingAnimationPanel", {
+            Title = "Animation stack",
+            Description = "Entrance, pulse rings, particles, progress shine, and animated text swaps.",
+            Icon = "sparkles",
+            Height = 74,
+        })
+
+        task.spawn(function()
+            local Steps = {
+                { "Downloading assets", "Resolving icons and themed surfaces." },
+                { "Building layout", "Preparing responsive content and sidebar." },
+                { "Applying theme", "Syncing accent gradients and glow layers." },
+                { "Animating particles", "Starting ambient dots and pulse rings." },
+                { "Final polish", "Warming up progress shimmer and labels." },
+                { "Ready", "Closing with a soft exit animation." },
+            }
+
+            for Index, Step in ipairs(Steps) do
+                if Loading.Destroyed then
+                    return
+                end
+
+                Loading:SetMessage(Step[1])
+                Loading:SetDescription(Step[2])
+                Loading:SetCurrentStep(Index)
+                task.wait(0.55)
+            end
+
+            if not Loading.Destroyed then
+                Loading:Destroy()
+            end
+        end)
+    end,
+})
 
 local GroupboxTabBox = LeftGroupBox:AddTabbox({ Name = "Groupbox nested tabbox" })
 local MiningTab = GroupboxTabBox:AddTab("Mining", "pickaxe")
