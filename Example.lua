@@ -50,7 +50,7 @@ local Window = Library:CreateWindow({
     --TabStyle = "Card",
     TabsMode = "Sidebar", -- can change between "Sidebar" And "Topbar"
     FullscreenBackground = true,
-    FullscreenBackgroundTransparency = 0.55,
+    FullscreenBackgroundTransparency = 1,
 })
 
 -- CALLBACK NOTE:
