@@ -2,9 +2,14 @@
 -- You can suggest changes with a pull request or something
 
 local repo = "https://raw.githubusercontent.com/tanhoangviet/Obsidian-UI-Modded/main/"
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+local repoCacheKey = tostring(os.time())
+local function RepoAsset(Path)
+    return repo .. Path .. "?v=" .. repoCacheKey
+end
+
+local Library = loadstring(game:HttpGet(RepoAsset("Library.lua")))()
+local ThemeManager = loadstring(game:HttpGet(RepoAsset("addons/ThemeManager.lua")))()
+local SaveManager = loadstring(game:HttpGet(RepoAsset("addons/SaveManager.lua")))()
 
 local Options = Library.Options
 local Toggles = Library.Toggles
@@ -110,19 +115,19 @@ local CustomFontBox = Tabs.Main:AddRightGroupbox("Custom Fonts", "type")
 local FontExamples = {
     {
         Name = "Pixel",
-        Url = repo .. "assets/custom_fonts/ObsidianPixel.json",
+        Url = RepoAsset("assets/custom_fonts/ObsidianPixel.json"),
         Text = "PIXEL FONT TEST 123",
         Color = Color3.fromRGB(125, 235, 255),
     },
     {
         Name = "Block",
-        Url = repo .. "assets/custom_fonts/ObsidianBlock.json",
+        Url = RepoAsset("assets/custom_fonts/ObsidianBlock.json"),
         Text = "BLOCK FONT TEST 456",
         Color = Color3.fromRGB(255, 212, 102),
     },
     {
         Name = "Slant",
-        Url = repo .. "assets/custom_fonts/ObsidianSlant.json",
+        Url = RepoAsset("assets/custom_fonts/ObsidianSlant.json"),
         Text = "SLANT FONT TEST 789",
         Color = Color3.fromRGB(190, 160, 255),
     },
