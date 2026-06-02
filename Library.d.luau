@@ -52,8 +52,10 @@ export type CustomFontManager = {
 export type DownloadAssetInfo = {
     FileName: string?,
     Name: string?,
+    AssetName: string?,
     Folder: string?,
     Extension: string?,
+    RobloxAssetId: number?,
     ForceRedownload: boolean?,
 }
 
@@ -1214,6 +1216,7 @@ export type Window = {
     ChangeBackgroundImage: (self: Window, Image: string) -> (),
     ChangeFooter: (self: Window, Footer: string) -> (),
     SetBackgroundImage: (self: Window, Image: string) -> (),
+    SetFullscreenBackgroundImage: (self: Window, Image: string?) -> (),
     SetBackgroundImageTransparency: (self: Window, Transparency: number) -> (),
     SetBackgroundImageSurfaceTransparency: (
         self: Window,
@@ -1384,6 +1387,7 @@ export type Library = {
     GiveSignal: (self: Library, Connection: RBXScriptConnection) -> RBXScriptConnection,
     GetIcon: (self: Library, IconName: string) -> Icon?,
     DownloadUrlAsset: (self: Library, Url: string, Info: DownloadAssetInfo?) -> string,
+    DownloadImage: (self: Library, Url: string, Info: DownloadAssetInfo | string?) -> string,
     DownloadVideo: (self: Library, Url: string, Info: DownloadAssetInfo | string?) -> string,
     DownloadSprite: (self: Library, Url: string, Info: DownloadAssetInfo | string?) -> string,
     Validate: (self: Library, Table: { [string]: any }, Template: { [string]: any }) -> { [string]: any },

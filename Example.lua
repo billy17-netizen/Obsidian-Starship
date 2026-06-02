@@ -35,7 +35,7 @@ local Window = Library:CreateWindow({
     --MobileButtonsMode = "Normal",
 
     -- Modded visuals: background image, gradient overlay, and custom border stroke.
-    BackgroundImage = "rbxassetid://14909902842",
+    BackgroundImage = RepoAsset("assets/Example.png"),
     BackgroundImageTransparency = 0.12,
     BackgroundImageContentTransparency = 0.2,
     BackgroundImagePanelTransparency = 0.08,
@@ -144,9 +144,9 @@ local FloatingArisu = Library:AddFloatingSprite({
     FrameCount = 8,
     Columns = 8,
     Fps = 10,
-    Position = UDim2.new(0.5, 0, 0, 118),
-    Size = UDim2.fromOffset(86, 86),
-    Visible = false,
+    Position = UDim2.new(0.68, 0, 0, 72),
+    Size = UDim2.fromOffset(74, 74),
+    Visible = true,
 })
 
 Library:AddKeybindMenuButton({
@@ -158,7 +158,7 @@ Library:AddKeybindMenuButton({
 
 Library:AddKeybindMenuToggle("FloatingArisuSprite", {
     Text = "Show Arisu sprite",
-    Default = false,
+    Default = true,
     Callback = function(Value)
         FloatingArisu:SetVisible(Value)
     end,

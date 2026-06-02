@@ -5,6 +5,7 @@
 + Tab:AddFullGroupbox() and Tab:AddFullTabbox() for full-width tab content above the left/right columns
 + Library:AddKeybindMenuButton() and Library:AddKeybindMenuToggle()
 + Groupbox:AddSprite(), Library:AddFloatingSprite(), Library:DownloadSprite(), and Library:DownloadVideo()
++ BackgroundImage and fullscreen background image URLs now download through Library.ImageManager
 
 [changes]
 + KeyPicker synced keybind toggles now render as liquid-glass pill switches

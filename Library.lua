@@ -234,6 +234,15 @@ local function DownloadUrlToCustomAsset(Url: string, Info)
     return CustomAsset, true, Path
 end
 
+local function HashString(Value: string): string
+    local Hash = 2166136261
+    for Index = 1, #Value do
+        Hash = bit32.bxor(Hash, string.byte(Value, Index))
+        Hash = (Hash * 16777619) % 4294967296
+    end
+    return string.format("%08x", Hash)
+end
+
 local Library = {
     LocalPlayer = LocalPlayer,
     DevicePlatform = nil,
@@ -637,6 +646,8 @@ local Sizes = {
     Left = { 0.5, 1 },
     Right = { 0.5, 1 },
 }
+
+local New
 
 --// Scheme Functions \\--
 local SchemeReplaceAlias = {
@@ -1227,6 +1238,32 @@ function Library:DownloadUrlAsset(Url: string, Info)
     end
 
     return Asset
+end
+
+function Library:DownloadImage(Url: string, Info)
+    if not IsHttpUrl(Url) then
+        return Url
+    end
+    if not (getcustomasset and writefile and isfile) then
+        return Url
+    end
+
+    Info = typeof(Info) == "table" and Info or { FileName = Info }
+    local FileName = GetUrlFileName(Url, Info.FileName or Info.Name, Info.Extension)
+    local AssetName = SanitizeAssetPathSegment(Info.AssetName or ("RemoteImage_" .. HashString(Url) .. "_" .. FileName))
+
+    local AddSuccess, AddError = pcall(CustomImageManager.AddAsset, AssetName, Info.RobloxAssetId or 0, Url, Info.ForceRedownload)
+    if not AddSuccess then
+        if tostring(AddError):find("already exists", 1, true) then
+            if Info.ForceRedownload == true then
+                pcall(CustomImageManager.DownloadAsset, AssetName, true)
+            end
+        else
+            warn(string.format("Failed to register remote image %q: %s", Url, tostring(AddError)))
+        end
+    end
+
+    return CustomImageManager.GetAsset(AssetName) or Url
 end
 
 function Library:DownloadVideo(Url: string, Info)
@@ -1868,7 +1905,7 @@ local function FillInstance(Table: { [string]: any }, Instance: GuiObject)
     end
 end
 
-local function New(ClassName: string, Properties: { [string]: any }): any
+function New(ClassName: string, Properties: { [string]: any }): any
     local Instance = Instance.new(ClassName)
 
     if Templates[ClassName] then
@@ -9211,10 +9248,22 @@ function Library:CreateWindow(WindowInfo)
     local IsCompact = WindowInfo.SidebarCompacted
     local LastExpandedWidth = InitialLeftWidth
 
+    local function ResolveWindowImage(Image: string?, Name: string)
+        if IsHttpUrl(Image) then
+            return Library:DownloadImage(Image, {
+                AssetName = Name,
+                FileName = Name .. ".png",
+            })
+        end
+
+        return Image
+    end
+
     do
         FullscreenBackground.Visible = WindowInfo.FullscreenBackground == true
         FullscreenBackground.BackgroundColor3 = WindowInfo.FullscreenBackgroundColor
         FullscreenBackground.BackgroundTransparency = WindowInfo.FullscreenBackgroundTransparency
+        WindowInfo.FullscreenBackgroundImage = ResolveWindowImage(WindowInfo.FullscreenBackgroundImage, "WindowFullscreenBackground")
         FullscreenBackground.Image = WindowInfo.FullscreenBackgroundImage or ""
         FullscreenBackground.ImageTransparency = WindowInfo.FullscreenBackgroundImageTransparency
         FullscreenBackground.ScaleType = WindowInfo.FullscreenBackgroundImageScaleType
@@ -9308,6 +9357,8 @@ function Library:CreateWindow(WindowInfo)
             return BackgroundImage
         end
 
+        WindowInfo.BackgroundImage = ResolveWindowImage(WindowInfo.BackgroundImage, "WindowBackground")
+        Library.HasBackgroundImage = WindowInfo.BackgroundImage ~= nil and WindowInfo.BackgroundImage ~= ""
         CreateBackgroundImage(WindowInfo.BackgroundImage)
 
         if WindowInfo.Center then
@@ -9627,6 +9678,7 @@ function Library:CreateWindow(WindowInfo)
     function Window:SetBackgroundImage(Image: string)
         assert(typeof(Image) == "string", "Expected string for Image got: " .. typeof(Image))
 
+        Image = ResolveWindowImage(Image, "WindowBackground")
         BackgroundImage.Image = Image
         BackgroundImage.Visible = Image ~= ""
         WindowInfo.BackgroundImage = Image
@@ -9635,6 +9687,22 @@ function Library:CreateWindow(WindowInfo)
     end
 
     Window.ChangeBackgroundImage = Window.SetBackgroundImage
+
+    function Window:SetFullscreenBackgroundImage(Image: string?)
+        assert(Image == nil or typeof(Image) == "string", "Expected string or nil for Image got: " .. typeof(Image))
+
+        Image = ResolveWindowImage(Image, "WindowFullscreenBackground")
+        FullscreenBackground.Image = Image or ""
+        FullscreenBackground.Visible = WindowInfo.FullscreenBackground == true
+            and Image ~= nil
+            and Image ~= ""
+        WindowInfo.FullscreenBackgroundImage = Image
+        if Image and Image ~= "" then
+            FullscreenBackground.BackgroundTransparency = math.max(0.95, WindowInfo.FullscreenBackgroundTransparency)
+        else
+            FullscreenBackground.BackgroundTransparency = WindowInfo.FullscreenBackgroundTransparency
+        end
+    end
 
     function Window:SetBackgroundImageTransparency(Transparency: number)
         assert(typeof(Transparency) == "number", "Expected number for Transparency got: " .. typeof(Transparency))
