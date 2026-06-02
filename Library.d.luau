@@ -21,6 +21,56 @@ export type Icon = {
     ImageRectSize: Vector2,
 }
 
+export type CustomFontGlyph = {
+    Image: string,
+    X: number,
+    Y: number,
+    Width: number,
+    Height: number,
+    XOffset: number,
+    YOffset: number,
+    XAdvance: number,
+}
+
+export type CustomFont = {
+    Type: "CustomFont",
+    Name: string,
+    Pages: { string },
+    Glyphs: { [string]: CustomFontGlyph },
+    Size: number,
+    LineHeight: number,
+    Space: number,
+    SourceUrl: string?,
+    GetTextBounds: (self: CustomFont, Text: string, TextSize: number?, Width: number?) -> (number, number),
+}
+
+export type CustomFontManager = {
+    Download: (self: CustomFontManager, Url: string, Options: { [string]: any }?) -> CustomFont,
+    Register: (self: CustomFontManager, FontInfo: { [string]: any }) -> CustomFont,
+}
+
+export type CustomFontText = {
+    Font: CustomFont,
+    Text: string,
+    TextSize: number,
+    TextColor3: Color3,
+    TextTransparency: number,
+    TextXAlignment: Enum.TextXAlignment,
+    TextYAlignment: Enum.TextYAlignment,
+    TextWrapped: boolean,
+    Visible: boolean,
+    Holder: Frame,
+    Type: string?,
+
+    Render: (self: CustomFontText) -> (),
+    SetText: (self: CustomFontText, Text: string) -> (),
+    SetFont: (self: CustomFontText, Font: CustomFont) -> (),
+    SetColor: (self: CustomFontText, Color: Color3) -> (),
+    SetVisible: (self: CustomFontText, Visible: boolean) -> (),
+    SetHeight: ((self: CustomFontText, Height: number) -> ())?,
+    Destroy: (self: CustomFontText) -> (),
+}
+
 export type ContextMenu = {
     Active: boolean,
     Holder: GuiObject,
@@ -671,6 +721,7 @@ export type Element =
     | UIPassthrough
     | Divider
     | Tabbox
+    | CustomFontText
 export type Option =
     Toggle
     | Input
@@ -693,6 +744,27 @@ export type BaseGroupbox = {
         Idx: string?
     ) -> Label,
     AddButton: (self: Groupbox, Info: ButtonInfo | string, Func: (() -> ())?, Idx: string?) -> Button,
+    AddCustomFontLabel: (
+        self: Groupbox,
+        Info:
+            | {
+                Text: string?,
+                Font: CustomFont?,
+                Size: number?,
+                Height: number?,
+                TextSize: number?,
+                TextColor3: Color3?,
+                Color: Color3?,
+                TextXAlignment: Enum.TextXAlignment?,
+                TextYAlignment: Enum.TextYAlignment?,
+                TextWrapped: boolean?,
+                DoesWrap: boolean?,
+                Visible: boolean?,
+            }
+            | string,
+        Font: CustomFont?,
+        Idx: string?
+    ) -> CustomFontText,
     AddGlassPanel: ((self: Groupbox, Info: GlassPanelInfo) -> GlassPanel)
         & ((self: Groupbox, Idx: string, Info: GlassPanelInfo) -> GlassPanel),
     AddHighlightButton: (self: Groupbox, Info: NewElementButtonInfo) -> NewElementButton,
@@ -1027,10 +1099,12 @@ export type Library = {
     NotifyTweenInfo: TweenInfo,
     Toggled: boolean,
     Unloaded: boolean,
-    Labels: { [string | number]: Label },
+    Labels: { [string | number]: Label | CustomFontText },
     Buttons: { [string | number]: Button | SubButton },
     Toggles: { [string | number]: Toggle },
     Options: { [string | number]: Option },
+    Font: CustomFontManager,
+    CustomFont: CustomFont?,
     NotifySide: "Right" | "Left",
     ShowCustomCursor: boolean,
     ForceCheckbox: boolean,
@@ -1112,7 +1186,9 @@ export type Library = {
     GetBetterColor: (self: Library, Color: Color3, Add: number) -> Color3,
     GetDarkerColor: (self: Library, Color: Color3) -> Color3,
     GetKeyString: (self: Library, KeyCode: Enum.KeyCode) -> string,
-    GetTextBounds: (self: Library, Text: string, Font: Font, Size: number, Width: number?) -> (number, number),
+    GetTextBounds: (self: Library, Text: string, Font: Font | CustomFont, Size: number, Width: number?) -> (number, number),
+    DownloadFont: (self: Library, Url: string, Options: { [string]: any }?) -> CustomFont,
+    RegisterCustomFont: (self: Library, FontInfo: { [string]: any }) -> CustomFont,
     MouseIsOverFrame: (self: Library, Frame: GuiObject, Mouse: Vector2) -> boolean,
     SafeCallback: (self: Library, Func: (...any) -> ...any, ...any) -> ...any,
     MakeDraggable: (
@@ -1141,7 +1217,9 @@ export type Library = {
     AddTooltip: (self: Library, InfoStr: string, DisabledInfoStr: string, HoverInstance: GuiObject) -> Tooltip,
     OnUnload: (self: Library, Callback: () -> ()) -> (),
     Unload: (self: Library) -> (),
-    SetFont: (self: Library, FontFace: Font | Enum.Font) -> (),
+    SetFont: (self: Library, FontFace: Font | Enum.Font | CustomFont) -> (),
+    SetCustomFont: (self: Library, Font: CustomFont) -> CustomFont,
+    CreateCustomText: (self: Library, Parent: GuiObject, Info: { [string]: any }) -> CustomFontText,
     SetNotifySide: (self: Library, Side: "Left" | "Right") -> (),
     Notify: (self: Library, Info: NotificationInfo | string, Time: number?, SoundId: string | number?) -> Notification,
     NotifyInfo: (
@@ -1209,7 +1287,7 @@ export type Library = {
             CornerRadius: number?,
             NotifySide: "Left" | "Right"?,
             ShowCustomCursor: boolean?,
-            Font: Font | Enum.Font?,
+            Font: Font | Enum.Font | CustomFont?,
             ToggleKeybind: Enum.KeyCode?,
             MobileButtonsSide: "Left" | "Right"?,
             MobileButtonsMode: "Normal" | "TopbarPlus"?,

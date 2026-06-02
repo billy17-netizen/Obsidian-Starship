@@ -102,6 +102,53 @@ UISettingsTab:UpdateWarningBox({
 -- Groupbox and Tabbox inherit the same functions
 -- except Tabboxes you have to call the functions on a tab (Tabbox:AddTab(Name))
 local LeftGroupBox = Tabs.Main:AddLeftGroupbox("Groupbox", "boxes")
+local CustomFontBox = Tabs.Main:AddRightGroupbox("Custom Fonts", "type")
+
+-- Advanced custom font examples.
+-- Font:Download expects a bitmap-font JSON manifest with atlas page image URLs and glyph metrics.
+-- These test manifests live in this repo, but any internet URL with the same schema works.
+local FontExamples = {
+    {
+        Name = "Pixel",
+        Url = repo .. "assets/custom_fonts/ObsidianPixel.json",
+        Text = "PIXEL FONT TEST 123",
+        Color = Color3.fromRGB(125, 235, 255),
+    },
+    {
+        Name = "Block",
+        Url = repo .. "assets/custom_fonts/ObsidianBlock.json",
+        Text = "BLOCK FONT TEST 456",
+        Color = Color3.fromRGB(255, 212, 102),
+    },
+    {
+        Name = "Slant",
+        Url = repo .. "assets/custom_fonts/ObsidianSlant.json",
+        Text = "SLANT FONT TEST 789",
+        Color = Color3.fromRGB(190, 160, 255),
+    },
+}
+
+for _, FontExample in ipairs(FontExamples) do
+    local Success, FontData = pcall(function()
+        return Library:DownloadFont(FontExample.Url)
+    end)
+
+    if Success then
+        CustomFontBox:AddCustomFontLabel({
+            Text = FontExample.Text,
+            Font = FontData,
+            TextSize = 18,
+            Height = 32,
+            Color = FontExample.Color,
+            TextXAlignment = Enum.TextXAlignment.Center,
+        })
+    else
+        CustomFontBox:AddLabel({
+            Text = "Failed to load " .. FontExample.Name .. " font: " .. tostring(FontData),
+            DoesWrap = true,
+        })
+    end
+end
 
 LeftGroupBox:AddGlassPanel("ExampleGlassPanel", {
     Title = "Liquid glass preview",

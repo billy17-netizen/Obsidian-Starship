@@ -1119,6 +1119,352 @@ function Library:GetCustomIcon(IconName: string): any
     return nil
 end
 
+local CustomFontManager = {}
+
+local function ResolveFontAssetUrl(BaseUrl: string?, AssetUrl: string): string
+    if AssetUrl:match("^https?://") or AssetUrl:match("^rbxasset") or AssetUrl:match("^roblox%.com/asset/%?id=") then
+        return AssetUrl
+    end
+
+    if not BaseUrl then
+        return AssetUrl
+    end
+
+    local BasePath = BaseUrl:match("^(.*)/[^/]*$")
+    return BasePath and (BasePath .. "/" .. AssetUrl) or AssetUrl
+end
+
+local function EnsureFontFolder(Path: string)
+    if not isfolder or not makefolder then
+        return
+    end
+
+    local Current = ""
+    for Segment in Path:gmatch("[^/]+") do
+        Current ..= Segment
+        if not isfolder(Current) then
+            makefolder(Current)
+        end
+        Current ..= "/"
+    end
+end
+
+local function DownloadFontAsset(AssetUrl: string, FontName: string, FileName: string): string
+    if IsValidCustomIcon(AssetUrl) then
+        return AssetUrl
+    end
+
+    if not (writefile and isfile and getcustomasset) then
+        return AssetUrl
+    end
+
+    local Folder = string.format("Obsidian/custom_fonts/%s", FontName:gsub("[^%w_%-]", "_"))
+    EnsureFontFolder(Folder)
+
+    local Path = string.format("%s/%s", Folder, FileName:gsub("[^%w_%-%.]", "_"))
+    if not isfile(Path) then
+        writefile(Path, game:HttpGet(AssetUrl))
+    end
+
+    local Success, CustomAsset = pcall(getcustomasset, Path)
+    return Success and CustomAsset or AssetUrl
+end
+
+local function ReadGlyphField(Glyph, ...)
+    for _, Key in { ... } do
+        if Glyph[Key] ~= nil then
+            return Glyph[Key]
+        end
+    end
+end
+
+local function NormalizeCustomFont(FontInfo, SourceUrl: string?)
+    assert(typeof(FontInfo) == "table", "Custom font info must be a table.")
+
+    local FontName = tostring(FontInfo.Name or FontInfo.name or "CustomFont")
+    local Pages = FontInfo.Pages or FontInfo.pages or FontInfo.Images or FontInfo.images
+    if not Pages and (FontInfo.Image or FontInfo.image or FontInfo.Texture or FontInfo.texture) then
+        Pages = { FontInfo.Image or FontInfo.image or FontInfo.Texture or FontInfo.texture }
+    end
+
+    assert(typeof(Pages) == "table" and #Pages > 0, "Custom font requires at least one image page.")
+
+    local Common = FontInfo.Common or FontInfo.common or {}
+    local FontData = {
+        Type = "CustomFont",
+        Name = FontName,
+        Pages = {},
+        Glyphs = {},
+        Size = tonumber(FontInfo.Size or FontInfo.size) or 32,
+        LineHeight = tonumber(FontInfo.LineHeight or FontInfo.lineHeight or Common.LineHeight or Common.lineHeight)
+            or tonumber(FontInfo.Size or FontInfo.size)
+            or 32,
+        Space = tonumber(FontInfo.Space or FontInfo.space) or nil,
+        SourceUrl = SourceUrl,
+    }
+
+    for Index, Page in ipairs(Pages) do
+        local PageUrl = typeof(Page) == "table" and (Page.Url or Page.url or Page.Image or Page.image) or Page
+        assert(typeof(PageUrl) == "string", "Custom font page image must be a string URL or asset id.")
+
+        PageUrl = ResolveFontAssetUrl(SourceUrl, PageUrl)
+        FontData.Pages[Index] = DownloadFontAsset(PageUrl, FontName, string.format("page_%d.png", Index))
+    end
+
+    local Characters = FontInfo.Characters or FontInfo.characters or FontInfo.Chars or FontInfo.chars
+    assert(typeof(Characters) == "table", "Custom font requires a Characters/Chars table.")
+
+    for Key, Glyph in Characters do
+        if typeof(Glyph) ~= "table" then
+            continue
+        end
+
+        local Char = Glyph.Char or Glyph.char or Glyph.Character or Glyph.character
+        local Id = Glyph.Id or Glyph.id
+        if not Char and Id then
+            local Success, UtfChar = pcall(utf8.char, tonumber(Id))
+            Char = Success and UtfChar or nil
+        end
+        Char = Char or (typeof(Key) == "string" and Key or nil)
+
+        if not Char then
+            continue
+        end
+
+        local Width = tonumber(ReadGlyphField(Glyph, "Width", "width", "W", "w")) or 0
+        local Height = tonumber(ReadGlyphField(Glyph, "Height", "height", "H", "h")) or 0
+
+        FontData.Glyphs[Char] = {
+            Image = FontData.Pages[(tonumber(ReadGlyphField(Glyph, "Page", "page")) or 0) + 1] or FontData.Pages[1],
+            X = tonumber(ReadGlyphField(Glyph, "X", "x")) or 0,
+            Y = tonumber(ReadGlyphField(Glyph, "Y", "y")) or 0,
+            Width = Width,
+            Height = Height,
+            XOffset = tonumber(ReadGlyphField(Glyph, "XOffset", "xoffset", "xOffset")) or 0,
+            YOffset = tonumber(ReadGlyphField(Glyph, "YOffset", "yoffset", "yOffset")) or 0,
+            XAdvance = tonumber(ReadGlyphField(Glyph, "XAdvance", "xadvance", "xAdvance")) or Width,
+        }
+    end
+
+    if not FontData.Space then
+        local SpaceGlyph = FontData.Glyphs[" "]
+        FontData.Space = SpaceGlyph and SpaceGlyph.XAdvance or FontData.Size * 0.35
+    end
+
+    function FontData:GetTextBounds(Text: string, TextSize: number?, Width: number?): (number, number)
+        local Scale = (TextSize or FontData.Size) / FontData.Size
+        local MaxWidth = Width or math.huge
+        local LineWidth = 0
+        local BestWidth = 0
+        local Lines = 1
+
+        for _, Codepoint in utf8.codes(tostring(Text or "")) do
+            local Char = utf8.char(Codepoint)
+
+            if Char == "\n" then
+                BestWidth = math.max(BestWidth, LineWidth)
+                LineWidth = 0
+                Lines += 1
+                continue
+            end
+
+            local Advance = ((FontData.Glyphs[Char] and FontData.Glyphs[Char].XAdvance) or FontData.Space) * Scale
+            if LineWidth > 0 and LineWidth + Advance > MaxWidth then
+                BestWidth = math.max(BestWidth, LineWidth)
+                LineWidth = 0
+                Lines += 1
+            end
+            LineWidth += Advance
+        end
+
+        BestWidth = math.max(BestWidth, LineWidth)
+        return BestWidth, Lines * FontData.LineHeight * Scale
+    end
+
+    return FontData
+end
+
+function CustomFontManager:Download(Url: string, Options)
+    assert(typeof(Url) == "string", "Font:Download expects a URL string.")
+
+    local Success, Decoded = pcall(function()
+        return HttpService:JSONDecode(game:HttpGet(Url))
+    end)
+    assert(Success and typeof(Decoded) == "table", "Font:Download expects a bitmap font JSON manifest URL.")
+
+    if typeof(Options) == "table" then
+        for Key, Value in Options do
+            Decoded[Key] = Value
+        end
+    end
+
+    return NormalizeCustomFont(Decoded, Url)
+end
+
+function CustomFontManager:Register(FontInfo)
+    return NormalizeCustomFont(FontInfo)
+end
+
+Library.Font = CustomFontManager
+pcall(function()
+    Font.Download = function(_, Url: string, Options)
+        return CustomFontManager:Download(Url, Options)
+    end
+end)
+
+function Library:DownloadFont(Url: string, Options)
+    return CustomFontManager:Download(Url, Options)
+end
+
+function Library:RegisterCustomFont(FontInfo)
+    return CustomFontManager:Register(FontInfo)
+end
+
+function Library:SetCustomFont(FontData)
+    assert(typeof(FontData) == "table" and FontData.Type == "CustomFont", "SetCustomFont expects Font:Download/Register data.")
+
+    Library.CustomFont = FontData
+    return FontData
+end
+
+function Library:CreateCustomText(Parent: GuiObject, Info)
+    Info = Info or {}
+    local FontData = Info.Font or Library.CustomFont
+    assert(typeof(FontData) == "table" and FontData.Type == "CustomFont", "CreateCustomText requires a custom font.")
+
+    local TextObject = {
+        Font = FontData,
+        Text = tostring(Info.Text or ""),
+        TextSize = Info.TextSize or FontData.Size,
+        TextColor3 = Info.TextColor3 or Info.Color or Library.Scheme.FontColor,
+        TextTransparency = Info.TextTransparency or 0,
+        TextXAlignment = Info.TextXAlignment or Enum.TextXAlignment.Left,
+        TextYAlignment = Info.TextYAlignment or Enum.TextYAlignment.Center,
+        TextWrapped = Info.TextWrapped == true,
+        Visible = Info.Visible ~= false,
+    }
+
+    local Holder = Instance.new("Frame")
+    Holder.Name = Info.Name or "CustomFontText"
+    Holder.BackgroundTransparency = 1
+    Holder.ClipsDescendants = true
+    Holder.Position = Info.Position or UDim2.fromScale(0, 0)
+    Holder.Size = Info.Size or UDim2.fromScale(1, 1)
+    Holder.Visible = TextObject.Visible
+    Holder.ZIndex = Info.ZIndex or Parent.ZIndex
+    Holder.Parent = Parent
+
+    local Glyphs = {}
+
+    local function ClearGlyphs()
+        for _, Glyph in Glyphs do
+            Glyph:Destroy()
+        end
+        table.clear(Glyphs)
+    end
+
+    function TextObject:Render()
+        ClearGlyphs()
+
+        local Scale = TextObject.TextSize / FontData.Size
+        local MaxWidth = TextObject.TextWrapped and math.max(1, Holder.AbsoluteSize.X) or math.huge
+        local Lines = { { Width = 0, Glyphs = {} } }
+
+        for _, Codepoint in utf8.codes(TextObject.Text) do
+            local Char = utf8.char(Codepoint)
+            if Char == "\n" then
+                table.insert(Lines, { Width = 0, Glyphs = {} })
+                continue
+            end
+
+            local GlyphInfo = FontData.Glyphs[Char]
+            local Advance = ((GlyphInfo and GlyphInfo.XAdvance) or FontData.Space) * Scale
+            local Line = Lines[#Lines]
+
+            if TextObject.TextWrapped and Line.Width > 0 and Line.Width + Advance > MaxWidth then
+                Line = { Width = 0, Glyphs = {} }
+                table.insert(Lines, Line)
+            end
+
+            if GlyphInfo then
+                table.insert(Line.Glyphs, {
+                    Info = GlyphInfo,
+                    X = Line.Width,
+                })
+            end
+            Line.Width += Advance
+        end
+
+        local LineHeight = FontData.LineHeight * Scale
+        local TotalHeight = #Lines * LineHeight
+        local StartY = TextObject.TextYAlignment == Enum.TextYAlignment.Bottom and Holder.AbsoluteSize.Y - TotalHeight
+            or TextObject.TextYAlignment == Enum.TextYAlignment.Center and (Holder.AbsoluteSize.Y - TotalHeight) / 2
+            or 0
+
+        for LineIndex, Line in ipairs(Lines) do
+            local StartX = TextObject.TextXAlignment == Enum.TextXAlignment.Right and Holder.AbsoluteSize.X - Line.Width
+                or TextObject.TextXAlignment == Enum.TextXAlignment.Center and (Holder.AbsoluteSize.X - Line.Width) / 2
+                or 0
+
+            for _, GlyphData in Line.Glyphs do
+                local GlyphInfo = GlyphData.Info
+                local GlyphImage = Instance.new("ImageLabel")
+                GlyphImage.BackgroundTransparency = 1
+                GlyphImage.Image = GlyphInfo.Image
+                GlyphImage.ImageColor3 = TextObject.TextColor3
+                GlyphImage.ImageTransparency = TextObject.TextTransparency
+                GlyphImage.ImageRectOffset = Vector2.new(GlyphInfo.X, GlyphInfo.Y)
+                GlyphImage.ImageRectSize = Vector2.new(GlyphInfo.Width, GlyphInfo.Height)
+                GlyphImage.Position = UDim2.fromOffset(
+                    StartX + GlyphData.X + GlyphInfo.XOffset * Scale,
+                    StartY + (LineIndex - 1) * LineHeight + GlyphInfo.YOffset * Scale
+                )
+                GlyphImage.Size = UDim2.fromOffset(GlyphInfo.Width * Scale, GlyphInfo.Height * Scale)
+                GlyphImage.ZIndex = Holder.ZIndex
+                GlyphImage.Parent = Holder
+                table.insert(Glyphs, GlyphImage)
+            end
+        end
+    end
+
+    function TextObject:SetText(Text: string)
+        TextObject.Text = tostring(Text)
+        TextObject:Render()
+    end
+
+    function TextObject:SetFont(NewFont)
+        assert(typeof(NewFont) == "table" and NewFont.Type == "CustomFont", "SetFont expects custom font data.")
+        TextObject.Font = NewFont
+        FontData = NewFont
+        TextObject:Render()
+    end
+
+    function TextObject:SetColor(Color: Color3)
+        TextObject.TextColor3 = Color
+        for _, Glyph in Glyphs do
+            Glyph.ImageColor3 = Color
+        end
+    end
+
+    function TextObject:SetVisible(Visible: boolean)
+        TextObject.Visible = Visible
+        Holder.Visible = Visible
+    end
+
+    function TextObject:Destroy()
+        Holder:Destroy()
+    end
+
+    Holder:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+        TextObject:Render()
+    end)
+
+    TextObject.Holder = Holder
+    TextObject:Render()
+
+    return TextObject
+end
+
 function Library:AnimateIconSprite(ImageObject: ImageLabel | ImageButton, AtlasInfo)
     assert(ImageObject and ImageObject:IsA("GuiObject"), "AnimateIconSprite expected an image gui object.")
     assert(typeof(AtlasInfo) == "table", "AnimateIconSprite expected atlas info table.")
@@ -1428,11 +1774,15 @@ function Library:GetKeyString(KeyCode: Enum.KeyCode)
     return KeyCode.Name
 end
 
-function Library:GetTextBounds(Text: string, Font: Font, Size: number, Width: number?): (number, number)
+function Library:GetTextBounds(Text: string, FontFace: any, Size: number, Width: number?): (number, number)
+    if typeof(FontFace) == "table" and FontFace.Type == "CustomFont" and FontFace.GetTextBounds then
+        return FontFace:GetTextBounds(Text, Size, Width)
+    end
+
     local Params = Instance.new("GetTextBoundsParams")
     Params.Text = Text
     Params.RichText = true
-    Params.Font = Font
+    Params.Font = FontFace
     Params.Size = Size
     Params.Width = Width or workspace.CurrentCamera.ViewportSize.X - 32
 
@@ -3589,6 +3939,82 @@ do
             table.insert(Labels, Label)
         end
 
+        return Label
+    end
+
+    function Funcs:AddCustomFontLabel(...)
+        local Info = {}
+        local First = select(1, ...)
+        local Second = select(2, ...)
+        local SecondIsInfo = typeof(Second) == "table" and Second.Type ~= "CustomFont"
+
+        if typeof(First) == "table" or SecondIsInfo then
+            local Params = typeof(First) == "table" and First or Second
+            local TextSize = Params.TextSize or 18
+            Info.Idx = SecondIsInfo and First or nil
+            Info.Text = Params.Text or ""
+            Info.Font = Params.Font or Library.CustomFont
+            Info.Size = Params.Height or Params.Size or TextSize + 8
+            Info.TextSize = TextSize
+            Info.TextColor3 = Params.TextColor3 or Params.Color or Library.Scheme.FontColor
+            Info.TextXAlignment = Params.TextXAlignment or Enum.TextXAlignment.Left
+            Info.TextYAlignment = Params.TextYAlignment or Enum.TextYAlignment.Center
+            Info.TextWrapped = Params.TextWrapped or Params.DoesWrap or false
+            Info.Visible = Params.Visible ~= false
+        else
+            Info.Text = First or ""
+            Info.Font = typeof(Second) == "table" and Second or Library.CustomFont
+            Info.Size = 24
+            Info.TextSize = 18
+            Info.TextColor3 = Library.Scheme.FontColor
+            Info.TextXAlignment = Enum.TextXAlignment.Left
+            Info.TextYAlignment = Enum.TextYAlignment.Center
+            Info.TextWrapped = false
+            Info.Visible = true
+            Info.Idx = select(3, ...) or nil
+        end
+
+        local Groupbox = self
+        local Holder = New("Frame", {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 0, Info.Size),
+            Visible = Info.Visible,
+            Parent = Groupbox.Container,
+        })
+
+        local Label = Library:CreateCustomText(Holder, {
+            Font = Info.Font,
+            Text = Info.Text,
+            TextSize = Info.TextSize,
+            TextColor3 = Info.TextColor3,
+            TextXAlignment = Info.TextXAlignment,
+            TextYAlignment = Info.TextYAlignment,
+            TextWrapped = Info.TextWrapped,
+            Size = UDim2.fromScale(1, 1),
+        })
+        Label.Type = "CustomFontLabel"
+        Label.Visible = Info.Visible
+
+        function Label:SetVisible(Visible: boolean)
+            Label.Visible = Visible
+            Holder.Visible = Visible
+            Groupbox:Resize()
+        end
+
+        function Label:SetHeight(Height: number)
+            Holder.Size = UDim2.new(1, 0, 0, Height)
+            Groupbox:Resize()
+        end
+
+        Label.Holder = Holder
+        table.insert(Groupbox.Elements, Label)
+        if Info.Idx then
+            Labels[Info.Idx] = Label
+        else
+            table.insert(Labels, Label)
+        end
+
+        Groupbox:Resize()
         return Label
     end
 
@@ -7180,6 +7606,10 @@ Library.applynewelments = Library.ApplyNewElements
 Library.applynewelements = Library.ApplyNewElements
 
 function Library:SetFont(FontFace)
+    if typeof(FontFace) == "table" and FontFace.Type == "CustomFont" then
+        return Library:SetCustomFont(FontFace)
+    end
+
     if typeof(FontFace) == "EnumItem" then
         FontFace = Font.fromEnum(FontFace)
     end
@@ -7879,7 +8309,10 @@ function Library:CreateWindow(WindowInfo)
         math.clamp(WindowInfo.Size.X.Offset, Library.MinSize.X, MaxX),
         math.clamp(WindowInfo.Size.Y.Offset, Library.MinSize.Y, MaxY)
     )
-    if typeof(WindowInfo.Font) == "EnumItem" then
+    if typeof(WindowInfo.Font) == "table" and WindowInfo.Font.Type == "CustomFont" then
+        Library:SetCustomFont(WindowInfo.Font)
+        WindowInfo.Font = Library.Scheme.Font
+    elseif typeof(WindowInfo.Font) == "EnumItem" then
         WindowInfo.Font = Font.fromEnum(WindowInfo.Font)
     end
     WindowInfo.CornerRadius = math.min(WindowInfo.CornerRadius, 20)
