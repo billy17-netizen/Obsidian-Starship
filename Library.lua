@@ -333,7 +333,7 @@ local Templates = {
             NumberSequenceKeypoint.new(1, 1),
         }),
         GradientRotation = 35,
-        BackgroundImageTransparency = 0.88,
+        BackgroundImageTransparency = 0.12,
         BackgroundImageScaleType = Enum.ScaleType.Crop,
         BackgroundImageContentTransparency = 0.2,
         BackgroundImagePanelTransparency = 0.08,
@@ -347,9 +347,9 @@ local Templates = {
         TabStyle = "Default", -- Default, Card
         FullscreenBackground = false,
         FullscreenBackgroundColor = Color3.fromRGB(0, 0, 0),
-        FullscreenBackgroundTransparency = 1,
+        FullscreenBackgroundTransparency = 0.55,
         FullscreenBackgroundImage = nil,
-        FullscreenBackgroundImageTransparency = 0.9,
+        FullscreenBackgroundImageTransparency = 0.15,
         FullscreenBackgroundImageScaleType = Enum.ScaleType.Crop,
         ShowCustomCursor = true,
         Font = Enum.Font.Code,
@@ -8594,8 +8594,6 @@ function Library:CreateWindow(WindowInfo)
         FullscreenBackground.ScaleType = WindowInfo.FullscreenBackgroundImageScaleType
         if WindowInfo.FullscreenBackgroundImage and WindowInfo.FullscreenBackgroundImage ~= "" then
             FullscreenBackground.BackgroundTransparency = math.max(0.95, WindowInfo.FullscreenBackgroundTransparency)
-        elseif WindowInfo.FullscreenBackground == true then
-            FullscreenBackground.BackgroundTransparency = 1
         end
 
         Library.KeybindFrame, Library.KeybindContainer = Library:AddDraggableMenu("Keybinds")
