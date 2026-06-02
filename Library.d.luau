@@ -1195,6 +1195,7 @@ export type LoadingInfo = {
     BlackHoleColumns: number?,
     BlackHoleFrameSize: Vector2?,
     BlackHoleTransparency: number?,
+    BlackHoleRingPadding: Vector2?,
     ProgressShine: boolean?,
     ProgressTexture: boolean?,
     ProgressTextureImage: string | number?,

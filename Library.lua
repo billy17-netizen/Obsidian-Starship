@@ -79,10 +79,10 @@ local CustomImageManagerAssets = {
         Id = nil,
     },
 
-    BlackHoleBarSheet = {
+    BlackHoleRingSheet = {
         RobloxId = 0,
-        Path = "Obsidian/assets/BlackHoleBarSheet.png",
-        URL = BaseURL .. "assets/BlackHoleBarSheet.png",
+        Path = "Obsidian/assets/BlackHoleRingSheet.png",
+        URL = BaseURL .. "assets/BlackHoleRingSheet.png",
 
         Id = nil,
     },
@@ -503,16 +503,17 @@ local Templates = {
         EntranceAnimation = true,
         ExitAnimation = true,
         AmbientGradient = true,
-        Backdrop = true,
+        Backdrop = false,
         BackdropTransparency = 0.35,
         IconPulse = true,
         BlackHole = true,
-        BlackHoleImage = CustomImageManager.GetAsset("BlackHoleBarSheet"),
+        BlackHoleImage = CustomImageManager.GetAsset("BlackHoleRingSheet"),
         BlackHoleFrameRate = 32,
         BlackHoleFrameCount = 32,
         BlackHoleColumns = 8,
-        BlackHoleFrameSize = Vector2.new(128, 16),
-        BlackHoleTransparency = 0.08,
+        BlackHoleFrameSize = Vector2.new(256, 128),
+        BlackHoleTransparency = 0.12,
+        BlackHoleRingPadding = Vector2.new(170, 130),
         ProgressShine = false,
         ProgressTexture = true,
         ProgressTextureImage = CustomImageManager.GetAsset("LoadingBarTexture"),
@@ -12362,12 +12363,14 @@ function Library:CreateLoading(LoadingInfo)
     local BlackHoleColumns = math.max(1, math.floor(tonumber(LoadingInfo.BlackHoleColumns) or 8))
     local BlackHoleTransparency = math.clamp(tonumber(LoadingInfo.BlackHoleTransparency) or 0.04, 0, 1)
     local UseBlackHole = LoadingInfo.Animated and LoadingInfo.BlackHole
+    local BlackHoleRingPadding = typeof(LoadingInfo.BlackHoleRingPadding) == "Vector2" and LoadingInfo.BlackHoleRingPadding
+        or Vector2.new(170, 130)
     local BlackHoleImage = LoadingInfo.BlackHoleImage
     if tonumber(BlackHoleImage) then
         BlackHoleImage = string.format("rbxassetid://%s", tostring(BlackHoleImage))
     elseif IsHttpUrl(BlackHoleImage) then
         BlackHoleImage = Library:DownloadImage(BlackHoleImage, {
-            AssetName = "LoadingBlackHoleBar_" .. HashString(BlackHoleImage),
+            AssetName = "LoadingBlackHoleRing_" .. HashString(BlackHoleImage),
             Extension = "png",
         })
     end
@@ -12383,6 +12386,18 @@ function Library:CreateLoading(LoadingInfo)
             AssetName = "LoadingBarTexture_" .. HashString(ProgressTextureImage),
             Extension = "png",
         })
+    end
+
+    local function GetLoadingFrameWidth()
+        return Loading.ShowSidebar and (Loading.ContentWidth + Loading.SidebarWidth) or Loading.WindowWidth
+    end
+
+    local function GetBlackHoleRingSize(Height)
+        local Scale = Library.IsMobile and 0.8 or 1
+        return UDim2.fromOffset(
+            (GetLoadingFrameWidth() + BlackHoleRingPadding.X) * Scale,
+            ((Height or Loading.WindowHeight) + BlackHoleRingPadding.Y) * Scale
+        )
     end
 
     --// ScreenGui \\--
@@ -12428,7 +12443,7 @@ function Library:CreateLoading(LoadingInfo)
         BackgroundTransparency = UseEntranceAnimation and 1 or 0,
         Position = UseEntranceAnimation and UDim2.new(0.5, 0, 0.5, 18) or UDim2.fromScale(0.5, 0.5),
         Size = UDim2.fromOffset(
-            Loading.ShowSidebar and (Loading.ContentWidth + Loading.SidebarWidth) or Loading.WindowWidth,
+            GetLoadingFrameWidth(),
             Loading.WindowHeight
         ),
         ClipsDescendants = true,
@@ -12449,6 +12464,41 @@ function Library:CreateLoading(LoadingInfo)
     table.insert(Library.Scales, MainScale)
     Library.ScalesOffset[MainScale] = Library.IsMobile and 0.2 or 0
 
+    local BlackHoleRing
+    if UseBlackHole then
+        BlackHoleRing = New("ImageLabel", {
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            BackgroundTransparency = 1,
+            Image = BlackHoleImage,
+            ImageRectOffset = Vector2.zero,
+            ImageRectSize = BlackHoleFrameSize,
+            ImageTransparency = UseEntranceAnimation and 1 or BlackHoleTransparency,
+            Position = MainFrame.Position,
+            ScaleType = Enum.ScaleType.Stretch,
+            Size = GetBlackHoleRingSize(),
+            ZIndex = 2,
+            Parent = ScreenGui,
+        })
+
+        local LastFrame = -1
+        TrackConnection(RunService.RenderStepped:Connect(function()
+            if not LoadingAnimations.Running then
+                return
+            end
+
+            local Frame = math.floor(os.clock() * BlackHoleFrameRate) % BlackHoleFrameCount
+            if Frame == LastFrame then
+                return
+            end
+
+            LastFrame = Frame
+            BlackHoleRing.ImageRectOffset = Vector2.new(
+                (Frame % BlackHoleColumns) * BlackHoleFrameSize.X,
+                math.floor(Frame / BlackHoleColumns) * BlackHoleFrameSize.Y
+            )
+        end))
+    end
+
     if UseEntranceAnimation then
         TweenObject(
             MainFrame,
@@ -12463,6 +12513,17 @@ function Library:CreateLoading(LoadingInfo)
             TweenInfo.new(0.48, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
             { Scale = TargetScale }
         )
+
+        if BlackHoleRing then
+            TweenObject(
+                BlackHoleRing,
+                TweenInfo.new(0.48, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+                {
+                    ImageTransparency = BlackHoleTransparency,
+                    Position = UDim2.fromScale(0.5, 0.5),
+                }
+            )
+        end
     end
 
     if LoadingInfo.Animated and LoadingInfo.AmbientGradient then
@@ -12829,39 +12890,6 @@ function Library:CreateLoading(LoadingInfo)
         end
     end
 
-    if UseBlackHole then
-        local BlackHoleBar = New("ImageLabel", {
-            BackgroundTransparency = 1,
-            Image = BlackHoleImage,
-            ImageRectOffset = Vector2.zero,
-            ImageRectSize = BlackHoleFrameSize,
-            ImageTransparency = BlackHoleTransparency,
-            Position = UDim2.fromScale(0, 0),
-            ScaleType = Enum.ScaleType.Stretch,
-            Size = UDim2.fromScale(1, 1),
-            ZIndex = 2,
-            Parent = SliderFill,
-        })
-
-        local LastFrame = -1
-        TrackConnection(RunService.RenderStepped:Connect(function()
-            if not LoadingAnimations.Running then
-                return
-            end
-
-            local Frame = math.floor(os.clock() * BlackHoleFrameRate) % BlackHoleFrameCount
-            if Frame == LastFrame then
-                return
-            end
-
-            LastFrame = Frame
-            BlackHoleBar.ImageRectOffset = Vector2.new(
-                (Frame % BlackHoleColumns) * BlackHoleFrameSize.X,
-                math.floor(Frame / BlackHoleColumns) * BlackHoleFrameSize.Y
-            )
-        end))
-    end
-
     local ProgressLabel = New("TextLabel", {
         BackgroundTransparency = 1,
         Size = UDim2.fromScale(1, 1),
@@ -13010,6 +13038,12 @@ function Library:CreateLoading(LoadingInfo)
         end
 
         TweenService:Create(MainFrame, Library.TweenInfo, { Size = UDim2.fromOffset(FinalWidth, FinalHeight) }):Play()
+        if BlackHoleRing then
+            TweenService:Create(BlackHoleRing, Library.TweenInfo, {
+                Size = GetBlackHoleRingSize(FinalHeight),
+            }):Play()
+        end
+
         TweenService:Create(SideBar, Library.TweenInfo, {
             Position = UDim2.fromOffset(Loading.ContentWidth, 0),
             Size = UDim2.new(0, ShowSidebar and Loading.SidebarWidth or 0, 1, 0),
@@ -13336,6 +13370,17 @@ function Library:CreateLoading(LoadingInfo)
                     Backdrop,
                     TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
                     { BackgroundTransparency = 1 }
+                ):Play()
+            end
+
+            if BlackHoleRing then
+                TweenService:Create(
+                    BlackHoleRing,
+                    TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                    {
+                        ImageTransparency = 1,
+                        Position = UDim2.new(0.5, 0, 0.5, 14),
+                    }
                 ):Play()
             end
 
