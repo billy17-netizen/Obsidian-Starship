@@ -17,6 +17,7 @@ This fork keeps the familiar Obsidian/Linoria-style API while adding quality-of-
 - Remote background images: `BackgroundImage`, `Window:SetBackgroundImage(url)`, and `Window:SetFullscreenBackgroundImage(url)` accept direct internet image URLs and cache them through `Library.ImageManager`.
 - Dashboard tab: `Window:AddDashboardTab()` creates a ready-made landing tab with overview panels, status cards, and quick actions.
 - New element pack: `Library:ApplyNewElements()` exposes glass panels, liquid-glass toggles/buttons, highlight buttons, and shiny animated buttons on groupboxes.
+- Shiny image masks: shiny buttons and loading shimmer use bounded PNG alpha masks with `ClipsDescendants`, preventing sweep effects from overflowing rounded UI.
 - Nested tabboxes: `Groupbox:AddTabbox()` creates tabbed sections inside any groupbox, so compact category panels can hold their own sub-tabs.
 - Full-width tab content: `Tab:AddFullGroupbox()` and `Tab:AddFullTabbox()` span the tab above the normal left/right columns for large previews or viewport-style layouts.
 - Premium loading screen: `Library:CreateLoading()` now supports entrance/exit motion, optional backdrop fade, ambient gradient sweep, floating particles, icon pulse rings, progress shimmer, and animated text updates.

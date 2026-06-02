@@ -334,6 +334,9 @@ export type NewElementButtonInfo = {
     GradientTransparency: NumberSequence?,
     GradientRotation: number?,
     Shine: boolean?,
+    ShineColor: Color3 | string?,
+    ShineTransparency: number?,
+    ShineWidth: number?,
     Disabled: boolean?,
     Visible: boolean?,
 }

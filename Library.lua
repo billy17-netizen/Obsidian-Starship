@@ -28,7 +28,7 @@ local Toggles = {}
 local Options = {}
 local Tooltips = {}
 
-local BaseURL = "https://raw.githubusercontent.com/deividcomsono/Obsidian/refs/heads/main/"
+local BaseURL = "https://raw.githubusercontent.com/tanhoangviet/Obsidian-UI-Modded/main/"
 local CustomImageManager = {}
 local CustomImageManagerAssets = {
     TransparencyTexture = {
@@ -59,6 +59,22 @@ local CustomImageManagerAssets = {
         RobloxId = 97682394690683,
         Path = "Obsidian/assets/CheckIcon.png",
         URL = BaseURL .. "assets/CheckIcon.png",
+
+        Id = nil,
+    },
+
+    ShinyEffect = {
+        RobloxId = 0,
+        Path = "Obsidian/assets/ShinyEffect.png",
+        URL = BaseURL .. "assets/ShinyEffect.png",
+
+        Id = nil,
+    },
+
+    LoadingShine = {
+        RobloxId = 0,
+        Path = "Obsidian/assets/LoadingShine.png",
+        URL = BaseURL .. "assets/LoadingShine.png",
 
         Id = nil,
     },
@@ -5128,6 +5144,7 @@ do
                 ImageRectSize = ParsedIcon.ImageRectSize,
                 Position = UDim2.new(0, 10, 0.5, 0),
                 Size = UDim2.fromOffset(16, 16),
+                ZIndex = 2,
                 Parent = Holder,
             })
         end
@@ -5138,27 +5155,23 @@ do
             Size = ParsedIcon and UDim2.new(1, -24, 1, 0) or UDim2.fromScale(1, 1),
             Text = Button.Text,
             TextSize = Info.TextSize or 14,
+            ZIndex = 2,
             Parent = Holder,
         })
 
         local Shine
         if Variant == "ShinyButton" or Variant == "LiquidGlassButton" or Info.Shine then
-            Shine = New("Frame", {
+            Shine = New("ImageLabel", {
                 AnchorPoint = Vector2.new(0.5, 0.5),
-                BackgroundColor3 = "WhiteColor",
-                BackgroundTransparency = 0.7,
+                BackgroundTransparency = 1,
+                Image = CustomImageManager.GetAsset("ShinyEffect"),
+                ImageColor3 = Info.ShineColor or "WhiteColor",
+                ImageTransparency = Info.ShineTransparency or 0,
                 Position = UDim2.fromScale(-0.25, 0.5),
-                Rotation = 18,
-                Size = UDim2.new(0, 18, 2, 0),
+                ScaleType = Enum.ScaleType.Stretch,
+                Size = UDim2.new(0, Info.ShineWidth or 74, 1, 0),
+                ZIndex = 1,
                 Parent = Holder,
-            })
-            Library:AddGradient(Shine, {
-                Rotation = 90,
-                Transparency = NumberSequence.new({
-                    NumberSequenceKeypoint.new(0, 1),
-                    NumberSequenceKeypoint.new(0.5, 0.15),
-                    NumberSequenceKeypoint.new(1, 1),
-                }),
             })
         end
 
@@ -12424,28 +12437,21 @@ function Library:CreateLoading(LoadingInfo)
             { Rotation = 380 }
         )
 
-        local Sweep = New("Frame", {
+        local Sweep = New("ImageLabel", {
             AnchorPoint = Vector2.new(0.5, 0.5),
-            BackgroundColor3 = "WhiteColor",
-            BackgroundTransparency = 0.88,
-            Position = UDim2.new(-0.2, 0, 0.45, 0),
-            Rotation = 14,
-            Size = UDim2.new(0.18, 0, 1.45, 0),
+            BackgroundTransparency = 1,
+            Image = CustomImageManager.GetAsset("LoadingShine"),
+            ImageTransparency = 0.08,
+            Position = UDim2.new(-0.2, 0, 0.5, 0),
+            ScaleType = Enum.ScaleType.Stretch,
+            Size = UDim2.new(0.24, 0, 1, 0),
             ZIndex = 1,
             Parent = MainFrame,
-        })
-        Library:AddGradient(Sweep, {
-            Rotation = 90,
-            Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 1),
-                NumberSequenceKeypoint.new(0.5, 0.35),
-                NumberSequenceKeypoint.new(1, 1),
-            }),
         })
         TweenObject(
             Sweep,
             TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1),
-            { Position = UDim2.new(1.22, 0, 0.48, 0) }
+            { Position = UDim2.new(1.22, 0, 0.5, 0) }
         )
     end
 
@@ -12612,6 +12618,7 @@ function Library:CreateLoading(LoadingInfo)
     local IconHolder = New("Frame", {
         Name = "IconHolder",
         BackgroundTransparency = 1,
+        ClipsDescendants = true,
         Size = UDim2.fromOffset(64, 64),
         Parent = InnerContent,
     })
@@ -12622,7 +12629,7 @@ function Library:CreateLoading(LoadingInfo)
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 BackgroundTransparency = 1,
                 Position = UDim2.fromScale(0.5, 0.5),
-                Size = UDim2.fromScale(0.86, 0.86),
+                Size = UDim2.fromScale(0.58, 0.58),
                 Parent = IconHolder,
             })
             table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Ring }))
@@ -12636,7 +12643,7 @@ function Library:CreateLoading(LoadingInfo)
             TweenObject(
                 Ring,
                 TweenInfo.new(1.35, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, -1, true, Delay),
-                { Size = UDim2.fromScale(1.25, 1.25) }
+                { Size = UDim2.fromScale(0.98, 0.98) }
             )
             TweenObject(
                 RingStroke,
@@ -12766,22 +12773,15 @@ function Library:CreateLoading(LoadingInfo)
             }),
         })
 
-        local SliderShine = New("Frame", {
+        local SliderShine = New("ImageLabel", {
             AnchorPoint = Vector2.new(0.5, 0.5),
-            BackgroundColor3 = "WhiteColor",
-            BackgroundTransparency = 0.55,
+            BackgroundTransparency = 1,
+            Image = CustomImageManager.GetAsset("ShinyEffect"),
+            ImageTransparency = 0,
             Position = UDim2.new(-0.25, 0, 0.5, 0),
-            Rotation = 12,
-            Size = UDim2.new(0.28, 0, 1.8, 0),
+            ScaleType = Enum.ScaleType.Stretch,
+            Size = UDim2.new(0.38, 0, 1, 0),
             Parent = SliderFill,
-        })
-        Library:AddGradient(SliderShine, {
-            Rotation = 90,
-            Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 1),
-                NumberSequenceKeypoint.new(0.5, 0.2),
-                NumberSequenceKeypoint.new(1, 1),
-            }),
         })
         TweenObject(
             SliderShine,

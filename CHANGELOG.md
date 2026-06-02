@@ -13,6 +13,7 @@
 + Keybind menu now uses a compact fixed width via WindowInfo.KeybindMenuWidth
 + Example sprite animation now renders as a floating sprite near the top search area instead of inside the groupbox
 + Example.lua adds a premium loading preview button for testing the new loading animation stack
++ Shiny button and loading shimmer effects now use bounded PNG image masks with clipping instead of oversized rotated frames
 ```
 
 ## 21.04.2026
