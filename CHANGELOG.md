@@ -6,8 +6,8 @@
 + Library:AddKeybindMenuButton() and Library:AddKeybindMenuToggle()
 + Groupbox:AddSprite(), Library:AddFloatingSprite(), Library:DownloadSprite(), and Library:DownloadVideo()
 + BackgroundImage and fullscreen background image URLs now download through Library.ImageManager
-+ Premium Library:CreateLoading() animations with entrance/exit motion, backdrop fade, ambient gradient, particles, icon pulse rings, textured progress, and animated text
-+ Loading progress bar texture and 32fps black-hole ring spritesheet around the loading UI
++ Premium Library:CreateLoading() animations with entrance/exit motion, optional backdrop fade, ambient gradient, optional particles, icon pulse rings, clipped textured progress, and animated text
++ Loading drawing API: AddDrawingFrame(), AddDrawingImage(), AddDrawingLine(), AddDrawingGradient(), and ClearDrawings()
 
 [changes]
 + KeyPicker synced keybind toggles now render as liquid-glass pill switches
@@ -16,6 +16,8 @@
 + Example.lua adds a premium loading preview button for testing the new loading animation stack
 + Shiny button and loading shimmer effects now use bounded PNG image masks with clipping instead of oversized rotated frames
 + Loading dark backdrop overlay is now disabled by default; set Backdrop = true to opt back in
++ Removed the black-hole loading ring effect and keep the loading surface opaque by default
++ Groupbox:AddTabbox() now uses a flatter clipped nested-tab style to avoid doubled rounded corners
 ```
 
 ## 21.04.2026

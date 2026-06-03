@@ -234,19 +234,41 @@ LeftGroupBox:AddLiquidGlassButton({
             ContentWidth = 460,
             SidebarWidth = 230,
             BackdropTransparency = 0.28,
-            ParticleCount = 22,
+            SurfaceTransparency = 0,
+            DrawingDecorations = true,
+            Drawings = {
+                {
+                    Type = "Texture",
+                    Name = "BottomTextureWash",
+                    Image = RepoAsset("assets/LoadingBarTexture.png"),
+                    ImageColor3 = Color3.fromRGB(125, 85, 255),
+                    ImageTransparency = 0.78,
+                    Position = UDim2.new(0, 0, 1, -44),
+                    Size = UDim2.new(1, 0, 0, 44),
+                    ScaleType = Enum.ScaleType.Tile,
+                    TileSize = UDim2.fromOffset(96, 18),
+                },
+                {
+                    Type = "Line",
+                    Name = "BottomAccentLine",
+                    BackgroundColor3 = Color3.fromRGB(125, 85, 255),
+                    BackgroundTransparency = 0.35,
+                    Position = UDim2.new(0, 14, 1, -45),
+                    Size = UDim2.new(1, -28, 0, 1),
+                },
+            },
         })
 
         Loading:SetTotalSteps(6)
         Loading:SetMessage("Booting mspaint")
-        Loading:SetDescription("Preparing premium loading animations...")
+        Loading:SetDescription("Preparing clipped textures and loading drawings...")
         Loading.Sidebar:AddLabel({
-            Text = "Live preview: backdrop fade, ambient gradient, particles, icon pulse, progress shimmer, and exit fade.",
+            Text = "Live preview: opaque loading surface, clipped progress texture, icon pulse, drawing API decorations, and exit fade.",
             DoesWrap = true,
         })
         Loading.Sidebar:AddGlassPanel("LoadingAnimationPanel", {
-            Title = "Animation stack",
-            Description = "Entrance, pulse rings, particles, progress shine, and animated text swaps.",
+            Title = "Drawing API",
+            Description = "AddDrawingFrame/Image/Line/Gradient can paint clipped texture details inside the loading UI.",
             Icon = "sparkles",
             Height = 74,
         })

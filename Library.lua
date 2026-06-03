@@ -78,14 +78,6 @@ local CustomImageManagerAssets = {
 
         Id = nil,
     },
-
-    BlackHoleRingSheet = {
-        RobloxId = 0,
-        Path = "Obsidian/assets/BlackHoleRingSheet.png",
-        URL = BaseURL .. "assets/BlackHoleRingSheet.png",
-
-        Id = nil,
-    },
 }
 do
     local function RecursiveCreatePath(Path: string, IsFile: boolean?)
@@ -506,21 +498,16 @@ local Templates = {
         Backdrop = false,
         BackdropTransparency = 0.35,
         IconPulse = true,
-        BlackHole = true,
-        BlackHoleImage = CustomImageManager.GetAsset("BlackHoleRingSheet"),
-        BlackHoleFrameRate = 32,
-        BlackHoleFrameCount = 32,
-        BlackHoleColumns = 8,
-        BlackHoleFrameSize = Vector2.new(256, 128),
-        BlackHoleTransparency = 0.12,
-        BlackHoleRingPadding = Vector2.new(170, 130),
+        SurfaceTransparency = 0,
+        DrawingDecorations = true,
+        Drawings = {},
         ProgressShine = false,
         ProgressTexture = true,
         ProgressTextureImage = CustomImageManager.GetAsset("LoadingBarTexture"),
-        ProgressTextureTransparency = 0.28,
+        ProgressTextureTransparency = 0.42,
         ProgressTextureSpeed = 1.35,
-        Particles = true,
-        ParticleCount = 16,
+        Particles = false,
+        ParticleCount = 10,
 
         CurrentStep = 0,
         TotalSteps = 10,
@@ -8024,12 +8011,14 @@ do
 
         local Groupbox = self
         local Container = Groupbox.Container
-        local CornerRadius = Library.CornerRadius
+        local CornerRadius = math.max(3, math.floor(Library.CornerRadius * 0.65))
+        local ButtonCornerRadius = 0
 
         Groupbox.Tabboxes = Groupbox.Tabboxes or {}
 
         local TabboxHolder = New("Frame", {
             BackgroundColor3 = "BackgroundColor",
+            ClipsDescendants = true,
             Size = UDim2.fromScale(1, 0),
             Visible = Info.Visible ~= false,
             Parent = Container,
@@ -8046,6 +8035,7 @@ do
 
         local TabboxButtons = New("Frame", {
             BackgroundTransparency = 1,
+            ClipsDescendants = true,
             Size = UDim2.new(1, 0, 0, 34),
             Parent = TabboxHolder,
         })
@@ -8106,7 +8096,7 @@ do
             table.insert(
                 Library.Corners,
                 New("UICorner", {
-                    CornerRadius = UDim.new(0, CornerRadius),
+                    CornerRadius = UDim.new(0, ButtonCornerRadius),
                     Parent = Button,
                 })
             )
@@ -8115,8 +8105,9 @@ do
                 Name = "BottomCover",
                 BackgroundColor3 = "MainColor",
                 BorderSizePixel = 0,
-                Position = UDim2.new(0, 0, 1, -CornerRadius),
-                Size = UDim2.new(1, 0, 0, CornerRadius),
+                Position = UDim2.new(0, 0, 1, -ButtonCornerRadius),
+                Size = UDim2.new(1, 0, 0, ButtonCornerRadius),
+                Visible = false,
                 Parent = Button,
             })
 
@@ -8125,7 +8116,7 @@ do
                 BackgroundColor3 = "MainColor",
                 BorderSizePixel = 0,
                 Position = UDim2.new(0, 0, 0, 0),
-                Size = UDim2.new(0, CornerRadius, 1, 0),
+                Size = UDim2.new(0, ButtonCornerRadius, 1, 0),
                 Visible = false,
                 Parent = Button,
             })
@@ -8136,7 +8127,7 @@ do
                 BackgroundColor3 = "MainColor",
                 BorderSizePixel = 0,
                 Position = UDim2.new(1, 0, 0, 0),
-                Size = UDim2.new(0, CornerRadius, 1, 0),
+                Size = UDim2.new(0, ButtonCornerRadius, 1, 0),
                 Visible = false,
                 Parent = Button,
             })
@@ -8269,14 +8260,15 @@ do
             end
 
             function Tab:UpdateCorners()
-                LeftCover.Visible = TabIndex ~= 1
-                RightCover.Visible = TabIndex ~= TotalButtons
+                BottomCover.Visible = false
+                LeftCover.Visible = false
+                RightCover.Visible = false
 
-                BottomCover.Position = UDim2.new(0, 0, 1, -Library.CornerRadius)
-                BottomCover.Size = UDim2.new(1, 0, 0, Library.CornerRadius)
+                BottomCover.Position = UDim2.new(0, 0, 1, -ButtonCornerRadius)
+                BottomCover.Size = UDim2.new(1, 0, 0, ButtonCornerRadius)
 
-                LeftCover.Size = UDim2.new(0, Library.CornerRadius, 1, 0)
-                RightCover.Size = UDim2.new(0, Library.CornerRadius, 1, 0)
+                LeftCover.Size = UDim2.new(0, ButtonCornerRadius, 1, 0)
+                RightCover.Size = UDim2.new(0, ButtonCornerRadius, 1, 0)
             end
 
             if not Tabbox.ActiveTab then
@@ -12355,28 +12347,11 @@ function Library:CreateLoading(LoadingInfo)
     end
 
     local BackdropTransparency = math.clamp(tonumber(LoadingInfo.BackdropTransparency) or 0.35, 0, 1)
+    local SurfaceTransparency = math.clamp(tonumber(LoadingInfo.SurfaceTransparency) or 0, 0, 1)
     local ParticleCount = math.clamp(math.floor(tonumber(LoadingInfo.ParticleCount) or 0), 0, 48)
-    local BlackHoleFrameSize = typeof(LoadingInfo.BlackHoleFrameSize) == "Vector2" and LoadingInfo.BlackHoleFrameSize
-        or Vector2.new(64, 64)
-    local BlackHoleFrameRate = math.max(1, tonumber(LoadingInfo.BlackHoleFrameRate) or 32)
-    local BlackHoleFrameCount = math.max(1, math.floor(tonumber(LoadingInfo.BlackHoleFrameCount) or 32))
-    local BlackHoleColumns = math.max(1, math.floor(tonumber(LoadingInfo.BlackHoleColumns) or 8))
-    local BlackHoleTransparency = math.clamp(tonumber(LoadingInfo.BlackHoleTransparency) or 0.04, 0, 1)
-    local UseBlackHole = LoadingInfo.Animated and LoadingInfo.BlackHole
-    local BlackHoleRingPadding = typeof(LoadingInfo.BlackHoleRingPadding) == "Vector2" and LoadingInfo.BlackHoleRingPadding
-        or Vector2.new(170, 130)
-    local BlackHoleImage = LoadingInfo.BlackHoleImage
-    if tonumber(BlackHoleImage) then
-        BlackHoleImage = string.format("rbxassetid://%s", tostring(BlackHoleImage))
-    elseif IsHttpUrl(BlackHoleImage) then
-        BlackHoleImage = Library:DownloadImage(BlackHoleImage, {
-            AssetName = "LoadingBlackHoleRing_" .. HashString(BlackHoleImage),
-            Extension = "png",
-        })
-    end
 
     local UseProgressTexture = LoadingInfo.ProgressTexture or LoadingInfo.ProgressShine
-    local ProgressTextureTransparency = math.clamp(tonumber(LoadingInfo.ProgressTextureTransparency) or 0.28, 0, 1)
+    local ProgressTextureTransparency = math.clamp(tonumber(LoadingInfo.ProgressTextureTransparency) or 0.42, 0, 1)
     local ProgressTextureSpeed = math.max(0, tonumber(LoadingInfo.ProgressTextureSpeed) or 1.35)
     local ProgressTextureImage = LoadingInfo.ProgressTextureImage
     if tonumber(ProgressTextureImage) then
@@ -12390,14 +12365,6 @@ function Library:CreateLoading(LoadingInfo)
 
     local function GetLoadingFrameWidth()
         return Loading.ShowSidebar and (Loading.ContentWidth + Loading.SidebarWidth) or Loading.WindowWidth
-    end
-
-    local function GetBlackHoleRingSize(Height)
-        local Scale = Library.IsMobile and 0.8 or 1
-        return UDim2.fromOffset(
-            (GetLoadingFrameWidth() + BlackHoleRingPadding.X) * Scale,
-            ((Height or Loading.WindowHeight) + BlackHoleRingPadding.Y) * Scale
-        )
     end
 
     --// ScreenGui \\--
@@ -12440,7 +12407,7 @@ function Library:CreateLoading(LoadingInfo)
         BackgroundColor3 = function()
             return Library:GetBetterColor(Library.Scheme.BackgroundColor, -1)
         end,
-        BackgroundTransparency = UseEntranceAnimation and 1 or 0,
+        BackgroundTransparency = SurfaceTransparency,
         Position = UseEntranceAnimation and UDim2.new(0.5, 0, 0.5, 18) or UDim2.fromScale(0.5, 0.5),
         Size = UDim2.fromOffset(
             GetLoadingFrameWidth(),
@@ -12464,39 +12431,209 @@ function Library:CreateLoading(LoadingInfo)
     table.insert(Library.Scales, MainScale)
     Library.ScalesOffset[MainScale] = Library.IsMobile and 0.2 or 0
 
-    local BlackHoleRing
-    if UseBlackHole then
-        BlackHoleRing = New("ImageLabel", {
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            BackgroundTransparency = 1,
-            Image = BlackHoleImage,
-            ImageRectOffset = Vector2.zero,
-            ImageRectSize = BlackHoleFrameSize,
-            ImageTransparency = UseEntranceAnimation and 1 or BlackHoleTransparency,
-            Position = MainFrame.Position,
-            ScaleType = Enum.ScaleType.Stretch,
-            Size = GetBlackHoleRingSize(),
-            ZIndex = 2,
-            Parent = ScreenGui,
+    local DrawingLayer = New("Frame", {
+        Name = "LoadingDrawingLayer",
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        Size = UDim2.fromScale(1, 1),
+        ZIndex = 1,
+        Parent = MainFrame,
+    })
+    Loading.DrawingLayer = DrawingLayer
+    Loading.Drawings = {}
+
+    local function ResolveDrawingImage(Image, Prefix)
+        Image = Image or ""
+        if tonumber(Image) then
+            return string.format("rbxassetid://%s", tostring(Image))
+        elseif IsHttpUrl(Image) then
+            return Library:DownloadImage(Image, {
+                AssetName = (Prefix or "LoadingDrawing_") .. HashString(Image),
+                Extension = "png",
+            })
+        end
+
+        return tostring(Image)
+    end
+
+    local function AddDrawingCorner(Drawing, CornerRadius)
+        CornerRadius = tonumber(CornerRadius) or 0
+        if CornerRadius > 0 then
+            table.insert(
+                Library.Corners,
+                New("UICorner", {
+                    CornerRadius = UDim.new(0, CornerRadius),
+                    Parent = Drawing,
+                })
+            )
+        end
+    end
+
+    local function TrackDrawing(Drawing)
+        table.insert(Loading.Drawings, Drawing)
+        return Drawing
+    end
+
+    function Loading:AddDrawingFrame(Info)
+        Info = typeof(Info) == "table" and Info or {}
+
+        local Drawing = New("Frame", {
+            Name = Info.Name or "DrawingFrame",
+            AnchorPoint = Info.AnchorPoint or Vector2.zero,
+            BackgroundColor3 = Info.BackgroundColor3 or Info.Color or "AccentColor",
+            BackgroundTransparency = math.clamp(
+                tonumber(Info.BackgroundTransparency or Info.Transparency) or 0.35,
+                0,
+                1
+            ),
+            BorderSizePixel = 0,
+            Position = Info.Position or UDim2.fromScale(0, 0),
+            Rotation = tonumber(Info.Rotation) or 0,
+            Size = Info.Size or UDim2.fromOffset(24, 24),
+            Visible = Info.Visible ~= false,
+            ZIndex = tonumber(Info.ZIndex) or 1,
+            Parent = DrawingLayer,
         })
 
-        local LastFrame = -1
-        TrackConnection(RunService.RenderStepped:Connect(function()
-            if not LoadingAnimations.Running then
-                return
-            end
+        AddDrawingCorner(Drawing, Info.CornerRadius or Info.Radius)
 
-            local Frame = math.floor(os.clock() * BlackHoleFrameRate) % BlackHoleFrameCount
-            if Frame == LastFrame then
-                return
-            end
+        if Info.Stroke or Info.StrokeColor or Info.StrokeThickness then
+            Library:AddOutline(Drawing, {
+                Color = Info.StrokeColor or "OutlineColor",
+                Thickness = Info.StrokeThickness or 1,
+                Transparency = Info.StrokeTransparency or 0.2,
+                ShadowTransparency = 1,
+            })
+        end
 
-            LastFrame = Frame
-            BlackHoleRing.ImageRectOffset = Vector2.new(
-                (Frame % BlackHoleColumns) * BlackHoleFrameSize.X,
-                math.floor(Frame / BlackHoleColumns) * BlackHoleFrameSize.Y
-            )
-        end))
+        if typeof(Info.Gradient) == "table" then
+            Library:AddGradient(Drawing, Info.Gradient)
+        end
+
+        return TrackDrawing(Drawing)
+    end
+
+    function Loading:AddDrawingImage(Info)
+        Info = typeof(Info) == "table" and Info or { Image = Info }
+
+        local ScaleType = Info.ScaleType
+        if typeof(ScaleType) ~= "EnumItem" then
+            ScaleType = Info.TileSize and Enum.ScaleType.Tile or Enum.ScaleType.Stretch
+        end
+
+        local Drawing = New("ImageLabel", {
+            Name = Info.Name or "DrawingImage",
+            AnchorPoint = Info.AnchorPoint or Vector2.zero,
+            BackgroundColor3 = Info.BackgroundColor3 or "BackgroundColor",
+            BackgroundTransparency = math.clamp(tonumber(Info.BackgroundTransparency) or 1, 0, 1),
+            BorderSizePixel = 0,
+            Image = ResolveDrawingImage(Info.Image or Info.Texture or Info.Url or Info.URL, "LoadingDrawingImage_"),
+            ImageColor3 = Info.ImageColor3 or Info.Color or "WhiteColor",
+            ImageRectOffset = Info.ImageRectOffset or Info.RectOffset or Vector2.zero,
+            ImageRectSize = Info.ImageRectSize or Info.RectSize or Vector2.zero,
+            ImageTransparency = math.clamp(tonumber(Info.ImageTransparency or Info.Transparency) or 0, 0, 1),
+            Position = Info.Position or UDim2.fromScale(0, 0),
+            Rotation = tonumber(Info.Rotation) or 0,
+            ScaleType = ScaleType,
+            Size = Info.Size or UDim2.fromOffset(64, 64),
+            SliceCenter = Info.SliceCenter,
+            TileSize = Info.TileSize,
+            Visible = Info.Visible ~= false,
+            ZIndex = tonumber(Info.ZIndex) or 1,
+            Parent = DrawingLayer,
+        })
+
+        AddDrawingCorner(Drawing, Info.CornerRadius or Info.Radius)
+
+        if typeof(Info.Gradient) == "table" then
+            Library:AddGradient(Drawing, Info.Gradient)
+        end
+
+        return TrackDrawing(Drawing)
+    end
+
+    function Loading:AddDrawingLine(Info)
+        Info = typeof(Info) == "table" and Info or {}
+        Info.Size = Info.Size or UDim2.new(1, 0, 0, 1)
+        Info.BackgroundColor3 = Info.BackgroundColor3 or Info.Color or "OutlineColor"
+        Info.BackgroundTransparency = Info.BackgroundTransparency or Info.Transparency or 0
+        return Loading:AddDrawingFrame(Info)
+    end
+
+    function Loading:AddDrawingGradient(Target, Info)
+        if typeof(Target) == "Instance" and Target:IsA("GuiObject") then
+            return Library:AddGradient(Target, Info or {})
+        end
+
+        return Library:AddGradient(DrawingLayer, Target or Info or {})
+    end
+
+    function Loading:ClearDrawings()
+        for _, Drawing in Loading.Drawings do
+            if typeof(Drawing) == "Instance" and Drawing.Parent then
+                Drawing:Destroy()
+            end
+        end
+
+        table.clear(Loading.Drawings)
+    end
+
+    if LoadingInfo.DrawingDecorations then
+        Loading:AddDrawingLine({
+            Name = "TopAccentLine",
+            BackgroundColor3 = "AccentColor",
+            BackgroundTransparency = 0.24,
+            Position = UDim2.fromOffset(12, 0),
+            Size = UDim2.new(1, -24, 0, 1),
+            ZIndex = 1,
+            Gradient = {
+                Rotation = 0,
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 1),
+                    NumberSequenceKeypoint.new(0.18, 0.14),
+                    NumberSequenceKeypoint.new(0.82, 0.14),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+            },
+        })
+
+        Loading:AddDrawingFrame({
+            Name = "CornerBloom",
+            AnchorPoint = Vector2.new(1, 0),
+            BackgroundColor3 = "AccentColor",
+            BackgroundTransparency = 0.9,
+            CornerRadius = 96,
+            Position = UDim2.new(1, 18, 0, -42),
+            Size = UDim2.fromOffset(170, 170),
+            ZIndex = 1,
+            Gradient = {
+                Rotation = 35,
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.72),
+                    NumberSequenceKeypoint.new(0.45, 0.92),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+            },
+        })
+    end
+
+    for _, DrawingInfo in LoadingInfo.Drawings do
+        if typeof(DrawingInfo) ~= "table" then
+            continue
+        end
+
+        local DrawingType = tostring(DrawingInfo.Type or DrawingInfo.Kind or (DrawingInfo.Image and "Image" or "Frame"))
+            :lower()
+        if DrawingType == "image" or DrawingType == "texture" then
+            Loading:AddDrawingImage(DrawingInfo)
+        elseif DrawingType == "line" then
+            Loading:AddDrawingLine(DrawingInfo)
+        elseif DrawingType == "gradient" then
+            Loading:AddDrawingGradient(DrawingInfo)
+        else
+            Loading:AddDrawingFrame(DrawingInfo)
+        end
     end
 
     if UseEntranceAnimation then
@@ -12504,7 +12641,6 @@ function Library:CreateLoading(LoadingInfo)
             MainFrame,
             TweenInfo.new(0.48, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
             {
-                BackgroundTransparency = 0,
                 Position = UDim2.fromScale(0.5, 0.5),
             }
         )
@@ -12514,16 +12650,6 @@ function Library:CreateLoading(LoadingInfo)
             { Scale = TargetScale }
         )
 
-        if BlackHoleRing then
-            TweenObject(
-                BlackHoleRing,
-                TweenInfo.new(0.48, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-                {
-                    ImageTransparency = BlackHoleTransparency,
-                    Position = UDim2.fromScale(0.5, 0.5),
-                }
-            )
-        end
     end
 
     if LoadingInfo.Animated and LoadingInfo.AmbientGradient then
@@ -12599,6 +12725,7 @@ function Library:CreateLoading(LoadingInfo)
         BackgroundTransparency = 1,
         Position = UDim2.fromOffset(0, 0),
         Size = UDim2.new(0, Loading.ContentWidth, 1, 0),
+        ZIndex = 3,
         Parent = MainFrame,
     })
 
@@ -12609,6 +12736,7 @@ function Library:CreateLoading(LoadingInfo)
         Size = UDim2.new(0, Loading.ShowSidebar and Loading.SidebarWidth or 0, 1, 0),
         ClipsDescendants = true,
         Visible = Loading.ShowSidebar,
+        ZIndex = 3,
         Parent = MainFrame,
     })
     local SidebarCorner = New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = SideBar })
@@ -13038,11 +13166,6 @@ function Library:CreateLoading(LoadingInfo)
         end
 
         TweenService:Create(MainFrame, Library.TweenInfo, { Size = UDim2.fromOffset(FinalWidth, FinalHeight) }):Play()
-        if BlackHoleRing then
-            TweenService:Create(BlackHoleRing, Library.TweenInfo, {
-                Size = GetBlackHoleRingSize(FinalHeight),
-            }):Play()
-        end
 
         TweenService:Create(SideBar, Library.TweenInfo, {
             Position = UDim2.fromOffset(Loading.ContentWidth, 0),
@@ -13370,17 +13493,6 @@ function Library:CreateLoading(LoadingInfo)
                     Backdrop,
                     TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
                     { BackgroundTransparency = 1 }
-                ):Play()
-            end
-
-            if BlackHoleRing then
-                TweenService:Create(
-                    BlackHoleRing,
-                    TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-                    {
-                        ImageTransparency = 1,
-                        Position = UDim2.new(0.5, 0, 0.5, 14),
-                    }
                 ):Play()
             end
 

@@ -1174,6 +1174,59 @@ export type LoadingErrorButtonInfo = {
     Callback: ((Loading) -> ())?,
 }
 
+export type LoadingDrawingGradientInfo = {
+    Type: string?,
+    Kind: string?,
+    Name: string?,
+    Color: ColorSequence?,
+    ColorSequence: ColorSequence?,
+    Offset: Vector2?,
+    Rotation: number?,
+    Transparency: NumberSequence?,
+}
+
+export type LoadingDrawingFrameInfo = {
+    Type: string?,
+    Kind: string?,
+    Name: string?,
+    AnchorPoint: Vector2?,
+    BackgroundColor3: Color3 | string?,
+    Color: Color3 | string?,
+    BackgroundTransparency: number?,
+    Transparency: number?,
+    Position: UDim2?,
+    Rotation: number?,
+    Size: UDim2?,
+    Visible: boolean?,
+    ZIndex: number?,
+    CornerRadius: number?,
+    Radius: number?,
+    Stroke: boolean?,
+    StrokeColor: Color3 | string?,
+    StrokeThickness: number?,
+    StrokeTransparency: number?,
+    Gradient: LoadingDrawingGradientInfo?,
+}
+
+export type LoadingDrawingImageInfo = LoadingDrawingFrameInfo & {
+    Type: string?,
+    Image: string | number?,
+    Texture: string | number?,
+    Url: string?,
+    URL: string?,
+    ImageColor3: Color3 | string?,
+    ImageTransparency: number?,
+    ImageRectOffset: Vector2?,
+    ImageRectSize: Vector2?,
+    RectOffset: Vector2?,
+    RectSize: Vector2?,
+    ScaleType: Enum.ScaleType?,
+    SliceCenter: Rect?,
+    TileSize: UDim2?,
+}
+
+export type LoadingDrawingInfo = LoadingDrawingFrameInfo | LoadingDrawingImageInfo | LoadingDrawingGradientInfo
+
 export type LoadingInfo = {
     Title: string?,
     Icon: string | number?,
@@ -1188,14 +1241,9 @@ export type LoadingInfo = {
     Backdrop: boolean?,
     BackdropTransparency: number?,
     IconPulse: boolean?,
-    BlackHole: boolean?,
-    BlackHoleImage: string | number?,
-    BlackHoleFrameRate: number?,
-    BlackHoleFrameCount: number?,
-    BlackHoleColumns: number?,
-    BlackHoleFrameSize: Vector2?,
-    BlackHoleTransparency: number?,
-    BlackHoleRingPadding: Vector2?,
+    SurfaceTransparency: number?,
+    DrawingDecorations: boolean?,
+    Drawings: { LoadingDrawingInfo }?,
     ProgressShine: boolean?,
     ProgressTexture: boolean?,
     ProgressTextureImage: string | number?,
@@ -1225,8 +1273,19 @@ export type Loading = {
     ContentWidth: number,
     SidebarWidth: number,
     ScreenGui: ScreenGui,
+    DrawingLayer: Frame,
+    Drawings: { GuiObject },
     Sidebar: BaseGroupbox,
 
+    AddDrawingFrame: (self: Loading, Info: LoadingDrawingFrameInfo?) -> Frame,
+    AddDrawingImage: (self: Loading, Info: LoadingDrawingImageInfo | string | number) -> ImageLabel,
+    AddDrawingLine: (self: Loading, Info: LoadingDrawingFrameInfo?) -> Frame,
+    AddDrawingGradient: (
+        self: Loading,
+        Target: GuiObject | LoadingDrawingGradientInfo?,
+        Info: LoadingDrawingGradientInfo?
+    ) -> UIGradient,
+    ClearDrawings: (self: Loading) -> (),
     UpdateLayout: (self: Loading) -> (),
     SetMessage: (self: Loading, Text: string) -> (),
     SetDescription: (self: Loading, Text: string) -> (),
