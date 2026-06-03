@@ -49,6 +49,8 @@ local Window = Library:CreateWindow({
     BorderThickness = 1.5,
     --TabStyle = "Card",
     TabsMode = "Sidebar", -- can change between "Sidebar" And "Topbar"
+    KeybindMenuWidth = 360,
+    KeybindMenuMaxHeight = 240,
     FullscreenBackground = true,
     FullscreenBackgroundTransparency = 1,
 })
@@ -75,6 +77,19 @@ local Tabs = {
         Socials = {
             Telegram = "t.me/mspainthub",
             YouTube = "youtube.com/@mspaint",
+        },
+        Advanced = true,
+        GraphValues = { 10, 18, 16, 25, 31, 27, 40, 45 },
+        TopUsers = {
+            { Name = "mspaint", DisplayName = "mspaint", UserId = 1, Score = 991 },
+            { Name = "Obsidian", DisplayName = "Obsidian UI", UserId = 2, Score = 874 },
+            {
+                Name = "LocalPlayer",
+                DisplayName = "Local Player",
+                UserId = game.Players.LocalPlayer.UserId,
+                Score = 720,
+            },
+            { Name = "Guest", DisplayName = "Guest Preview", UserId = 3, Score = 540 },
         },
         Text = "Welcome to the modded Obsidian dashboard. Use this tab as a landing page for script hubs. This text can be very long and the tab info section now scrolls when overflowing.",
     }),
@@ -132,11 +147,12 @@ local FloatingArisu = Library:AddFloatingSprite({
     FrameSize = Vector2.new(64, 64),
     FrameCount = 8,
     Columns = 8,
-    Fps = 10,
-    Position = UDim2.new(0.7, 0, 0, 70),
+    Fps = 12,
+    ParentMode = "Floating",
+    Position = UDim2.new(0.72, 0, 0, 86),
     Size = UDim2.fromOffset(90, 90),
     Visible = true,
-    ZIndex = 12050,
+    ZIndex = 50000,
 })
 
 Library:AddKeybindMenuButton({

@@ -279,6 +279,9 @@ local Library = {
 
     KeybindFrame = nil,
     KeybindContainer = nil,
+    KeybindMenuWidth = 300,
+    KeybindMenuHeight = nil,
+    KeybindMenuMaxHeight = 260,
     KeybindToggles = {},
 
     Notifications = {},
@@ -459,6 +462,10 @@ local Templates = {
         MobileButtonsSide = "Left",
         MobileButtonsMode = "Normal", -- Normal, TopbarPlus
         KeybindMenuWidth = 300,
+        KeybindMenuHeight = nil,
+        KeybindMenuMaxHeight = 260,
+        KeybindMenuSize = nil,
+        KeybindMenuPosition = nil,
 
         UnlockMouseWhileOpen = true,
 
@@ -1808,6 +1815,11 @@ end
 function Library:AddFloatingSprite(Info)
     Info = Info or {}
 
+    local ParentGui = Info.Parent
+    if not ParentGui then
+        ParentGui = Info.ParentMode == "Window" and ScreenGui or FloatingSpritesGui
+    end
+
     local Sprite = {
         Image = Info.Image or Info.AtlasImage or "",
         Visible = Info.Visible ~= false,
@@ -1818,13 +1830,14 @@ function Library:AddFloatingSprite(Info)
     local ImageObject = New("ImageLabel", {
         AnchorPoint = Info.AnchorPoint or Vector2.new(0.5, 0.5),
         BackgroundTransparency = 1,
+        ClipsDescendants = false,
         ImageTransparency = Info.Transparency or 0,
         Position = Info.Position or UDim2.new(0.5, 0, 0, 96),
         ScaleType = Info.ScaleType or Enum.ScaleType.Fit,
         Size = Info.Size or UDim2.fromOffset(96, 96),
         Visible = Sprite.Visible,
-        ZIndex = Info.ZIndex or 12000,
-        Parent = ScreenGui,
+        ZIndex = Info.ZIndex or 50000,
+        Parent = ParentGui,
     })
 
     local function ApplyImage(NewImage)
@@ -1881,6 +1894,34 @@ function Library:AddFloatingSprite(Info)
         ImageObject.Visible = Visible
     end
 
+    function Sprite:SetPosition(Position: UDim2)
+        assert(typeof(Position) == "UDim2", "SetPosition expects a UDim2.")
+        ImageObject.Position = Position
+    end
+
+    function Sprite:SetSize(Size: UDim2)
+        assert(typeof(Size) == "UDim2", "SetSize expects a UDim2.")
+        ImageObject.Size = Size
+    end
+
+    function Sprite:SetZIndex(ZIndex: number)
+        ImageObject.ZIndex = tonumber(ZIndex) or ImageObject.ZIndex
+    end
+
+    function Sprite:SetParent(Parent: Instance)
+        assert(typeof(Parent) == "Instance", "SetParent expects an Instance.")
+        ImageObject.Parent = Parent
+    end
+
+    function Sprite:BringToFront()
+        if FloatingSpritesGui then
+            FloatingSpritesGui.DisplayOrder = math.max(FloatingSpritesGui.DisplayOrder, 1001)
+        end
+
+        ImageObject.ZIndex = math.max(ImageObject.ZIndex, 50000)
+        return ImageObject.ZIndex
+    end
+
     function Sprite:Destroy()
         Sprite:Stop()
         ImageObject:Destroy()
@@ -1891,6 +1932,7 @@ function Library:AddFloatingSprite(Info)
     if Sprite.Playing then
         Sprite:Play()
     end
+    Sprite:BringToFront()
 
     return Sprite
 end
@@ -1992,9 +2034,20 @@ local ScreenGui = New("ScreenGui", {
     Name = "Obsidian",
     DisplayOrder = 998,
     ResetOnSpawn = false,
+    ZIndexBehavior = Enum.ZIndexBehavior.Global,
 })
 ParentUI(ScreenGui)
 Library.ScreenGui = ScreenGui
+
+local FloatingSpritesGui = New("ScreenGui", {
+    Name = "ObsidianFloatingSprites",
+    DisplayOrder = 1001,
+    IgnoreGuiInset = true,
+    ResetOnSpawn = false,
+    ZIndexBehavior = Enum.ZIndexBehavior.Global,
+})
+ParentUI(FloatingSpritesGui)
+Library.FloatingSpritesGui = FloatingSpritesGui
 
 local FullscreenBackground = New("ImageLabel", {
     BackgroundColor3 = "DarkColor",
@@ -2499,13 +2552,24 @@ end
 
 function Library:AddDraggableMenu(Name: string, Info)
     Info = typeof(Info) == "table" and Info or {}
-    local Width = math.max(180, Info.Width or 280)
+    local SizeInfo = typeof(Info.Size) == "UDim2" and Info.Size or nil
+    local Width = math.max(180, (SizeInfo and SizeInfo.X.Offset > 0 and SizeInfo.X.Offset) or Info.Width or 280)
+    local FixedHeight = (SizeInfo and SizeInfo.Y.Offset > 0 and SizeInfo.Y.Offset) or Info.Height or nil
+    local MaxHeight = Info.MaxHeight or Info.MaximumHeight or nil
+    if FixedHeight then
+        FixedHeight = math.max(70, FixedHeight)
+    end
+    if MaxHeight then
+        MaxHeight = math.max(70, MaxHeight)
+    end
+    local UseHeightConstraint = FixedHeight ~= nil or MaxHeight ~= nil
 
     local Holder = New("Frame", {
-        AutomaticSize = Enum.AutomaticSize.Y,
+        AutomaticSize = UseHeightConstraint and Enum.AutomaticSize.None or Enum.AutomaticSize.Y,
         BackgroundColor3 = "BackgroundColor",
+        ClipsDescendants = true,
         Position = UDim2.fromOffset(6, 6),
-        Size = UDim2.fromOffset(Width, 0),
+        Size = UDim2.fromOffset(Width, FixedHeight or 0),
         ZIndex = 10,
         Parent = ScreenGui,
     })
@@ -2543,14 +2607,19 @@ function Library:AddDraggableMenu(Name: string, Info)
         Parent = Label,
     })
 
-    local Container = New("Frame", {
-        AutomaticSize = Enum.AutomaticSize.Y,
+    local Container = New("ScrollingFrame", {
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        AutomaticSize = UseHeightConstraint and Enum.AutomaticSize.None or Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        CanvasSize = UDim2.fromScale(0, 0),
         Position = UDim2.fromOffset(0, 35),
-        Size = UDim2.new(1, 0, 0, 0),
+        ScrollBarImageColor3 = "OutlineColor",
+        ScrollBarThickness = UseHeightConstraint and 2 or 0,
+        Size = UseHeightConstraint and UDim2.new(1, 0, 1, -35) or UDim2.new(1, 0, 0, 0),
         Parent = Holder,
     })
-    New("UIListLayout", {
+    local ContainerList = New("UIListLayout", {
         Padding = UDim.new(0, 7),
         Parent = Container,
     })
@@ -2562,8 +2631,53 @@ function Library:AddDraggableMenu(Name: string, Info)
         Parent = Container,
     })
 
+    local function RefreshConstrainedHeight()
+        if not UseHeightConstraint then
+            return
+        end
+
+        local ContentHeight = ContainerList.AbsoluteContentSize.Y + 14
+        local TargetHeight = FixedHeight or math.min(ContentHeight + 35, MaxHeight or ContentHeight + 35)
+        TargetHeight = math.max(70, TargetHeight)
+
+        Holder.Size = UDim2.fromOffset(Width, TargetHeight)
+        Container.Size = UDim2.new(1, 0, 1, -35)
+        Container.ScrollBarThickness = ContentHeight + 35 > TargetHeight and 2 or 0
+    end
+
+    if UseHeightConstraint then
+        Library:GiveSignal(ContainerList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(RefreshConstrainedHeight))
+        task.defer(RefreshConstrainedHeight)
+    end
+
+    Holder:SetAttribute("ObsidianMenuWidth", Width)
+    Holder:SetAttribute("ObsidianMenuHeight", FixedHeight or 0)
+    Holder:SetAttribute("ObsidianMenuMaxHeight", MaxHeight or 0)
+
     Library:MakeDraggable(Holder, Label, true)
     return Holder, Container
+end
+
+function Library:SetKeybindMenuSize(Width: number?, Height: number?)
+    if not Library.KeybindFrame or not Library.KeybindContainer then
+        return
+    end
+
+    Width = math.max(180, tonumber(Width) or Library.KeybindFrame.Size.X.Offset)
+    local TargetHeight = Library.KeybindFrame.Size.Y.Offset
+    if TargetHeight < 70 then
+        TargetHeight = Library.KeybindMenuHeight or Library.KeybindMenuMaxHeight or 220
+    end
+    if Height ~= nil then
+        TargetHeight = math.max(70, tonumber(Height) or TargetHeight)
+    end
+
+    Library.KeybindMenuWidth = Width
+    Library.KeybindMenuHeight = TargetHeight
+
+    Library.KeybindFrame.Size = UDim2.fromOffset(Width, TargetHeight)
+    Library.KeybindContainer.Size = UDim2.new(1, 0, 1, -35)
+    Library.KeybindContainer.ScrollBarThickness = 2
 end
 
 function Library:AddKeybindMenuButton(Info)
@@ -3123,6 +3237,10 @@ function Library:Unload()
 
     if ScreenGui then
         ScreenGui:Destroy()
+    end
+
+    if FloatingSpritesGui then
+        FloatingSpritesGui:Destroy()
     end
 
     getgenv().Library = nil
@@ -8005,6 +8123,694 @@ do
         return Passthrough
     end
 
+    function Funcs:AddCanvas(Idx, Info)
+        if typeof(Idx) == "table" then
+            Info = Idx
+            Idx = Info.Idx
+        end
+        Info = Info or {}
+
+        local Groupbox = self
+        local Container = Groupbox.Container
+        local Height = math.max(32, tonumber(Info.Height) or 160)
+
+        local Canvas = {
+            Height = Height,
+            Visible = Info.Visible ~= false,
+            Drawings = {},
+            Type = "Canvas",
+        }
+
+        local Holder = New("Frame", {
+            BackgroundColor3 = Info.BackgroundColor3 or Info.Color or "MainColor",
+            BackgroundTransparency = Info.BackgroundTransparency or Info.Transparency or 0.12,
+            ClipsDescendants = true,
+            Size = UDim2.new(1, 0, 0, Height),
+            Visible = Canvas.Visible,
+            Parent = Container,
+        })
+        RegisterBackgroundImageSurface(Holder, Info.BackgroundTransparency or Info.Transparency or 0.12, "Panel")
+        table.insert(
+            Library.Corners,
+            New("UICorner", {
+                CornerRadius = UDim.new(0, Info.CornerRadius or math.max(4, Library.CornerRadius)),
+                Parent = Holder,
+            })
+        )
+        if Info.Outline ~= false then
+            Library:AddOutline(Holder, {
+                Color = Info.StrokeColor or "OutlineColor",
+                Thickness = Info.StrokeThickness or 1,
+                Transparency = Info.StrokeTransparency or 0.15,
+                ShadowTransparency = Info.ShadowTransparency or 1,
+            })
+        end
+        if typeof(Info.Gradient) == "table" then
+            Library:AddGradient(Holder, Info.Gradient)
+        end
+
+        local Layer = New("Frame", {
+            BackgroundTransparency = 1,
+            ClipsDescendants = true,
+            Size = UDim2.fromScale(1, 1),
+            Parent = Holder,
+        })
+
+        local function ResolveCanvasImage(Image)
+            if tonumber(Image) then
+                return string.format("rbxassetid://%s", tostring(Image))
+            elseif IsHttpUrl(Image) then
+                return Library:DownloadImage(Image, {
+                    AssetName = "CanvasImage_" .. HashString(Image),
+                    Extension = "png",
+                })
+            end
+
+            return tostring(Image or "")
+        end
+
+        local function AddCorner(Drawing, Radius)
+            Radius = tonumber(Radius) or 0
+            if Radius > 0 then
+                table.insert(
+                    Library.Corners,
+                    New("UICorner", {
+                        CornerRadius = UDim.new(0, Radius),
+                        Parent = Drawing,
+                    })
+                )
+            end
+        end
+
+        local function Track(Drawing)
+            table.insert(Canvas.Drawings, Drawing)
+            return Drawing
+        end
+
+        function Canvas:AddFrame(DrawingInfo)
+            DrawingInfo = DrawingInfo or {}
+            local Drawing = New("Frame", {
+                Name = DrawingInfo.Name or "CanvasFrame",
+                AnchorPoint = DrawingInfo.AnchorPoint or Vector2.zero,
+                BackgroundColor3 = DrawingInfo.BackgroundColor3 or DrawingInfo.Color or "AccentColor",
+                BackgroundTransparency = math.clamp(
+                    tonumber(DrawingInfo.BackgroundTransparency or DrawingInfo.Transparency) or 0.2,
+                    0,
+                    1
+                ),
+                BorderSizePixel = 0,
+                Position = DrawingInfo.Position or UDim2.fromScale(0, 0),
+                Rotation = tonumber(DrawingInfo.Rotation) or 0,
+                Size = DrawingInfo.Size or UDim2.fromOffset(20, 20),
+                Visible = DrawingInfo.Visible ~= false,
+                ZIndex = tonumber(DrawingInfo.ZIndex) or 1,
+                Parent = Layer,
+            })
+            AddCorner(Drawing, DrawingInfo.CornerRadius or DrawingInfo.Radius)
+            if DrawingInfo.Stroke or DrawingInfo.StrokeColor or DrawingInfo.StrokeThickness then
+                Library:AddOutline(Drawing, {
+                    Color = DrawingInfo.StrokeColor or "OutlineColor",
+                    Thickness = DrawingInfo.StrokeThickness or 1,
+                    Transparency = DrawingInfo.StrokeTransparency or 0.35,
+                    ShadowTransparency = 1,
+                })
+            end
+            if typeof(DrawingInfo.Gradient) == "table" then
+                Library:AddGradient(Drawing, DrawingInfo.Gradient)
+            end
+            return Track(Drawing)
+        end
+
+        function Canvas:AddLine(DrawingInfo)
+            DrawingInfo = DrawingInfo or {}
+            DrawingInfo.Size = DrawingInfo.Size or UDim2.new(1, 0, 0, DrawingInfo.Thickness or 1)
+            DrawingInfo.BackgroundColor3 = DrawingInfo.BackgroundColor3 or DrawingInfo.Color or "OutlineColor"
+            DrawingInfo.BackgroundTransparency = DrawingInfo.BackgroundTransparency or DrawingInfo.Transparency or 0
+            return Canvas:AddFrame(DrawingInfo)
+        end
+
+        function Canvas:AddText(DrawingInfo)
+            DrawingInfo = DrawingInfo or {}
+            local Drawing = New("TextLabel", {
+                Name = DrawingInfo.Name or "CanvasText",
+                AnchorPoint = DrawingInfo.AnchorPoint or Vector2.zero,
+                BackgroundTransparency = DrawingInfo.BackgroundTransparency or 1,
+                Position = DrawingInfo.Position or UDim2.fromScale(0, 0),
+                Rotation = tonumber(DrawingInfo.Rotation) or 0,
+                Size = DrawingInfo.Size or UDim2.fromOffset(120, 18),
+                Text = tostring(DrawingInfo.Text or ""),
+                TextColor3 = DrawingInfo.TextColor3 or DrawingInfo.Color or "FontColor",
+                TextSize = DrawingInfo.TextSize or 14,
+                TextTransparency = DrawingInfo.TextTransparency or DrawingInfo.Transparency or 0,
+                TextTruncate = DrawingInfo.TextTruncate or Enum.TextTruncate.AtEnd,
+                TextWrapped = DrawingInfo.TextWrapped == true,
+                TextXAlignment = DrawingInfo.TextXAlignment or Enum.TextXAlignment.Left,
+                TextYAlignment = DrawingInfo.TextYAlignment or Enum.TextYAlignment.Center,
+                Visible = DrawingInfo.Visible ~= false,
+                ZIndex = tonumber(DrawingInfo.ZIndex) or 2,
+                Parent = Layer,
+            })
+            return Track(Drawing)
+        end
+
+        function Canvas:AddImage(DrawingInfo)
+            DrawingInfo = typeof(DrawingInfo) == "table" and DrawingInfo or { Image = DrawingInfo }
+            local Drawing = New("ImageLabel", {
+                Name = DrawingInfo.Name or "CanvasImage",
+                AnchorPoint = DrawingInfo.AnchorPoint or Vector2.zero,
+                BackgroundColor3 = DrawingInfo.BackgroundColor3 or "BackgroundColor",
+                BackgroundTransparency = DrawingInfo.BackgroundTransparency or 1,
+                BorderSizePixel = 0,
+                Image = ResolveCanvasImage(DrawingInfo.Image or DrawingInfo.Texture or DrawingInfo.Url or DrawingInfo.URL),
+                ImageColor3 = DrawingInfo.ImageColor3 or DrawingInfo.Color or "WhiteColor",
+                ImageRectOffset = DrawingInfo.ImageRectOffset or DrawingInfo.RectOffset or Vector2.zero,
+                ImageRectSize = DrawingInfo.ImageRectSize or DrawingInfo.RectSize or Vector2.zero,
+                ImageTransparency = DrawingInfo.ImageTransparency or DrawingInfo.Transparency or 0,
+                Position = DrawingInfo.Position or UDim2.fromScale(0, 0),
+                Rotation = tonumber(DrawingInfo.Rotation) or 0,
+                ScaleType = DrawingInfo.ScaleType or (DrawingInfo.TileSize and Enum.ScaleType.Tile or Enum.ScaleType.Crop),
+                Size = DrawingInfo.Size or UDim2.fromOffset(44, 44),
+                TileSize = DrawingInfo.TileSize,
+                Visible = DrawingInfo.Visible ~= false,
+                ZIndex = tonumber(DrawingInfo.ZIndex) or 1,
+                Parent = Layer,
+            })
+            AddCorner(Drawing, DrawingInfo.CornerRadius or DrawingInfo.Radius)
+            if typeof(DrawingInfo.Gradient) == "table" then
+                Library:AddGradient(Drawing, DrawingInfo.Gradient)
+            end
+            return Track(Drawing)
+        end
+
+        function Canvas:AddGradient(Target, GradientInfo)
+            local Gradient
+            if typeof(Target) == "Instance" and Target:IsA("GuiObject") then
+                Gradient = Library:AddGradient(Target, GradientInfo or {})
+            else
+                Gradient = Library:AddGradient(Layer, Target or GradientInfo or {})
+            end
+
+            return Track(Gradient)
+        end
+
+        function Canvas:Clear()
+            for _, Drawing in Canvas.Drawings do
+                if typeof(Drawing) == "Instance" and Drawing.Parent then
+                    Drawing:Destroy()
+                end
+            end
+            table.clear(Canvas.Drawings)
+        end
+
+        function Canvas:SetHeight(NewHeight)
+            Canvas.Height = math.max(32, tonumber(NewHeight) or Canvas.Height)
+            Holder.Size = UDim2.new(1, 0, 0, Canvas.Height)
+            Groupbox:Resize()
+        end
+
+        function Canvas:SetVisible(Visible)
+            Canvas.Visible = Visible == true
+            Holder.Visible = Canvas.Visible
+            Groupbox:Resize()
+        end
+
+        function Canvas:SetBackgroundTransparency(Transparency)
+            Holder.BackgroundTransparency = math.clamp(tonumber(Transparency) or Holder.BackgroundTransparency, 0, 1)
+        end
+
+        Canvas.Holder = Holder
+        Canvas.Layer = Layer
+
+        for _, DrawingInfo in Info.Drawings or {} do
+            if typeof(DrawingInfo) ~= "table" then
+                continue
+            end
+
+            local DrawingType = tostring(DrawingInfo.Type or DrawingInfo.Kind or (DrawingInfo.Image and "Image" or "Frame"))
+                :lower()
+            if DrawingType == "text" or DrawingType == "label" then
+                Canvas:AddText(DrawingInfo)
+            elseif DrawingType == "image" or DrawingType == "texture" then
+                Canvas:AddImage(DrawingInfo)
+            elseif DrawingType == "line" then
+                Canvas:AddLine(DrawingInfo)
+            elseif DrawingType == "gradient" then
+                Canvas:AddGradient(DrawingInfo)
+            else
+                Canvas:AddFrame(DrawingInfo)
+            end
+        end
+
+        table.insert(Groupbox.Elements, Canvas)
+        Groupbox:Resize()
+
+        if Idx then
+            Options[Idx] = Canvas
+        end
+
+        return Canvas
+    end
+
+    function Funcs:AddGraph(Idx, Info)
+        if typeof(Idx) == "table" then
+            Info = Idx
+            Idx = Info.Idx
+        end
+        Info = Info or {}
+
+        local Canvas = self:AddCanvas({
+            Height = Info.Height or 150,
+            BackgroundTransparency = Info.BackgroundTransparency or 0.1,
+            CornerRadius = Info.CornerRadius,
+            StrokeColor = Info.StrokeColor,
+            StrokeTransparency = Info.StrokeTransparency,
+            Gradient = Info.Gradient,
+        })
+        local Graph = {
+            Canvas = Canvas,
+            Values = typeof(Info.Values) == "table" and table.clone(Info.Values) or {},
+            Type = "Graph",
+        }
+
+        local function DrawGraph()
+            local Values = Graph.Values
+            Canvas:Clear()
+
+            Canvas:AddText({
+                Text = Info.Title or "Graph",
+                Position = UDim2.fromOffset(10, 7),
+                Size = UDim2.new(1, -20, 0, 18),
+                TextSize = Info.TitleSize or 14,
+                TextTransparency = 0.05,
+                ZIndex = 3,
+            })
+
+            local Size = Canvas.Layer.AbsoluteSize
+            if Size.X <= 1 or Size.Y <= 1 then
+                return
+            end
+
+            local Padding = Info.Padding or 14
+            local TopPadding = Padding + 18
+            local Width = math.max(1, Size.X - Padding * 2)
+            local Height = math.max(1, Size.Y - TopPadding - Padding)
+            local GridLines = math.max(2, Info.GridLines or 4)
+
+            for Index = 0, GridLines do
+                local Alpha = Index / GridLines
+                Canvas:AddLine({
+                    BackgroundColor3 = "OutlineColor",
+                    BackgroundTransparency = Index == GridLines and 0.35 or 0.72,
+                    Position = UDim2.fromOffset(Padding, TopPadding + Height * Alpha),
+                    Size = UDim2.fromOffset(Width, 1),
+                    ZIndex = 1,
+                })
+            end
+
+            if #Values == 0 then
+                Canvas:AddText({
+                    Text = Info.EmptyText or "No graph data",
+                    Position = UDim2.fromOffset(10, TopPadding + 12),
+                    Size = UDim2.new(1, -20, 0, 20),
+                    TextTransparency = 0.45,
+                    TextXAlignment = Enum.TextXAlignment.Center,
+                })
+                return
+            end
+
+            local MinValue = tonumber(Info.Min)
+            local MaxValue = tonumber(Info.Max)
+            for _, Value in Values do
+                Value = tonumber(Value) or 0
+                MinValue = MinValue and math.min(MinValue, Value) or Value
+                MaxValue = MaxValue and math.max(MaxValue, Value) or Value
+            end
+            if MinValue == MaxValue then
+                MinValue -= 1
+                MaxValue += 1
+            end
+
+            local Points = {}
+            for Index, Value in Values do
+                local Normalized = ((tonumber(Value) or 0) - MinValue) / (MaxValue - MinValue)
+                local X = Padding + ((Index - 1) / math.max(1, #Values - 1)) * Width
+                local Y = TopPadding + (1 - Normalized) * Height
+                Points[Index] = Vector2.new(X, Y)
+            end
+
+            for Index = 1, #Points - 1 do
+                local From = Points[Index]
+                local To = Points[Index + 1]
+                local Delta = To - From
+                local Length = Delta.Magnitude
+                Canvas:AddLine({
+                    AnchorPoint = Vector2.new(0, 0.5),
+                    BackgroundColor3 = Info.LineColor or "AccentColor",
+                    BackgroundTransparency = Info.LineTransparency or 0,
+                    CornerRadius = Info.LineThickness or 2,
+                    Position = UDim2.fromOffset(From.X, From.Y),
+                    Rotation = math.deg(math.atan2(Delta.Y, Delta.X)),
+                    Size = UDim2.fromOffset(Length, Info.LineThickness or 2),
+                    ZIndex = 3,
+                })
+            end
+
+            for _, Point in Points do
+                Canvas:AddFrame({
+                    AnchorPoint = Vector2.new(0.5, 0.5),
+                    BackgroundColor3 = Info.PointColor or "AccentColor",
+                    BackgroundTransparency = Info.PointTransparency or 0,
+                    CornerRadius = 12,
+                    Position = UDim2.fromOffset(Point.X, Point.Y),
+                    Size = UDim2.fromOffset(Info.PointSize or 5, Info.PointSize or 5),
+                    ZIndex = 4,
+                })
+            end
+        end
+
+        function Graph:SetValues(Values)
+            Graph.Values = typeof(Values) == "table" and table.clone(Values) or {}
+            DrawGraph()
+        end
+
+        function Graph:SetVisible(Visible)
+            Canvas:SetVisible(Visible)
+        end
+
+        function Graph:SetHeight(Height)
+            Canvas:SetHeight(Height)
+            DrawGraph()
+        end
+
+        Library:GiveSignal(Canvas.Layer:GetPropertyChangedSignal("AbsoluteSize"):Connect(DrawGraph))
+        task.defer(DrawGraph)
+
+        if Idx then
+            Options[Idx] = Graph
+        end
+
+        return Graph
+    end
+
+    function Funcs:AddPlayerCard(Idx, Info)
+        if typeof(Idx) == "table" then
+            Info = Idx
+            Idx = Info.Idx
+        end
+        Info = Info or {}
+
+        local Canvas = self:AddCanvas({
+            Height = Info.Height or 112,
+            BackgroundTransparency = Info.BackgroundTransparency or 0.1,
+            CornerRadius = Info.CornerRadius,
+            StrokeColor = Info.StrokeColor or "AccentColor",
+            StrokeTransparency = Info.StrokeTransparency or 0.35,
+        })
+        local Card = {
+            Canvas = Canvas,
+            Player = Info.Player or LocalPlayer,
+            Type = "PlayerCard",
+        }
+
+        local function GetPlayerThumbnail(Player)
+            if typeof(Player) == "Instance" and Player:IsA("Player") then
+                local Success, Thumbnail = pcall(function()
+                    return Players:GetUserThumbnailAsync(
+                        Player.UserId,
+                        Enum.ThumbnailType.HeadShot,
+                        Enum.ThumbnailSize.Size150x150
+                    )
+                end)
+                if Success and Thumbnail then
+                    return Thumbnail
+                end
+                return string.format("rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150", Player.UserId)
+            end
+
+            local UserId = typeof(Player) == "table" and tonumber(Player.UserId or Player.userId) or nil
+            if UserId then
+                return string.format("rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150", UserId)
+            end
+
+            return Info.Thumbnail or ""
+        end
+
+        local function ReadPlayerField(Player, Key, Default)
+            if typeof(Player) == "Instance" and Player:IsA("Player") then
+                return Player[Key] or Default
+            elseif typeof(Player) == "table" then
+                return Player[Key] or Player[Key:lower()] or Default
+            end
+
+            return Default
+        end
+
+        local function Refresh()
+            local Player = Card.Player
+            local Name = tostring(ReadPlayerField(Player, "Name", "Player"))
+            local DisplayName = tostring(ReadPlayerField(Player, "DisplayName", Name))
+            local UserId = tonumber(ReadPlayerField(Player, "UserId", 0)) or 0
+            local AccountAge = tonumber(ReadPlayerField(Player, "AccountAge", 0)) or 0
+            local Team = ReadPlayerField(Player, "Team", nil)
+            local TeamName = Team and tostring(Team.Name or Team) or "No team"
+            local HealthText = Info.HealthText
+
+            if not HealthText and typeof(Player) == "Instance" and Player:IsA("Player") then
+                local Humanoid = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
+                if Humanoid then
+                    HealthText = string.format("%d/%d HP", Humanoid.Health, Humanoid.MaxHealth)
+                end
+            end
+
+            Canvas:Clear()
+            Canvas:AddFrame({
+                BackgroundColor3 = "AccentColor",
+                BackgroundTransparency = 0.9,
+                Position = UDim2.fromOffset(-24, -34),
+                Size = UDim2.fromOffset(130, 130),
+                CornerRadius = 90,
+                Gradient = {
+                    Rotation = 20,
+                    Transparency = NumberSequence.new({
+                        NumberSequenceKeypoint.new(0, 0.78),
+                        NumberSequenceKeypoint.new(1, 1),
+                    }),
+                },
+            })
+            Canvas:AddImage({
+                Image = GetPlayerThumbnail(Player),
+                Position = UDim2.fromOffset(12, 16),
+                Size = UDim2.fromOffset(64, 64),
+                CornerRadius = 12,
+                BackgroundTransparency = 0,
+                ImageTransparency = 0,
+                ZIndex = 3,
+            })
+            Canvas:AddText({
+                Text = DisplayName,
+                Position = UDim2.fromOffset(88, 14),
+                Size = UDim2.new(1, -100, 0, 20),
+                TextSize = 16,
+                ZIndex = 3,
+            })
+            Canvas:AddText({
+                Text = "@" .. Name .. "  |  " .. tostring(UserId),
+                Position = UDim2.fromOffset(88, 36),
+                Size = UDim2.new(1, -100, 0, 16),
+                TextSize = 13,
+                TextTransparency = 0.38,
+                ZIndex = 3,
+            })
+            Canvas:AddText({
+                Text = string.format("%s   %d days%s", TeamName, AccountAge, HealthText and ("   " .. HealthText) or ""),
+                Position = UDim2.fromOffset(88, 58),
+                Size = UDim2.new(1, -100, 0, 18),
+                TextSize = 13,
+                TextTransparency = 0.2,
+                ZIndex = 3,
+            })
+            Canvas:AddLine({
+                BackgroundColor3 = "AccentColor",
+                BackgroundTransparency = 0.35,
+                Position = UDim2.new(0, 88, 1, -24),
+                Size = UDim2.new(1, -108, 0, 1),
+                ZIndex = 3,
+            })
+            Canvas:AddText({
+                Text = tostring(Info.Footer or "Player detail card"),
+                Position = UDim2.new(0, 88, 1, -22),
+                Size = UDim2.new(1, -100, 0, 16),
+                TextSize = 12,
+                TextTransparency = 0.5,
+                ZIndex = 3,
+            })
+        end
+
+        function Card:SetPlayer(Player)
+            Card.Player = Player
+            Refresh()
+        end
+
+        function Card:Refresh()
+            Refresh()
+        end
+
+        function Card:SetVisible(Visible)
+            Canvas:SetVisible(Visible)
+        end
+
+        task.defer(Refresh)
+
+        if Idx then
+            Options[Idx] = Card
+        end
+
+        return Card
+    end
+
+    function Funcs:AddTopUserBox(Idx, Info)
+        if typeof(Idx) == "table" then
+            Info = Idx
+            Idx = Info.Idx
+        end
+        Info = Info or {}
+
+        local Users = typeof(Info.Users) == "table" and table.clone(Info.Users) or GetPlayers(false)
+        local RowHeight = Info.RowHeight or 34
+        local MaxUsers = Info.MaxUsers or math.min(5, #Users)
+        local Canvas = self:AddCanvas({
+            Height = Info.Height or (44 + RowHeight * math.max(1, MaxUsers)),
+            BackgroundTransparency = Info.BackgroundTransparency or 0.1,
+            CornerRadius = Info.CornerRadius,
+            StrokeColor = Info.StrokeColor or "AccentColor",
+            StrokeTransparency = Info.StrokeTransparency or 0.4,
+        })
+        local Box = {
+            Canvas = Canvas,
+            Users = Users,
+            Type = "TopUserBox",
+        }
+
+        local function ReadUser(User, Key, Default)
+            if typeof(User) == "Instance" and User:IsA("Player") then
+                if Key == "Score" then
+                    return Default
+                end
+                return User[Key] or Default
+            elseif typeof(User) == "table" then
+                return User[Key] or User[Key:lower()] or Default
+            end
+
+            return Default
+        end
+
+        local function UserThumbnail(User)
+            local Thumbnail = ReadUser(User, "Thumbnail", nil)
+            if Thumbnail then
+                return Thumbnail
+            end
+            local UserId = tonumber(ReadUser(User, "UserId", 0)) or 0
+            if UserId > 0 then
+                return string.format("rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150", UserId)
+            end
+            return ""
+        end
+
+        local function Refresh()
+            local Sorted = table.clone(Box.Users)
+            table.sort(Sorted, function(A, B)
+                return (tonumber(ReadUser(A, "Score", 0)) or 0) > (tonumber(ReadUser(B, "Score", 0)) or 0)
+            end)
+
+            Canvas:Clear()
+            Canvas:AddText({
+                Text = Info.Title or "Top Users",
+                Position = UDim2.fromOffset(10, 8),
+                Size = UDim2.new(1, -20, 0, 18),
+                TextSize = 15,
+                ZIndex = 3,
+            })
+            Canvas:AddText({
+                Text = Info.Subtitle or "Ranked preview list",
+                Position = UDim2.fromOffset(10, 26),
+                Size = UDim2.new(1, -20, 0, 15),
+                TextSize = 12,
+                TextTransparency = 0.5,
+                ZIndex = 3,
+            })
+
+            for Index = 1, math.min(MaxUsers, #Sorted) do
+                local User = Sorted[Index]
+                local Y = 44 + (Index - 1) * RowHeight
+                local Name = tostring(ReadUser(User, "DisplayName", ReadUser(User, "Name", "Player")))
+                local Score = tonumber(ReadUser(User, "Score", Info.ScoreFallback or 0)) or 0
+
+                Canvas:AddFrame({
+                    BackgroundColor3 = Index == 1 and "AccentColor" or "MainColor",
+                    BackgroundTransparency = Index == 1 and 0.82 or 0.28,
+                    Position = UDim2.fromOffset(8, Y),
+                    Size = UDim2.new(1, -16, 0, RowHeight - 5),
+                    CornerRadius = 8,
+                    ZIndex = 2,
+                })
+                Canvas:AddText({
+                    Text = tostring(Index),
+                    Position = UDim2.fromOffset(14, Y),
+                    Size = UDim2.fromOffset(20, RowHeight - 5),
+                    TextSize = 13,
+                    TextTransparency = 0.25,
+                    TextXAlignment = Enum.TextXAlignment.Center,
+                    ZIndex = 3,
+                })
+                Canvas:AddImage({
+                    Image = UserThumbnail(User),
+                    Position = UDim2.fromOffset(38, Y + 4),
+                    Size = UDim2.fromOffset(RowHeight - 13, RowHeight - 13),
+                    CornerRadius = 6,
+                    ZIndex = 3,
+                })
+                Canvas:AddText({
+                    Text = Name,
+                    Position = UDim2.fromOffset(38 + RowHeight - 7, Y),
+                    Size = UDim2.new(1, -145, 0, RowHeight - 5),
+                    TextSize = 13,
+                    TextTransparency = 0.08,
+                    ZIndex = 3,
+                })
+                Canvas:AddText({
+                    Text = tostring(Score),
+                    Position = UDim2.new(1, -76, 0, Y),
+                    Size = UDim2.fromOffset(64, RowHeight - 5),
+                    TextSize = 13,
+                    TextColor3 = Index == 1 and "AccentColor" or "FontColor",
+                    TextXAlignment = Enum.TextXAlignment.Right,
+                    ZIndex = 3,
+                })
+            end
+        end
+
+        function Box:SetUsers(NewUsers)
+            Box.Users = typeof(NewUsers) == "table" and table.clone(NewUsers) or {}
+            Refresh()
+        end
+
+        function Box:Refresh()
+            Refresh()
+        end
+
+        function Box:SetVisible(Visible)
+            Canvas:SetVisible(Visible)
+        end
+
+        task.defer(Refresh)
+
+        if Idx then
+            Options[Idx] = Box
+        end
+
+        return Box
+    end
+
     function Funcs:AddTabbox(...)
         local Params = select(1, ...)
         local Info = if typeof(Params) == "table" then Params else { Name = Params }
@@ -9318,9 +10124,15 @@ function Library:CreateWindow(WindowInfo)
 
         Library.KeybindFrame, Library.KeybindContainer = Library:AddDraggableMenu("Keybinds", {
             Width = WindowInfo.KeybindMenuWidth,
+            Height = WindowInfo.KeybindMenuHeight,
+            MaxHeight = WindowInfo.KeybindMenuMaxHeight,
+            Size = WindowInfo.KeybindMenuSize,
         })
+        Library.KeybindMenuWidth = WindowInfo.KeybindMenuWidth
+        Library.KeybindMenuHeight = WindowInfo.KeybindMenuHeight
+        Library.KeybindMenuMaxHeight = WindowInfo.KeybindMenuMaxHeight
         Library.KeybindFrame.AnchorPoint = Vector2.new(0, 0.5)
-        Library.KeybindFrame.Position = UDim2.new(0, 6, 0.5, 0)
+        Library.KeybindFrame.Position = WindowInfo.KeybindMenuPosition or UDim2.new(0, 6, 0.5, 0)
         Library.KeybindFrame.Visible = false
 
         MainFrame = New("TextButton", {
@@ -9977,12 +10789,16 @@ function Library:CreateWindow(WindowInfo)
         local Name = nil
         local Icon = nil
         local Description = nil
+        local ShowInTabHolder = true
+        local InitialVisible = true
 
         if select("#", ...) == 1 and typeof(...) == "table" then
             local Info = select(1, ...)
             Name = Info.Name or "Tab"
             Icon = Info.Icon
             Description = Info.Description
+            ShowInTabHolder = Info.ShowInTabHolder ~= false and Info.Hidden ~= true
+            InitialVisible = Info.Visible ~= false
         else
             Name = select(1, ...)
             Icon = select(2, ...)
@@ -10006,6 +10822,7 @@ function Library:CreateWindow(WindowInfo)
                 BackgroundTransparency = IsCardTabs and 0.1 or 1,
                 Size = IsTopbarTabs and UDim2.new(0, 140, 1, 0) or UDim2.new(1, 0, 0, 40),
                 Text = "",
+                Visible = ShowInTabHolder and InitialVisible,
                 Parent = Tabs,
             })
             RegisterBackgroundImageSurface(TabButton, IsCardTabs and 0.1 or 1, "Panel")
@@ -10265,6 +11082,8 @@ function Library:CreateWindow(WindowInfo)
                 Title = "WARNING",
                 Text = "",
             },
+            ShowInTabHolder = ShowInTabHolder,
+            Visible = InitialVisible,
         }
 
         local function IsFullSide(Side)
@@ -11019,15 +11838,16 @@ function Library:CreateWindow(WindowInfo)
         end
 
         function Tab:SetVisible(Visible: boolean)
-            TabButton.Visible = Visible
+            Tab.Visible = Visible == true
+            TabButton.Visible = Tab.Visible and Tab.ShowInTabHolder ~= false
 
-            if not Visible and Library.ActiveTab == Tab then
+            if not Tab.Visible and Library.ActiveTab == Tab then
                 Tab:Hide()
             end
         end
 
         --// Execution \\--
-        if not Library.ActiveTab then
+        if not Library.ActiveTab and ShowInTabHolder and InitialVisible then
             Tab:Show()
         end
 
@@ -11042,6 +11862,23 @@ function Library:CreateWindow(WindowInfo)
         Library.Tabs[Name] = Tab
 
         return Tab
+    end
+
+    function Window:AddHiddenTab(Info, Icon, Description)
+        if typeof(Info) == "table" then
+            Info.ShowInTabHolder = false
+            Info.Hidden = true
+        else
+            Info = {
+                Name = tostring(Info or "Hidden Tab"),
+                Icon = Icon,
+                Description = Description,
+                ShowInTabHolder = false,
+                Hidden = true,
+            }
+        end
+
+        return Window:AddTab(Info)
     end
 
     function Window:AddDashboardTab(Info)
@@ -11154,6 +11991,61 @@ function Library:CreateWindow(WindowInfo)
                 end
             end,
         })
+
+        if Info.Advanced == true then
+            Overview:AddPlayerCard("DashboardLocalPlayerCard", {
+                Player = Info.Player or LocalPlayer,
+                Footer = Info.PlayerFooter or "Local player detail",
+            })
+
+            Stats:AddGraph("DashboardActivityGraph", {
+                Title = Info.GraphTitle or "Activity Graph",
+                Values = Info.GraphValues or { 12, 18, 15, 26, 22, 34, 29, 41 },
+                Height = Info.GraphHeight or 138,
+                LineThickness = 3,
+                PointSize = 6,
+            })
+
+            Stats:AddTopUserBox("DashboardTopUsers", {
+                Title = Info.TopUsersTitle or "Top Users",
+                Subtitle = Info.TopUsersSubtitle or "Live dashboard ranking",
+                Users = Info.TopUsers or {
+                    { Name = LocalPlayer.Name, DisplayName = LocalPlayer.DisplayName, UserId = LocalPlayer.UserId, Score = 100 },
+                },
+                MaxUsers = Info.TopUsersMax or 4,
+            })
+
+            local DetailTab = Window:AddHiddenTab({
+                Name = Info.DetailTabName or "Dashboard Details",
+                Icon = Info.DetailTabIcon or "panel-top-open",
+                Description = Info.DetailTabDescription or "A hidden tab opened from a dashboard card.",
+            })
+            local DetailOverview = DetailTab:AddFullGroupbox(Info.DetailGroupTitle or "Full Detail Players", "user-round")
+            DetailOverview:AddPlayerCard("DashboardDetailPlayerCard", {
+                Player = Info.Player or LocalPlayer,
+                Height = 120,
+                Footer = "Opened from a hidden dashboard card",
+            })
+            DetailOverview:AddTopUserBox("DashboardDetailTopUsers", {
+                Title = "Top User Box",
+                Subtitle = "This tab is not shown in the tab holder",
+                Users = Info.TopUsers or {
+                    { Name = LocalPlayer.Name, DisplayName = LocalPlayer.DisplayName, UserId = LocalPlayer.UserId, Score = 100 },
+                },
+                MaxUsers = Info.TopUsersMax or 5,
+            })
+
+            Dashboard:AddCard({
+                Side = 1,
+                Title = Info.DetailCardTitle or "Open hidden player details",
+                Desc = Info.DetailCardDescription or "Card tab index: opens a dedicated hidden tab without adding it to the tab holder.",
+                Icon = "external-link",
+                Height = Info.DetailCardHeight or 116,
+                TargetTab = DetailTab,
+                StrokeColor = "AccentColor",
+                StrokeTransparency = 0.35,
+            })
+        end
 
         return Dashboard
     end

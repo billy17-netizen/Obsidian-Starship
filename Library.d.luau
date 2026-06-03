@@ -172,6 +172,10 @@ export type DraggableButton = {
 
 export type DraggableMenuInfo = {
     Width: number?,
+    Height: number?,
+    MaxHeight: number?,
+    MaximumHeight: number?,
+    Size: UDim2?,
 }
 
 export type KeybindMenuButtonInfo = {
@@ -842,6 +846,8 @@ export type FloatingSpriteInfo = SpriteInfo & {
     Position: UDim2?,
     Size: UDim2?,
     ZIndex: number?,
+    Parent: Instance?,
+    ParentMode: "Floating" | "Window"?,
 }
 
 export type FloatingSprite = {
@@ -855,7 +861,159 @@ export type FloatingSprite = {
     Stop: (self: FloatingSprite) -> (),
     SetImage: (self: FloatingSprite, NewImage: string) -> (),
     SetVisible: (self: FloatingSprite, Visible: boolean) -> (),
+    SetPosition: (self: FloatingSprite, Position: UDim2) -> (),
+    SetSize: (self: FloatingSprite, Size: UDim2) -> (),
+    SetZIndex: (self: FloatingSprite, ZIndex: number) -> (),
+    SetParent: (self: FloatingSprite, Parent: Instance) -> (),
+    BringToFront: (self: FloatingSprite) -> number,
     Destroy: (self: FloatingSprite) -> (),
+}
+
+export type CanvasGradientInfo = {
+    Color: ColorSequence?,
+    ColorSequence: ColorSequence?,
+    Offset: Vector2?,
+    Rotation: number?,
+    Transparency: NumberSequence?,
+}
+
+export type CanvasDrawingInfo = {
+    Type: string?,
+    Kind: string?,
+    Name: string?,
+    AnchorPoint: Vector2?,
+    BackgroundColor3: Color3 | string?,
+    Color: Color3 | string?,
+    BackgroundTransparency: number?,
+    Transparency: number?,
+    Position: UDim2?,
+    Rotation: number?,
+    Size: UDim2?,
+    Visible: boolean?,
+    ZIndex: number?,
+    CornerRadius: number?,
+    Radius: number?,
+    Stroke: boolean?,
+    StrokeColor: Color3 | string?,
+    StrokeThickness: number?,
+    StrokeTransparency: number?,
+    Text: string?,
+    TextColor3: Color3 | string?,
+    TextSize: number?,
+    TextTransparency: number?,
+    TextWrapped: boolean?,
+    TextXAlignment: Enum.TextXAlignment?,
+    TextYAlignment: Enum.TextYAlignment?,
+    Image: string | number?,
+    Texture: string | number?,
+    Url: string?,
+    URL: string?,
+    ImageColor3: Color3 | string?,
+    ImageTransparency: number?,
+    ImageRectOffset: Vector2?,
+    ImageRectSize: Vector2?,
+    RectOffset: Vector2?,
+    RectSize: Vector2?,
+    ScaleType: Enum.ScaleType?,
+    TileSize: UDim2?,
+    Gradient: CanvasGradientInfo?,
+}
+
+export type CanvasInfo = {
+    Idx: string?,
+    Height: number?,
+    Visible: boolean?,
+    BackgroundColor3: Color3 | string?,
+    Color: Color3 | string?,
+    BackgroundTransparency: number?,
+    Transparency: number?,
+    CornerRadius: number?,
+    Outline: boolean?,
+    StrokeColor: Color3 | string?,
+    StrokeThickness: number?,
+    StrokeTransparency: number?,
+    ShadowTransparency: number?,
+    Gradient: CanvasGradientInfo?,
+    Drawings: { CanvasDrawingInfo }?,
+}
+
+export type Canvas = {
+    Height: number,
+    Visible: boolean,
+    Drawings: { Instance },
+    Type: "Canvas",
+    Holder: Frame,
+    Layer: Frame,
+
+    AddFrame: (self: Canvas, Info: CanvasDrawingInfo?) -> Frame,
+    AddLine: (self: Canvas, Info: CanvasDrawingInfo?) -> Frame,
+    AddText: (self: Canvas, Info: CanvasDrawingInfo?) -> TextLabel,
+    AddImage: (self: Canvas, Info: CanvasDrawingInfo | string | number) -> ImageLabel,
+    AddGradient: (self: Canvas, Target: GuiObject | CanvasGradientInfo?, Info: CanvasGradientInfo?) -> UIGradient,
+    Clear: (self: Canvas) -> (),
+    SetHeight: (self: Canvas, Height: number) -> (),
+    SetVisible: (self: Canvas, Visible: boolean) -> (),
+    SetBackgroundTransparency: (self: Canvas, Transparency: number) -> (),
+}
+
+export type GraphInfo = CanvasInfo & {
+    Values: { number }?,
+    Title: string?,
+    TitleSize: number?,
+    EmptyText: string?,
+    Padding: number?,
+    GridLines: number?,
+    Min: number?,
+    Max: number?,
+    LineColor: Color3 | string?,
+    LineTransparency: number?,
+    LineThickness: number?,
+    PointColor: Color3 | string?,
+    PointTransparency: number?,
+    PointSize: number?,
+}
+
+export type Graph = {
+    Canvas: Canvas,
+    Values: { number },
+    Type: "Graph",
+    SetValues: (self: Graph, Values: { number }) -> (),
+    SetVisible: (self: Graph, Visible: boolean) -> (),
+    SetHeight: (self: Graph, Height: number) -> (),
+}
+
+export type PlayerCardInfo = CanvasInfo & {
+    Player: Player | { [string]: any }?,
+    Thumbnail: string?,
+    Footer: string?,
+    HealthText: string?,
+}
+
+export type PlayerCard = {
+    Canvas: Canvas,
+    Player: Player | { [string]: any },
+    Type: "PlayerCard",
+    SetPlayer: (self: PlayerCard, Player: Player | { [string]: any }) -> (),
+    Refresh: (self: PlayerCard) -> (),
+    SetVisible: (self: PlayerCard, Visible: boolean) -> (),
+}
+
+export type TopUserBoxInfo = CanvasInfo & {
+    Users: { any }?,
+    RowHeight: number?,
+    MaxUsers: number?,
+    Title: string?,
+    Subtitle: string?,
+    ScoreFallback: number?,
+}
+
+export type TopUserBox = {
+    Canvas: Canvas,
+    Users: { any },
+    Type: "TopUserBox",
+    SetUsers: (self: TopUserBox, Users: { any }) -> (),
+    Refresh: (self: TopUserBox) -> (),
+    SetVisible: (self: TopUserBox, Visible: boolean) -> (),
 }
 
 export type UIPassthrough = {
@@ -890,6 +1048,10 @@ export type Element =
     | Divider
     | Tabbox
     | CustomFontText
+    | Canvas
+    | Graph
+    | PlayerCard
+    | TopUserBox
 export type Option =
     Toggle
     | Input
@@ -900,6 +1062,10 @@ export type Option =
     | Video
     | Sprite
     | UIPassthrough
+    | Canvas
+    | Graph
+    | PlayerCard
+    | TopUserBox
     | KeyPicker
     | KeybindMenuToggle
     | ColorPicker
@@ -951,6 +1117,13 @@ export type BaseGroupbox = {
     AddVideo: (self: Groupbox, Idx: string, Info: VideoInfo) -> Video,
     AddSprite: (self: Groupbox, Idx: string, Info: SpriteInfo) -> Sprite,
     AddUIPassthrough: (self: Groupbox, Idx: string, Info: UIPassthroughInfo) -> UIPassthrough,
+    AddCanvas: ((self: Groupbox, Idx: string, Info: CanvasInfo) -> Canvas)
+        & ((self: Groupbox, Info: CanvasInfo) -> Canvas),
+    AddGraph: ((self: Groupbox, Idx: string, Info: GraphInfo) -> Graph) & ((self: Groupbox, Info: GraphInfo) -> Graph),
+    AddPlayerCard: ((self: Groupbox, Idx: string, Info: PlayerCardInfo) -> PlayerCard)
+        & ((self: Groupbox, Info: PlayerCardInfo) -> PlayerCard),
+    AddTopUserBox: ((self: Groupbox, Idx: string, Info: TopUserBoxInfo) -> TopUserBox)
+        & ((self: Groupbox, Info: TopUserBoxInfo) -> TopUserBox),
     AddTabbox: (self: Groupbox, Info: { Name: string?, Visible: boolean? } | string?) -> Tabbox,
     AddDependencyBox: (self: Groupbox) -> DependencyBox,
     AddDependencyGroupbox: (self: Groupbox) -> DependencyGroupbox,
@@ -1312,6 +1485,14 @@ export type Window = {
     SetSidebarWidth: (self: Window, Width: number) -> (),
     AddTab: (
         self: Window,
+        Info:
+            | { Name: string, Icon: string?, Description: string?, ShowInTabHolder: boolean?, Hidden: boolean?, Visible: boolean? }
+            | string,
+        Icon: string?,
+        Description: string?
+    ) -> Tab,
+    AddHiddenTab: (
+        self: Window,
         Info: { Name: string, Icon: string?, Description: string? } | string,
         Icon: string?,
         Description: string?
@@ -1342,6 +1523,23 @@ export type Window = {
             BannerHeight: number?,
             DiscordInvite: string?,
             Socials: { [string]: string }?,
+            Advanced: boolean?,
+            Player: Player | { [string]: any }?,
+            PlayerFooter: string?,
+            GraphTitle: string?,
+            GraphValues: { number }?,
+            GraphHeight: number?,
+            TopUsersTitle: string?,
+            TopUsersSubtitle: string?,
+            TopUsers: { any }?,
+            TopUsersMax: number?,
+            DetailTabName: string?,
+            DetailTabIcon: string?,
+            DetailTabDescription: string?,
+            DetailGroupTitle: string?,
+            DetailCardTitle: string?,
+            DetailCardDescription: string?,
+            DetailCardHeight: number?,
         }?
     ) -> Tab,
     AddDialog: (
@@ -1413,7 +1611,10 @@ export type Library = {
     Tabs: { [string]: Tab | KeyTab },
     DependencyBoxes: { [number]: DependencyBox | DependencyGroupbox },
     KeybindFrame: Frame?,
-    KeybindContainer: Frame?,
+    KeybindContainer: ScrollingFrame?,
+    KeybindMenuWidth: number,
+    KeybindMenuHeight: number?,
+    KeybindMenuMaxHeight: number?,
     KeybindToggles: { [number]: KeybindToggle },
     Notifications: { [GuiObject]: Notification },
     ToggleKeybind: Enum.KeyCode,
@@ -1556,7 +1757,8 @@ export type Library = {
     MakeLine: (self: Library, Frame: GuiObject, Info: { AnchorPoint: Vector2?, Position: UDim2, Size: UDim2 }) -> Frame,
     MakeOutline: (self: Library, Frame: GuiObject, Corner: number?, ZIndex: number?) -> Frame,
     AddDraggableButton: (self: Library, Text: string, Func: (DraggableButton) -> ()) -> DraggableButton,
-    AddDraggableMenu: (self: Library, Name: string, Info: DraggableMenuInfo?) -> (Frame, Frame),
+    AddDraggableMenu: (self: Library, Name: string, Info: DraggableMenuInfo?) -> (Frame, ScrollingFrame),
+    SetKeybindMenuSize: (self: Library, Width: number?, Height: number?) -> (),
     AddKeybindMenuButton: (self: Library, Info: KeybindMenuButtonInfo | string) -> KeybindMenuButton,
     AddKeybindMenuToggle: (
         (self: Library, Idx: string, Info: KeybindMenuToggleInfo) -> KeybindMenuToggle
@@ -1647,6 +1849,10 @@ export type Library = {
             Font: Font | Enum.Font | CustomFont?,
             ToggleKeybind: Enum.KeyCode?,
             KeybindMenuWidth: number?,
+            KeybindMenuHeight: number?,
+            KeybindMenuMaxHeight: number?,
+            KeybindMenuSize: UDim2?,
+            KeybindMenuPosition: UDim2?,
             MobileButtonsSide: "Left" | "Right"?,
             MobileButtonsMode: "Normal" | "TopbarPlus"?,
             UnlockMouseWhileOpen: boolean?,

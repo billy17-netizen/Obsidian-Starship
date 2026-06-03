@@ -8,10 +8,14 @@
 + BackgroundImage and fullscreen background image URLs now download through Library.ImageManager
 + Premium Library:CreateLoading() animations with entrance/exit motion, optional backdrop fade, ambient gradient, optional particles, icon pulse rings, clipped textured progress, and animated text
 + Loading drawing API: AddDrawingFrame(), AddDrawingImage(), AddDrawingLine(), AddDrawingGradient(), and ClearDrawings()
++ Groupbox:AddCanvas(), AddGraph(), AddPlayerCard(), and AddTopUserBox() for advanced dashboard UI surfaces
++ Window:AddHiddenTab() for card-index pages that do not appear in the tab holder
 
 [changes]
 + KeyPicker synced keybind toggles now render as liquid-glass pill switches
 + Keybind menu now uses a compact fixed width via WindowInfo.KeybindMenuWidth
++ Keybind menu now supports height/max-height/size configuration and scrolls instead of growing too tall
++ Floating sprites now render on a dedicated high-display-order layer with BringToFront(), SetPosition(), and SetSize()
 + Example sprite animation now renders as a floating sprite near the top search area instead of inside the groupbox
 + Example.lua adds a premium loading preview button for testing the new loading animation stack
 + Shiny button and loading shimmer effects now use bounded PNG image masks with clipping instead of oversized rotated frames
