@@ -252,6 +252,10 @@ LeftGroupBox:AddLiquidGlassButton({
             BackdropTransparency = 0.28,
             SurfaceTransparency = 0,
             DrawingDecorations = true,
+            Decor = true,
+            DecorImage = RepoAsset("assets/PixelLoadingDecor.png"),
+            DecorImageTransparency = 0.4,
+            DecorHeight = 92,
             Drawings = {
                 {
                     Type = "Texture",
@@ -277,9 +281,9 @@ LeftGroupBox:AddLiquidGlassButton({
 
         Loading:SetTotalSteps(6)
         Loading:SetMessage("Booting mspaint")
-        Loading:SetDescription("Preparing clipped textures and loading drawings...")
+        Loading:SetDescription("Preparing pixel decor, clipped textures, and loading drawings...")
         Loading.Sidebar:AddLabel({
-            Text = "Live preview: opaque loading surface, clipped progress texture, icon pulse, drawing API decorations, and exit fade.",
+            Text = "Live preview: opaque loading surface, pixel-art decor image, clipped progress texture, icon pulse, drawing API decorations, and exit fade.",
             DoesWrap = true,
         })
         Loading.Sidebar:AddGlassPanel("LoadingAnimationPanel", {
@@ -314,6 +318,64 @@ LeftGroupBox:AddLiquidGlassButton({
                 Loading:Destroy()
             end
         end)
+    end,
+})
+
+LeftGroupBox:AddLiquidGlassButton({
+    Text = "Show popup",
+    Icon = "message-square",
+    Callback = function()
+        Library:ShowPopup({
+            Type = "Success",
+            Title = "Popup ready",
+            Description = "This is a polished floating popup card with no dark overlay by default.",
+            Time = 4,
+            Actions = {
+                {
+                    Text = "Keep open",
+                    Variant = "Ghost",
+                    CloseOnClick = false,
+                    Callback = function(Popup)
+                        Popup:SetDescription("Popup is still alive; close it with the x button.")
+                    end,
+                },
+                {
+                    Text = "Close",
+                    Variant = "Primary",
+                },
+            },
+        })
+    end,
+})
+
+LeftGroupBox:AddLiquidGlassButton({
+    Text = "Show dialog",
+    Icon = "panel-top-open",
+    Callback = function()
+        Window:ShowDialog({
+            Title = "Confirm action",
+            Description = "Dialog uses the existing Obsidian modal system, now with one-call API support and configurable overlay transparency.",
+            Icon = "sparkles",
+            OverlayTransparency = 0.62,
+            FooterButtons = {
+                Cancel = {
+                    Title = "Cancel",
+                    Variant = "Secondary",
+                },
+                Confirm = {
+                    Title = "Confirm",
+                    Variant = "Primary",
+                    Callback = function()
+                        Library:ShowPopup({
+                            Type = "Info",
+                            Title = "Dialog callback",
+                            Description = "Confirm button callback fired.",
+                            Time = 3,
+                        })
+                    end,
+                },
+            },
+        })
     end,
 })
 

@@ -1328,7 +1328,20 @@ export type DialogButtonInfo = {
     Variant: string?,
     WaitTime: number?,
     Order: number?,
-    Callback: (() -> ())?,
+    Callback: ((any) -> ())?,
+}
+
+export type DialogInfo = {
+    Id: string?,
+    Title: string,
+    Description: string?,
+    Icon: string?,
+    TitleColor: Color3?,
+    DescriptionColor: Color3?,
+    AutoDismiss: boolean?,
+    OutsideClickDismiss: boolean?,
+    OverlayTransparency: number?,
+    FooterButtons: { [string]: DialogButtonInfo }?,
 }
 
 export type Dialog = {
@@ -1339,6 +1352,56 @@ export type Dialog = {
     SetButtonDisabled: (self: Dialog, ButtonIdx: string, Disabled: boolean) -> (),
     SetButtonOrder: (self: Dialog, ButtonIdx: string, Order: number) -> (),
     Dismiss: (self: Dialog) -> (),
+}
+
+export type PopupActionInfo = {
+    Title: string?,
+    Text: string?,
+    Variant: "Primary" | "Secondary" | "Destructive" | "Ghost"?,
+    Risky: boolean?,
+    Order: number?,
+    CloseOnClick: boolean?,
+    Callback: ((any) -> ())?,
+    Func: ((any) -> ())?,
+}
+
+export type PopupInfo = {
+    Id: string?,
+    Title: string?,
+    Description: string?,
+    Icon: string | number?,
+    Type: "Info" | "Success" | "Warning" | "Error"?,
+    Variant: "Info" | "Success" | "Warning" | "Error"?,
+    Time: number?,
+    Persist: boolean?,
+    AutoDismiss: boolean?,
+    Dismissible: boolean?,
+    CloseButton: boolean?,
+    ShowOverlay: boolean?,
+    Modal: boolean?,
+    OutsideClickDismiss: boolean?,
+    OverlayTransparency: number?,
+    Width: number?,
+    MaxWidth: number?,
+    Position: UDim2?,
+    AnchorPoint: Vector2?,
+    AccentColor: Color3 | string?,
+    IconColor: Color3 | string?,
+    TitleColor: Color3 | string?,
+    DescriptionColor: Color3 | string?,
+    Actions: { PopupActionInfo }?,
+    Buttons: { PopupActionInfo }?,
+}
+
+export type Popup = {
+    Id: string,
+    Destroyed: boolean,
+    SetTitle: (self: Popup, Title: string) -> (),
+    SetDescription: (self: Popup, Description: string) -> (),
+    SetIcon: (self: Popup, Icon: string | number) -> (),
+    Close: (self: Popup) -> (),
+    Destroy: (self: Popup) -> (),
+    Dismiss: (self: Popup) -> (),
 }
 
 export type LoadingErrorButtonInfo = {
@@ -1417,11 +1480,19 @@ export type LoadingInfo = {
     SurfaceTransparency: number?,
     DrawingDecorations: boolean?,
     Drawings: { LoadingDrawingInfo }?,
+    Decor: boolean?,
+    DecorImage: string | number?,
+    DecorImageTransparency: number?,
+    DecorImageColor3: Color3 | string?,
+    DecorHeight: number?,
+    DecorPosition: "Top" | "Bottom" | "Full" | string?,
+    DecorScaleType: Enum.ScaleType?,
     ProgressShine: boolean?,
     ProgressTexture: boolean?,
     ProgressTextureImage: string | number?,
     ProgressTextureTransparency: number?,
     ProgressTextureSpeed: number?,
+    ProgressTextureTileSize: UDim2?,
     Particles: boolean?,
     ParticleCount: number?,
     CurrentStep: number?,
@@ -1465,6 +1536,9 @@ export type Loading = {
     SetLoadingIcon: (self: Loading, Icon: string | number) -> (),
     SetLoadingIconTweenTime: (self: Loading, TweenTime: number) -> (),
     SetLoadingIconColor: (self: Loading, Color: Color3 | string) -> (),
+    SetDecorImage: (self: Loading, Image: string | number) -> (),
+    SetDecorVisible: (self: Loading, Visible: boolean) -> (),
+    SetDecorTransparency: (self: Loading, Transparency: number) -> (),
     SetCurrentStep: (self: Loading, Step: number) -> (),
     SetTotalSteps: (self: Loading, Steps: number) -> (),
     SetWindowHeight: (self: Loading, Height: number) -> (),
@@ -1542,19 +1616,12 @@ export type Window = {
             DetailCardHeight: number?,
         }?
     ) -> Tab,
-    AddDialog: (
-        self: Window,
-        Info: {
-            Title: string,
-            Description: string?,
-            Icon: string?,
-            TitleColor: Color3?,
-            DescriptionColor: Color3?,
-            AutoDismiss: boolean?,
-            OutsideClickDismiss: boolean?,
-            FooterButtons: { [string]: DialogButtonInfo }?,
-        }
-    ) -> Dialog,
+    AddDialog: (self: Window, InfoOrId: DialogInfo | string, Info: DialogInfo?) -> Dialog,
+    ShowDialog: (self: Window, Info: DialogInfo) -> Dialog,
+    Dialog: (self: Window, Info: DialogInfo) -> Dialog,
+    AddPopup: (self: Window, Info: PopupInfo | string, Time: number?) -> Popup,
+    ShowPopup: (self: Window, Info: PopupInfo | string, Time: number?) -> Popup,
+    Popup: (self: Window, Info: PopupInfo | string, Time: number?) -> Popup,
     ChangeTitle: (self: Window, Title: string) -> (),
     ChangeBackgroundImage: (self: Window, Image: string) -> (),
     ChangeFooter: (self: Window, Footer: string) -> (),
@@ -1866,6 +1933,13 @@ export type Library = {
             CompactWidthActivation: number?,
         }
     ) -> Window,
+    CreatePopup: (self: Library, Info: PopupInfo | string, Time: number?) -> Popup,
+    AddPopup: (self: Library, Info: PopupInfo | string, Time: number?) -> Popup,
+    ShowPopup: (self: Library, Info: PopupInfo | string, Time: number?) -> Popup,
+    Popup: (self: Library, Info: PopupInfo | string, Time: number?) -> Popup,
+    ShowDialog: (self: Library, Info: DialogInfo | PopupInfo) -> Dialog | Popup,
+    CreateDialog: (self: Library, Info: DialogInfo | PopupInfo) -> Dialog | Popup,
+    Dialog: (self: Library, Info: DialogInfo | PopupInfo) -> Dialog | Popup,
     CreateLoading: (self: Library, LoadingInfo: LoadingInfo?) -> Loading,
     Toggle: (self: Library, Value: boolean?) -> (),
 }

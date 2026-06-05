@@ -12,6 +12,7 @@ This fork keeps the familiar Obsidian/Linoria-style API while adding quality-of-
 - Actionable notifications: pass an `Actions` array with button text and callbacks to let users confirm, cancel, or open follow-up UI directly from a toast.
 - Progress notifications: pass `Progress = 0` and update it later with `Notification:SetProgress(0.5)` for long-running jobs.
 - Dismissible toasts: notifications include a close button by default; use `CloseButton = false` or `Dismissible = false` to hide it.
+- Popup and dialog cards: `Library:ShowPopup()`, `Window:ShowDialog()`, and aliases provide polished floating popup cards plus modal dialogs with action buttons.
 - Improved key tabs: `AddKeyBox` now supports expected-key validation, Enter-to-submit, status text, auto-clear behavior, and dynamic `SetExpectedKey` updates.
 - Visual polish: windows support `BackgroundImage`, image transparency, content/panel image overlay transparency, gradient overlays, and custom border/shadow stroke settings.
 - Remote background images: `BackgroundImage`, `Window:SetBackgroundImage(url)`, and `Window:SetFullscreenBackgroundImage(url)` accept direct internet image URLs and cache them through `Library.ImageManager`.
@@ -20,7 +21,7 @@ This fork keeps the familiar Obsidian/Linoria-style API while adding quality-of-
 - Shiny image masks: shiny buttons use bounded PNG alpha masks with `ClipsDescendants`; loading bar media is clipped inside the progress fill instead of overflowing rounded UI.
 - Nested tabboxes: `Groupbox:AddTabbox()` creates tabbed sections inside any groupbox, so compact category panels can hold their own sub-tabs.
 - Full-width tab content: `Tab:AddFullGroupbox()` and `Tab:AddFullTabbox()` span the tab above the normal left/right columns for large previews or viewport-style layouts.
-- Premium loading screen: `Library:CreateLoading()` now supports entrance/exit motion, optional backdrop fade, ambient gradients, optional floating particles, icon pulse rings, clipped textured progress, and animated text updates.
+- Premium loading screen: `Library:CreateLoading()` now supports entrance/exit motion, optional backdrop fade, ambient gradients, optional floating particles, icon pulse rings, clipped textured progress, pixel-art decor imagery, and animated text updates.
 - Loading drawing API: `Loading:AddDrawingFrame()`, `AddDrawingImage()`, `AddDrawingLine()`, `AddDrawingGradient()`, and `ClearDrawings()` paint clipped decorative texture layers inside the loading UI; URL images cache through `Library.ImageManager`.
 - Loading media polish: loading surfaces are opaque by default, the dark backdrop overlay is off by default, and progress texture media stays clipped inside rounded UI.
 - Advanced custom fonts: `Library.Font:Download(url)` / `Library:DownloadFont(url)` loads a bitmap-font JSON manifest from any internet URL, downloads atlas pages, and renders text with `ImageLabel` glyphs through `Library:CreateCustomText()` or `Groupbox:AddCustomFontLabel()` (TTF/OTF files need to be converted to a bitmap atlas manifest first).

@@ -7,6 +7,7 @@
 + Groupbox:AddSprite(), Library:AddFloatingSprite(), Library:DownloadSprite(), and Library:DownloadVideo()
 + BackgroundImage and fullscreen background image URLs now download through Library.ImageManager
 + Premium Library:CreateLoading() animations with entrance/exit motion, optional backdrop fade, ambient gradient, optional particles, icon pulse rings, clipped textured progress, and animated text
++ Library:ShowPopup(), Library:CreatePopup(), Window:ShowDialog(), and popup/dialog aliases for polished popup cards and modal dialogs
 + Loading drawing API: AddDrawingFrame(), AddDrawingImage(), AddDrawingLine(), AddDrawingGradient(), and ClearDrawings()
 + Groupbox:AddCanvas(), AddGraph(), AddPlayerCard(), and AddTopUserBox() for advanced dashboard UI surfaces
 + Window:AddHiddenTab() for card-index pages that do not appear in the tab holder
@@ -18,6 +19,7 @@
 + Floating sprites now render on a dedicated high-display-order layer with BringToFront(), SetPosition(), and SetSize()
 + Example sprite animation now renders as a floating sprite near the top search area instead of inside the groupbox
 + Example.lua adds a premium loading preview button for testing the new loading animation stack
++ Loading now ships with a pixel-art decor PNG, DecorImage options, SetDecorImage(), SetDecorVisible(), and SetDecorTransparency()
 + Shiny button and loading shimmer effects now use bounded PNG image masks with clipping instead of oversized rotated frames
 + Loading dark backdrop overlay is now disabled by default; set Backdrop = true to opt back in
 + Removed the black-hole loading ring effect and keep the loading surface opaque by default

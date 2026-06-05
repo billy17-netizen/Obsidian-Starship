@@ -78,6 +78,14 @@ local CustomImageManagerAssets = {
 
         Id = nil,
     },
+
+    PixelLoadingDecor = {
+        RobloxId = 0,
+        Path = "Obsidian/assets/PixelLoadingDecor.png",
+        URL = BaseURL .. "assets/PixelLoadingDecor.png",
+
+        Id = nil,
+    },
 }
 do
     local function RecursiveCreatePath(Path: string, IsFile: boolean?)
@@ -286,6 +294,9 @@ local Library = {
 
     Notifications = {},
     Dialogues = {},
+    Popups = {},
+    DialogCounter = 0,
+    PopupCounter = 0,
     ActiveLoading = nil,
     ActiveDialog = nil,
 
@@ -484,11 +495,38 @@ local Templates = {
         CompactWidthActivation = 128,
     },
     Dialog = {
+        Id = nil,
         Title = "Dialog",
         Description = "Description",
+        Icon = nil,
+        TitleColor = nil,
+        DescriptionColor = nil,
         AutoDismiss = true,
         OutsideClickDismiss = true,
+        OverlayTransparency = 0.5,
         FooterButtons = {},
+    },
+    Popup = {
+        Title = "Popup",
+        Description = "Description",
+        Icon = "message-square",
+        Time = 4,
+        Persist = false,
+        AutoDismiss = true,
+        Dismissible = true,
+        CloseButton = true,
+        ShowOverlay = false,
+        OutsideClickDismiss = true,
+        OverlayTransparency = 0.74,
+        Width = 360,
+        MaxWidth = 460,
+        Position = nil,
+        AnchorPoint = nil,
+        AccentColor = nil,
+        IconColor = nil,
+        TitleColor = nil,
+        DescriptionColor = nil,
+        Actions = {},
     },
     Loading = {
         Title = "mspaint",
@@ -508,11 +546,19 @@ local Templates = {
         SurfaceTransparency = 0,
         DrawingDecorations = true,
         Drawings = {},
+        Decor = true,
+        DecorImage = CustomImageManager.GetAsset("PixelLoadingDecor"),
+        DecorImageTransparency = 0.44,
+        DecorImageColor3 = "WhiteColor",
+        DecorHeight = 92,
+        DecorPosition = "Bottom",
+        DecorScaleType = Enum.ScaleType.Crop,
         ProgressShine = false,
         ProgressTexture = true,
         ProgressTextureImage = CustomImageManager.GetAsset("LoadingBarTexture"),
         ProgressTextureTransparency = 0.42,
         ProgressTextureSpeed = 1.35,
+        ProgressTextureTileSize = UDim2.fromOffset(64, 16),
         Particles = false,
         ParticleCount = 10,
 
@@ -10020,6 +10066,459 @@ function Library:NotifyError(Info, Time, SoundId)
     })
 end
 
+local PopupVariants = {
+    Info = {
+        Icon = "info",
+        Color = Color3.fromRGB(59, 130, 246),
+    },
+    Success = {
+        Icon = "circle-check",
+        Color = Color3.fromRGB(34, 197, 94),
+    },
+    Warning = {
+        Icon = "triangle-alert",
+        Color = Color3.fromRGB(245, 158, 11),
+    },
+    Error = {
+        Icon = "circle-x",
+        Color = Color3.fromRGB(239, 68, 68),
+    },
+}
+
+local function ApplyPopupVariant(Data)
+    local RawVariant = tostring(Data.Type or Data.Variant or ""):lower()
+    local VariantName = RawVariant:sub(1, 1):upper() .. RawVariant:sub(2)
+    local Variant = PopupVariants[VariantName]
+    if not Variant then
+        return
+    end
+
+    Data.Type = VariantName
+    Data.Title = Data.Title or VariantName
+    Data.Icon = Data.Icon or Variant.Icon
+    Data.AccentColor = Data.AccentColor or Variant.Color
+    Data.IconColor = Data.IconColor or Variant.Color
+end
+
+function Library:CreatePopup(Info, Time)
+    if typeof(Info) ~= "table" then
+        Info = {
+            Description = tostring(Info or ""),
+            Time = Time,
+        }
+    else
+        Info = table.clone(Info)
+        if Time ~= nil then
+            Info.Time = Time
+        end
+    end
+
+    Info = Library:Validate(Info, Templates.Popup)
+    ApplyPopupVariant(Info)
+
+    Library.PopupCounter += 1
+    local PopupId = tostring(Info.Id or ("Popup_" .. Library.PopupCounter))
+    local ViewportWidth = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.X or 800
+    local MaxWidth = math.max(260, math.min(tonumber(Info.MaxWidth) or 460, ViewportWidth - 32))
+    local Width = math.clamp(tonumber(Info.Width) or 360, 260, MaxWidth)
+    local Accent = Info.AccentColor or "AccentColor"
+    local AccentColor = typeof(Accent) == "Color3" and Accent or Library.Scheme[Accent] or Library.Scheme.AccentColor
+
+    local Popup = {
+        Id = PopupId,
+        Destroyed = false,
+    }
+
+    local PopupGui = New("ScreenGui", {
+        Name = "ObsidianPopup",
+        DisplayOrder = 1001,
+        IgnoreGuiInset = true,
+        ResetOnSpawn = false,
+    })
+    ParentUI(PopupGui)
+
+    local PopupParent = PopupGui
+    local Overlay
+    if Info.ShowOverlay or Info.Modal then
+        Overlay = New("TextButton", {
+            AutoButtonColor = false,
+            BackgroundColor3 = "DarkColor",
+            BackgroundTransparency = 1,
+            Size = UDim2.fromScale(1, 1),
+            Text = "",
+            Parent = PopupGui,
+        })
+        PopupParent = Overlay
+        TweenService:Create(Overlay, Library.TweenInfo, {
+            BackgroundTransparency = math.clamp(tonumber(Info.OverlayTransparency) or 0.74, 0, 1),
+        }):Play()
+    end
+
+    local Card = New("Frame", {
+        Active = true,
+        AnchorPoint = Info.AnchorPoint or Vector2.new(0.5, 0.5),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundColor3 = function()
+            return Library:GetBetterColor(Library.Scheme.BackgroundColor, 1)
+        end,
+        ClipsDescendants = true,
+        Position = Info.Position or UDim2.fromScale(0.5, 0.5),
+        Size = UDim2.fromOffset(Width, 0),
+        ZIndex = 10000,
+        Parent = PopupParent,
+    })
+    table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius + 2), Parent = Card }))
+    Library:AddOutline(Card, {
+        Color = Info.OutlineColor or "OutlineColor",
+        Transparency = 0.05,
+        ShadowTransparency = 0.28,
+    })
+
+    local CardScale = New("UIScale", {
+        Scale = 0.96,
+        Parent = Card,
+    })
+    TweenService:Create(CardScale, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Scale = 1,
+    }):Play()
+
+    New("Frame", {
+        BackgroundColor3 = Accent,
+        BackgroundTransparency = 0.05,
+        BorderSizePixel = 0,
+        Position = UDim2.fromOffset(0, 0),
+        Size = UDim2.new(0, 3, 1, 0),
+        ZIndex = 10001,
+        Parent = Card,
+    })
+
+    local TopGlow = New("Frame", {
+        BackgroundColor3 = Accent,
+        BackgroundTransparency = 0.84,
+        BorderSizePixel = 0,
+        Position = UDim2.fromOffset(0, 0),
+        Size = UDim2.new(1, 0, 0, 32),
+        ZIndex = 10001,
+        Parent = Card,
+    })
+    Library:AddGradient(TopGlow, {
+        Rotation = 90,
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.65),
+            NumberSequenceKeypoint.new(1, 1),
+        }),
+    })
+
+    local Content = New("Frame", {
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(1, 0),
+        ZIndex = 10002,
+        Parent = Card,
+    })
+    New("UIListLayout", {
+        Padding = UDim.new(0, 9),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Parent = Content,
+    })
+    New("UIPadding", {
+        PaddingBottom = UDim.new(0, 12),
+        PaddingLeft = UDim.new(0, 14),
+        PaddingRight = UDim.new(0, 12),
+        PaddingTop = UDim.new(0, 12),
+        Parent = Content,
+    })
+
+    local Header = New("Frame", {
+        BackgroundTransparency = 1,
+        LayoutOrder = 1,
+        Size = UDim2.new(1, 0, 0, 24),
+        ZIndex = 10002,
+        Parent = Content,
+    })
+    New("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        Padding = UDim.new(0, 8),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Parent = Header,
+    })
+
+    local ParsedIcon = Info.Icon and Library:GetCustomIcon(Info.Icon)
+    local IconLabel
+    if ParsedIcon then
+        IconLabel = New("ImageLabel", {
+            BackgroundTransparency = 1,
+            Image = ParsedIcon.Url,
+            ImageColor3 = Info.IconColor or Accent,
+            ImageRectOffset = ParsedIcon.ImageRectOffset,
+            ImageRectSize = ParsedIcon.ImageRectSize,
+            LayoutOrder = 1,
+            Size = UDim2.fromOffset(20, 20),
+            ZIndex = 10003,
+            Parent = Header,
+        })
+    end
+
+    local CloseButtonWidth = (Info.CloseButton ~= false and Info.Dismissible ~= false) and 28 or 0
+    local TitleLabel = New("TextLabel", {
+        BackgroundTransparency = 1,
+        LayoutOrder = 2,
+        Size = UDim2.new(1, -(IconLabel and 36 or 8) - CloseButtonWidth, 1, 0),
+        Text = Info.Title or "Popup",
+        TextColor3 = Info.TitleColor or "FontColor",
+        TextSize = 18,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 10003,
+        Parent = Header,
+    })
+
+    local CloseButton
+    if Info.CloseButton ~= false and Info.Dismissible ~= false then
+        CloseButton = New("TextButton", {
+            BackgroundColor3 = "MainColor",
+            LayoutOrder = 3,
+            Size = UDim2.fromOffset(24, 24),
+            Text = "x",
+            TextSize = 14,
+            TextTransparency = 0.18,
+            ZIndex = 10003,
+            Parent = Header,
+        })
+        table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = CloseButton }))
+        Library:AddOutline(CloseButton, { Transparency = 0.25, ShadowTransparency = 1 })
+    end
+
+    local DescriptionLabel = New("TextLabel", {
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+        LayoutOrder = 2,
+        Size = UDim2.new(1, 0, 0, 0),
+        Text = Info.Description or "",
+        TextColor3 = Info.DescriptionColor or "FontColor",
+        TextSize = 14,
+        TextTransparency = Info.DescriptionColor and 0 or 0.18,
+        TextWrapped = true,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Visible = Info.Description ~= nil and tostring(Info.Description) ~= "",
+        ZIndex = 10003,
+        Parent = Content,
+    })
+
+    local Actions = Info.Actions or Info.Buttons
+    if typeof(Actions) == "table" and #Actions > 0 then
+        local ActionsHolder = New("Frame", {
+            AutomaticSize = Enum.AutomaticSize.Y,
+            BackgroundTransparency = 1,
+            LayoutOrder = 3,
+            Size = UDim2.fromScale(1, 0),
+            ZIndex = 10003,
+            Parent = Content,
+        })
+        New("UIListLayout", {
+            FillDirection = Enum.FillDirection.Horizontal,
+            HorizontalAlignment = Enum.HorizontalAlignment.Right,
+            Padding = UDim.new(0, 7),
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Wraps = true,
+            Parent = ActionsHolder,
+        })
+
+        for Order, Action in ipairs(Actions) do
+            if typeof(Action) ~= "table" then
+                continue
+            end
+
+            local Variant = tostring(Action.Variant or (Action.Risky and "Destructive" or "Secondary"))
+            local ButtonColor = "MainColor"
+            local ButtonTextColor = Library.Scheme.FontColor
+            local ButtonOutlineColor = "OutlineColor"
+            if Variant == "Primary" then
+                ButtonColor = AccentColor
+                ButtonTextColor = Color3.new(1, 1, 1)
+                ButtonOutlineColor = AccentColor
+            elseif Variant == "Destructive" then
+                ButtonColor = "DestructiveColor"
+                ButtonTextColor = Color3.new(1, 1, 1)
+                ButtonOutlineColor = "DestructiveColor"
+            elseif Variant == "Ghost" then
+                ButtonColor = "BackgroundColor"
+                ButtonOutlineColor = "BackgroundColor"
+            end
+
+            local Button = New("TextButton", {
+                AutomaticSize = Enum.AutomaticSize.X,
+                BackgroundColor3 = ButtonColor,
+                LayoutOrder = Action.Order or Order,
+                Size = UDim2.fromOffset(0, 28),
+                Text = tostring(Action.Title or Action.Text or "Action"),
+                TextColor3 = ButtonTextColor,
+                TextSize = 14,
+                ZIndex = 10004,
+                Parent = ActionsHolder,
+            })
+            New("UIPadding", {
+                PaddingLeft = UDim.new(0, 10),
+                PaddingRight = UDim.new(0, 10),
+                Parent = Button,
+            })
+            table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = Button }))
+            Library:AddOutline(Button, {
+                Color = ButtonOutlineColor,
+                Transparency = Variant == "Ghost" and 0.85 or 0.2,
+                ShadowTransparency = 1,
+            })
+
+            local BaseColor = typeof(ButtonColor) == "Color3" and ButtonColor
+                or Library.Scheme[ButtonColor]
+                or Library.Scheme.MainColor
+            local HoverColor = Library:GetBetterColor(BaseColor, Variant == "Ghost" and 5 or 8)
+
+            Library:GiveSignal(Button.MouseEnter:Connect(function()
+                TweenService:Create(Button, Library.TweenInfo, {
+                    BackgroundColor3 = HoverColor,
+                }):Play()
+            end))
+            Library:GiveSignal(Button.MouseLeave:Connect(function()
+                TweenService:Create(Button, Library.TweenInfo, {
+                    BackgroundColor3 = BaseColor,
+                }):Play()
+            end))
+            Library:GiveSignal(Button.MouseButton1Click:Connect(function()
+                Library:SafeCallback(Action.Callback or Action.Func, Popup)
+                if Action.CloseOnClick ~= false and not Popup.Destroyed then
+                    Popup:Close()
+                end
+            end))
+        end
+    end
+
+    local TimerFill
+    local AutoDismissTime = tonumber(Info.Time) or 0
+    if Info.Persist ~= true and Info.AutoDismiss ~= false and AutoDismissTime > 0 then
+        local TimerTrack = New("Frame", {
+            BackgroundColor3 = "OutlineColor",
+            BackgroundTransparency = 0.2,
+            BorderSizePixel = 0,
+            LayoutOrder = 4,
+            Size = UDim2.new(1, 0, 0, 2),
+            ZIndex = 10003,
+            Parent = Content,
+        })
+        TimerFill = New("Frame", {
+            BackgroundColor3 = Accent,
+            BorderSizePixel = 0,
+            Size = UDim2.fromScale(1, 1),
+            ZIndex = 10004,
+            Parent = TimerTrack,
+        })
+    end
+
+    function Popup:SetTitle(Title)
+        Info.Title = tostring(Title or "")
+        TitleLabel.Text = Info.Title
+    end
+
+    function Popup:SetDescription(Description)
+        Info.Description = tostring(Description or "")
+        DescriptionLabel.Text = Info.Description
+        DescriptionLabel.Visible = Info.Description ~= ""
+    end
+
+    function Popup:SetIcon(Icon)
+        if not IconLabel then
+            return
+        end
+
+        local NewIcon = Library:GetCustomIcon(Icon)
+        if not NewIcon then
+            return
+        end
+
+        IconLabel.Image = NewIcon.Url
+        IconLabel.ImageRectOffset = NewIcon.ImageRectOffset
+        IconLabel.ImageRectSize = NewIcon.ImageRectSize
+    end
+
+    function Popup:Close()
+        if Popup.Destroyed then
+            return
+        end
+
+        Popup.Destroyed = true
+        Library.Popups[PopupId] = nil
+
+        TweenService:Create(CardScale, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            Scale = 0.97,
+        }):Play()
+        TweenService:Create(Card, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            BackgroundTransparency = 1,
+        }):Play()
+        if Overlay then
+            TweenService:Create(Overlay, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                BackgroundTransparency = 1,
+            }):Play()
+        end
+
+        task.delay(0.18, function()
+            if PopupGui.Parent then
+                PopupGui:Destroy()
+            end
+        end)
+    end
+
+    Popup.Destroy = Popup.Close
+    Popup.Dismiss = Popup.Close
+
+    if CloseButton then
+        Library:GiveSignal(CloseButton.MouseButton1Click:Connect(function()
+            Popup:Close()
+        end))
+    end
+
+    if Overlay then
+        Library:GiveSignal(Overlay.MouseButton1Click:Connect(function()
+            if Info.OutsideClickDismiss ~= false and Info.Dismissible ~= false then
+                Popup:Close()
+            end
+        end))
+    end
+
+    if TimerFill then
+        TweenService:Create(TimerFill, TweenInfo.new(AutoDismissTime, Enum.EasingStyle.Linear), {
+            Size = UDim2.fromScale(0, 1),
+        }):Play()
+
+        task.delay(AutoDismissTime, function()
+            if not Popup.Destroyed then
+                Popup:Close()
+            end
+        end)
+    end
+
+    Library.Popups[PopupId] = Popup
+    return Popup
+end
+
+function Library:ShowPopup(Info, Time)
+    return Library:CreatePopup(Info, Time)
+end
+
+Library.Popup = Library.ShowPopup
+Library.AddPopup = Library.CreatePopup
+
+function Library:ShowDialog(Info)
+    if Library.Window and Library.Window.AddDialog then
+        return Library.Window:AddDialog(Info)
+    end
+
+    return Library:CreatePopup(Info)
+end
+
+Library.Dialog = Library.ShowDialog
+Library.CreateDialog = Library.ShowDialog
+
 function Library:CreateWindow(WindowInfo)
     WindowInfo = Library:Validate(WindowInfo, Templates.Window)
     local ViewportSize: Vector2 = workspace.CurrentCamera.ViewportSize
@@ -12443,7 +12942,18 @@ function Library:CreateWindow(WindowInfo)
     end
 
     function Window:AddDialog(Idx, Info)
+        if typeof(Idx) == "table" and Info == nil then
+            Info = Idx
+            Idx = Info.Id
+        end
+
+        if not Idx then
+            Library.DialogCounter += 1
+            Idx = "Dialog_" .. tostring(Library.DialogCounter)
+        end
+
         Info = Library:Validate(Info, Templates.Dialog)
+        local OverlayTransparency = math.clamp(tonumber(Info.OverlayTransparency) or 0.5, 0, 1)
 
         local DialogFrame
         local DialogOverlay
@@ -12463,7 +12973,7 @@ function Library:CreateWindow(WindowInfo)
             Parent = MainFrame,
         })
         TweenService:Create(DialogOverlay, Library.TweenInfo, {
-            BackgroundTransparency = 0.5,
+            BackgroundTransparency = OverlayTransparency,
         }):Play()
 
         DialogFrame = New("TextButton", {
@@ -12472,6 +12982,7 @@ function Library:CreateWindow(WindowInfo)
             Position = UDim2.fromScale(0.5, 0.5),
             Size = UDim2.fromOffset(300, 0),
             AutomaticSize = Enum.AutomaticSize.Y,
+            ClipsDescendants = true,
             Text = "",
             AutoButtonColor = false,
             ZIndex = 9001,
@@ -12919,6 +13430,19 @@ function Library:CreateWindow(WindowInfo)
         return Dialog
     end
 
+    function Window:ShowDialog(Info)
+        return Window:AddDialog(Info)
+    end
+
+    Window.Dialog = Window.ShowDialog
+
+    function Window:AddPopup(Info, Time)
+        return Library:CreatePopup(Info, Time)
+    end
+
+    Window.ShowPopup = Window.AddPopup
+    Window.Popup = Window.AddPopup
+
     function Window:Toggle(Value: boolean?)
         if Library.ActiveLoading then
             if Value == true then
@@ -13242,18 +13766,32 @@ function Library:CreateLoading(LoadingInfo)
     local SurfaceTransparency = math.clamp(tonumber(LoadingInfo.SurfaceTransparency) or 0, 0, 1)
     local ParticleCount = math.clamp(math.floor(tonumber(LoadingInfo.ParticleCount) or 0), 0, 48)
 
+    local function ResolveLoadingImageAsset(Image, Prefix)
+        if tonumber(Image) then
+            return string.format("rbxassetid://%s", tostring(Image))
+        elseif IsHttpUrl(Image) then
+            return Library:DownloadImage(Image, {
+                AssetName = (Prefix or "LoadingImage_") .. HashString(Image),
+                Extension = "png",
+            })
+        end
+
+        return Image
+    end
+
     local UseProgressTexture = LoadingInfo.ProgressTexture or LoadingInfo.ProgressShine
     local ProgressTextureTransparency = math.clamp(tonumber(LoadingInfo.ProgressTextureTransparency) or 0.42, 0, 1)
     local ProgressTextureSpeed = math.max(0, tonumber(LoadingInfo.ProgressTextureSpeed) or 1.35)
-    local ProgressTextureImage = LoadingInfo.ProgressTextureImage
-    if tonumber(ProgressTextureImage) then
-        ProgressTextureImage = string.format("rbxassetid://%s", tostring(ProgressTextureImage))
-    elseif IsHttpUrl(ProgressTextureImage) then
-        ProgressTextureImage = Library:DownloadImage(ProgressTextureImage, {
-            AssetName = "LoadingBarTexture_" .. HashString(ProgressTextureImage),
-            Extension = "png",
-        })
-    end
+    local ProgressTextureImage = ResolveLoadingImageAsset(LoadingInfo.ProgressTextureImage, "LoadingBarTexture_")
+    local ProgressTextureTileSize = LoadingInfo.ProgressTextureTileSize or UDim2.fromOffset(64, 16)
+
+    local UseLoadingDecor = LoadingInfo.Decor ~= false and LoadingInfo.DecorImage ~= nil
+    local DecorImage = ResolveLoadingImageAsset(LoadingInfo.DecorImage, "LoadingDecor_")
+    local DecorImageTransparency = math.clamp(tonumber(LoadingInfo.DecorImageTransparency) or 0.44, 0, 1)
+    local DecorHeight = math.max(0, tonumber(LoadingInfo.DecorHeight) or 92)
+    local DecorPosition = tostring(LoadingInfo.DecorPosition or "Bottom"):lower()
+    local DecorScaleType = typeof(LoadingInfo.DecorScaleType) == "EnumItem" and LoadingInfo.DecorScaleType
+        or Enum.ScaleType.Crop
 
     local function GetLoadingFrameWidth()
         return Loading.ShowSidebar and (Loading.ContentWidth + Loading.SidebarWidth) or Loading.WindowWidth
@@ -13471,6 +14009,64 @@ function Library:CreateLoading(LoadingInfo)
         table.clear(Loading.Drawings)
     end
 
+    local LoadingDecor
+    local function GetDecorPlacement()
+        if DecorPosition == "top" then
+            return Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 0), UDim2.new(1, 0, 0, DecorHeight)
+        elseif DecorPosition == "full" then
+            return Vector2.zero, UDim2.fromScale(0, 0), UDim2.fromScale(1, 1)
+        end
+
+        return Vector2.new(0.5, 1), UDim2.new(0.5, 0, 1, 0), UDim2.new(1, 0, 0, DecorHeight)
+    end
+
+    local function CreateLoadingDecor()
+        if LoadingDecor or not UseLoadingDecor then
+            return LoadingDecor
+        end
+
+        local AnchorPoint, Position, Size = GetDecorPlacement()
+        LoadingDecor = Loading:AddDrawingImage({
+            Name = "PixelLoadingDecor",
+            AnchorPoint = AnchorPoint,
+            Image = DecorImage,
+            ImageColor3 = LoadingInfo.DecorImageColor3 or "WhiteColor",
+            ImageTransparency = DecorImageTransparency,
+            Position = Position,
+            ScaleType = DecorScaleType,
+            Size = Size,
+            ZIndex = 1,
+        })
+
+        return LoadingDecor
+    end
+
+    function Loading:SetDecorImage(Image)
+        DecorImage = ResolveLoadingImageAsset(Image, "LoadingDecor_")
+        UseLoadingDecor = true
+
+        local Decor = CreateLoadingDecor()
+        if Decor then
+            Decor.Image = DecorImage
+        end
+    end
+
+    function Loading:SetDecorVisible(Visible)
+        local Decor = CreateLoadingDecor()
+        if Decor then
+            Decor.Visible = Visible ~= false
+        end
+    end
+
+    function Loading:SetDecorTransparency(Transparency)
+        DecorImageTransparency = math.clamp(tonumber(Transparency) or DecorImageTransparency, 0, 1)
+        if LoadingDecor then
+            LoadingDecor.ImageTransparency = DecorImageTransparency
+        end
+    end
+
+    CreateLoadingDecor()
+
     if LoadingInfo.DrawingDecorations then
         Loading:AddDrawingLine({
             Name = "TopAccentLine",
@@ -13510,21 +14106,23 @@ function Library:CreateLoading(LoadingInfo)
         })
     end
 
-    for _, DrawingInfo in LoadingInfo.Drawings do
-        if typeof(DrawingInfo) ~= "table" then
-            continue
-        end
+    if typeof(LoadingInfo.Drawings) == "table" then
+        for _, DrawingInfo in LoadingInfo.Drawings do
+            if typeof(DrawingInfo) ~= "table" then
+                continue
+            end
 
-        local DrawingType = tostring(DrawingInfo.Type or DrawingInfo.Kind or (DrawingInfo.Image and "Image" or "Frame"))
-            :lower()
-        if DrawingType == "image" or DrawingType == "texture" then
-            Loading:AddDrawingImage(DrawingInfo)
-        elseif DrawingType == "line" then
-            Loading:AddDrawingLine(DrawingInfo)
-        elseif DrawingType == "gradient" then
-            Loading:AddDrawingGradient(DrawingInfo)
-        else
-            Loading:AddDrawingFrame(DrawingInfo)
+            local DrawingType = tostring(DrawingInfo.Type or DrawingInfo.Kind or (DrawingInfo.Image and "Image" or "Frame"))
+                :lower()
+            if DrawingType == "image" or DrawingType == "texture" then
+                Loading:AddDrawingImage(DrawingInfo)
+            elseif DrawingType == "line" then
+                Loading:AddDrawingLine(DrawingInfo)
+            elseif DrawingType == "gradient" then
+                Loading:AddDrawingGradient(DrawingInfo)
+            else
+                Loading:AddDrawingFrame(DrawingInfo)
+            end
         end
     end
 
@@ -13859,6 +14457,7 @@ function Library:CreateLoading(LoadingInfo)
         BorderSizePixel = 0,
         Position = UDim2.fromScale(0.5, 0.5),
         Size = UDim2.new(1, 10, 1, 10),
+        ZIndex = 1,
         Parent = SliderBar,
     })
     table.insert(
@@ -13866,11 +14465,35 @@ function Library:CreateLoading(LoadingInfo)
         New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = SliderGlow })
     )
 
+    if UseProgressTexture and ProgressTextureImage then
+        local TrackTexture = New("ImageLabel", {
+            BackgroundTransparency = 1,
+            Image = ProgressTextureImage,
+            ImageColor3 = "AccentColor",
+            ImageTransparency = math.clamp(ProgressTextureTransparency + 0.28, 0, 0.9),
+            Position = UDim2.fromOffset(0, 0),
+            ScaleType = Enum.ScaleType.Tile,
+            Size = UDim2.new(1, 64, 1, 0),
+            TileSize = ProgressTextureTileSize,
+            ZIndex = 1,
+            Parent = SliderBar,
+        })
+
+        if LoadingInfo.Animated and ProgressTextureSpeed > 0 then
+            TweenObject(
+                TrackTexture,
+                TweenInfo.new(ProgressTextureSpeed * 1.4, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1),
+                { Position = UDim2.fromOffset(-64, 0) }
+            )
+        end
+    end
+
     local SliderFill = New("Frame", {
         BackgroundColor3 = "AccentColor",
         BorderSizePixel = 0,
         ClipsDescendants = true,
         Size = UDim2.fromScale(0, 1),
+        ZIndex = 2,
         Parent = SliderBar,
     })
     table.insert(
@@ -13878,7 +14501,31 @@ function Library:CreateLoading(LoadingInfo)
         New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius / 2), Parent = SliderFill })
     )
 
-    if UseProgressTexture then
+    local SliderCap = New("Frame", {
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundColor3 = "FontColor",
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Position = UDim2.fromScale(0, 0.5),
+        Size = UDim2.fromOffset(3, 17),
+        Visible = false,
+        ZIndex = 3,
+        Parent = SliderBar,
+    })
+    table.insert(
+        Library.Corners,
+        New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = SliderCap })
+    )
+    Library:AddGradient(SliderCap, {
+        Rotation = 90,
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.8),
+            NumberSequenceKeypoint.new(0.5, 0),
+            NumberSequenceKeypoint.new(1, 0.8),
+        }),
+    })
+
+    if UseProgressTexture and ProgressTextureImage then
         Library:AddGradient(SliderFill, {
             Rotation = 0,
             Transparency = NumberSequence.new({
@@ -13896,7 +14543,7 @@ function Library:CreateLoading(LoadingInfo)
             Position = UDim2.fromOffset(0, 0),
             ScaleType = Enum.ScaleType.Tile,
             Size = UDim2.new(1, 64, 1, 0),
-            TileSize = UDim2.fromOffset(64, 16),
+            TileSize = ProgressTextureTileSize,
             ZIndex = 1,
             Parent = SliderFill,
         })
@@ -14144,6 +14791,11 @@ function Library:CreateLoading(LoadingInfo)
 
         local Progress = Loading.TotalSteps > 0 and (Loading.CurrentStep / Loading.TotalSteps) or 1
         TweenService:Create(SliderFill, Library.TweenInfo, { Size = UDim2.fromScale(Progress, 1) }):Play()
+        SliderCap.Visible = Progress > 0
+        TweenService:Create(SliderCap, Library.TweenInfo, {
+            BackgroundTransparency = Progress > 0 and 0.12 or 1,
+            Position = UDim2.fromScale(Progress, 0.5),
+        }):Play()
         if LoadingInfo.Animated then
             ProgressLabel.TextTransparency = 0.35
             SliderGlow.BackgroundTransparency = 0.72
