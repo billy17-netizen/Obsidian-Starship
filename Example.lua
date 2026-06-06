@@ -352,7 +352,7 @@ LeftGroupBox:AddLiquidGlassButton({
                 Loading:SetMessage(Step[1])
                 Loading:SetDescription(Step[2])
                 Loading:SetCurrentStep(Index)
-                task.wait(5.0)
+                task.wait(0.55)
             end
 
             if not Loading.Destroyed then
