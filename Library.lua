@@ -336,6 +336,12 @@ local Library = {
     ShowToggleFrameInKeybinds = true,
     NotifyOnError = false,
 
+    GroupboxTitleCustomFont = false,
+    GroupboxTitleFont = nil,
+    GroupboxTitleFontUrl = nil,
+    GroupboxTitleTextSize = 15,
+    GroupboxTitleTextColor = "FontColor",
+
     CantDragForced = false,
 
     Signals = {},
@@ -12062,20 +12068,44 @@ function Library:CreateWindow(WindowInfo)
                     })
                 end
 
-                GroupboxLabel = New("TextLabel", {
-                    BackgroundTransparency = 1,
-                    Position = UDim2.fromOffset(BoxIcon and 24 or 0, 0),
-                    Size = UDim2.new(1, 0, 0, 34),
-                    Text = Info.Name,
-                    TextSize = 15,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    Parent = GroupboxHolder,
-                })
-                New("UIPadding", {
-                    PaddingLeft = UDim.new(0, 12),
-                    PaddingRight = UDim.new(0, 12),
-                    Parent = GroupboxLabel,
-                })
+                local UseCustomGroupboxTitle = Library.GroupboxTitleCustomFont and typeof(Library.GroupboxTitleFont) == "table" and Library.GroupboxTitleFont.Type == "CustomFont"
+                if Library.GroupboxTitleCustomFont and not UseCustomGroupboxTitle and Library.GroupboxTitleFontUrl then
+                    local Success, DownloadedFont = pcall(function()
+                        return Library:DownloadCustomFont(Library.GroupboxTitleFontUrl)
+                    end)
+                    if Success then
+                        Library.GroupboxTitleFont = DownloadedFont
+                        UseCustomGroupboxTitle = typeof(DownloadedFont) == "table" and DownloadedFont.Type == "CustomFont"
+                    end
+                end
+
+                if UseCustomGroupboxTitle then
+                    GroupboxLabel = Library:CreateCustomText(GroupboxHolder, {
+                        Name = "GroupboxTitle",
+                        Text = Info.Name,
+                        Font = Library.GroupboxTitleFont,
+                        TextSize = Library.GroupboxTitleTextSize,
+                        TextColor3 = Library.Scheme[Library.GroupboxTitleTextColor or "FontColor"] or Library.Scheme.FontColor,
+                        Position = UDim2.fromOffset(BoxIcon and 36 or 12, 0),
+                        Size = UDim2.new(1, BoxIcon and -48 or -24, 0, 34),
+                        TextYAlignment = Enum.TextYAlignment.Center,
+                    })
+                else
+                    GroupboxLabel = New("TextLabel", {
+                        BackgroundTransparency = 1,
+                        Position = UDim2.fromOffset(BoxIcon and 24 or 0, 0),
+                        Size = UDim2.new(1, 0, 0, 34),
+                        Text = Info.Name,
+                        TextSize = 15,
+                        TextXAlignment = Enum.TextXAlignment.Left,
+                        Parent = GroupboxHolder,
+                    })
+                    New("UIPadding", {
+                        PaddingLeft = UDim.new(0, 12),
+                        PaddingRight = UDim.new(0, 12),
+                        Parent = GroupboxLabel,
+                    })
+                end
 
                 GroupboxContainer = New("Frame", {
                     BackgroundTransparency = 1,
