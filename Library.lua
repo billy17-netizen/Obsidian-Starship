@@ -281,6 +281,7 @@ local function HashString(Value: string): string
     return string.format("%08x", Hash)
 end
 
+local ScreenGui, FloatingSpritesGui
 local Library = {
     LocalPlayer = LocalPlayer,
     DevicePlatform = nil,
@@ -2122,7 +2123,7 @@ DestroyExistingGui("ObsidianFloatingSprites")
 DestroyExistingGui("ObsidianPopup")
 DestroyExistingGui("ObsidianLoading")
 
-local ScreenGui = New("ScreenGui", {
+ScreenGui = New("ScreenGui", {
     Name = "Obsidian",
     DisplayOrder = 998,
     ResetOnSpawn = false,
@@ -2131,7 +2132,7 @@ local ScreenGui = New("ScreenGui", {
 ParentUI(ScreenGui)
 Library.ScreenGui = ScreenGui
 
-local FloatingSpritesGui = New("ScreenGui", {
+FloatingSpritesGui = New("ScreenGui", {
     Name = "ObsidianFloatingSprites",
     DisplayOrder = 1001,
     IgnoreGuiInset = true,
