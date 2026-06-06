@@ -1141,8 +1141,6 @@ export type BaseGroupbox = {
     AddTabbox: (self: Groupbox, Info: { Name: string?, Visible: boolean? } | string?) -> Tabbox,
     AddDependencyBox: (self: Groupbox) -> DependencyBox,
     AddDependencyGroupbox: (self: Groupbox) -> DependencyGroupbox,
-    AddGlow: (self: Groupbox, Info: { Color: (Color3 | string)?, Thickness: number?, Transparency: number?, ZIndex: number? }?) -> UIStroke,
-    SetGlow: (self: Groupbox, State: boolean) -> (),
     SetMinimized: (self: Groupbox, State: boolean) -> (),
     ToggleMinimized: (self: Groupbox) -> (),
     MakeMinimizable: (self: Groupbox, Info: { Icon: string?, Callback: ((boolean, Groupbox) -> ())?, Default: boolean?, Minimized: boolean? }?) -> TextButton,
@@ -1230,10 +1228,10 @@ export type Tab = {
         Info: { IsNormal: boolean?, LockSize: boolean?, Visible: boolean?, Title: string?, Text: string? }
     ) -> (),
     Resize: (self: Tab, ResizeWarningBox: boolean?) -> (),
-    AddGroupbox: (self: Tab, Info: { Side: (number | string)?, Name: string, IconName: string?, Glow: { Color: (Color3 | string)?, Thickness: number?, Transparency: number?, ZIndex: number? }?, Minimize: (boolean | { Icon: string?, Callback: ((boolean, Groupbox) -> ())?, Default: boolean?, Minimized: boolean? })?, Minimizable: boolean? } | string) -> Groupbox,
-    AddLeftGroupbox: (self: Tab, Name: string | { Name: string, IconName: string?, Glow: { Color: (Color3 | string)?, Thickness: number?, Transparency: number?, ZIndex: number? }?, Minimize: (boolean | { Icon: string?, Callback: ((boolean, Groupbox) -> ())?, Default: boolean?, Minimized: boolean? })?, Minimizable: boolean? }, IconName: string?) -> Groupbox,
-    AddRightGroupbox: (self: Tab, Name: string | { Name: string, IconName: string?, Glow: { Color: (Color3 | string)?, Thickness: number?, Transparency: number?, ZIndex: number? }?, Minimize: (boolean | { Icon: string?, Callback: ((boolean, Groupbox) -> ())?, Default: boolean?, Minimized: boolean? })?, Minimizable: boolean? }, IconName: string?) -> Groupbox,
-    AddFullGroupbox: (self: Tab, Name: string | { Name: string, IconName: string?, Glow: { Color: (Color3 | string)?, Thickness: number?, Transparency: number?, ZIndex: number? }?, Minimize: (boolean | { Icon: string?, Callback: ((boolean, Groupbox) -> ())?, Default: boolean?, Minimized: boolean? })?, Minimizable: boolean? }, IconName: string?) -> Groupbox,
+    AddGroupbox: (self: Tab, Info: { Side: (number | string)?, Name: string, IconName: string?, Minimize: (boolean | { Icon: string?, Callback: ((boolean, Groupbox) -> ())?, Default: boolean?, Minimized: boolean? })?, Minimizable: boolean? } | string) -> Groupbox,
+    AddLeftGroupbox: (self: Tab, Name: string | { Name: string, IconName: string?, Minimize: (boolean | { Icon: string?, Callback: ((boolean, Groupbox) -> ())?, Default: boolean?, Minimized: boolean? })?, Minimizable: boolean? }, IconName: string?) -> Groupbox,
+    AddRightGroupbox: (self: Tab, Name: string | { Name: string, IconName: string?, Minimize: (boolean | { Icon: string?, Callback: ((boolean, Groupbox) -> ())?, Default: boolean?, Minimized: boolean? })?, Minimizable: boolean? }, IconName: string?) -> Groupbox,
+    AddFullGroupbox: (self: Tab, Name: string | { Name: string, IconName: string?, Minimize: (boolean | { Icon: string?, Callback: ((boolean, Groupbox) -> ())?, Default: boolean?, Minimized: boolean? })?, Minimizable: boolean? }, IconName: string?) -> Groupbox,
     AddTabbox: (self: Tab, Info: { Side: number | string, Name: string? }) -> Tabbox,
     AddLeftTabbox: (self: Tab, Name: string?) -> Tabbox,
     AddRightTabbox: (self: Tab, Name: string?) -> Tabbox,
@@ -1705,6 +1703,10 @@ export type Window = {
         }?
     ) -> (),
     SetTabsMode: (self: Window, Mode: "Sidebar" | "Topbar") -> (),
+    AddGlow: (self: Window, Info: { Color: (Color3 | string)?, Thickness: number?, Transparency: number?, ZIndex: number? }?) -> UIStroke,
+    SetGlow: (self: Window, State: boolean) -> (),
+    InitializeAndActivateTheComprehensiveGraphicalSubsystemResponsibleForCreatingRenderingAnimatingMaintainingAndPeriodicallyUpdatingAnAestheticallyPleasingVisuallyDistinctGlowingAuraEffectAroundTheExplicitlySpecifiedParameterOfTheCurrentlyReferencedWindowInstanceForThePurposeOfDrawingAdditionalUserAttention: (self: Window, State: boolean, Info: { Color: (Color3 | string)?, Thickness: number?, Transparency: number?, ZIndex: number? }?) -> (),
+    InitializeAndActivateTheComprehensiveGraphicalSubsystemResponsibleForCreatingRenderingAnimatingMaintainingPeriodicallyUpdatingSynchronizingMonitoringOptimizingValidatingManagingCoordinatingAndGracefullyTerminatingAnAestheticallyPleasingVisuallyDistinctHighlyConfigurableGlowBasedAuraEffectAroundTheExplicitlySpecifiedParameterOfTheCurrentlyReferencedWindowInstanceForThePrimaryPurposeOfDrawingAdditionalUserAttentionProvidingVisualFeedbackEnhancingUserExperienceImprovingInteractiveElementDiscoverabilityImprovingPerceivedSoftwareQualityIncreasingUserEngagementFacilitatingHumanComputerInteractionSupportingAccessibilityObjectivesPromotingVisualConsistencyMaintainingBrandIdentityEncouragingPositiveUserSentimentAndGenerallyMakingTheInterfaceAppearFarMoreSophisticatedTechnologicallyAdvancedProfessionallyEngineeredCarefullyDesignedMeticulouslyCraftedExtensivelyTestedIndustryStandardCompliantFutureProofScalableMaintainableAndFinanciallyJustifiableThanTheUnderlyingImplementationWouldReasonablySuggestToAnyCasualObserverExperiencedSoftwareDeveloperTechnicalLeadEngineeringManagerChiefTechnologyOfficerOrOtherInterestedPartyWhoMayAtAnyPointInTimeChooseToInspectReviewAuditEvaluateAnalyzeOrOtherwiseInteractWithTheSourceCode: (self: Window, State: boolean, Info: { Color: (Color3 | string)?, Thickness: number?, Transparency: number?, ZIndex: number? }?) -> (),
 }
 
 --// Main Library Type

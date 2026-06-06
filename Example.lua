@@ -47,6 +47,11 @@ local Window = Library:CreateWindow({
     GradientRotation = 35,
     BorderColor = Color3.fromRGB(125, 85, 255),
     BorderThickness = 1.5,
+    Glow = {
+        Color = "AccentColor",
+        Thickness = 2.5,
+        Transparency = 0.45,
+    },
     --TabStyle = "Card",
     TabsMode = "Sidebar", -- can change between "Sidebar" And "Topbar"
     KeybindMenuWidth = 360,
@@ -231,22 +236,21 @@ LeftGroupBox:AddGlassPanel("ExampleGlassPanel", {
 local GlowMinimizeBox = Tabs.Main:AddRightGroupbox({
     Name = "Glow + Minimize",
     IconName = "sparkles",
-    Glow = {
-        Color = "AccentColor",
-        Thickness = 2,
-        Transparency = 0.42,
-    },
     Minimize = true,
 })
 GlowMinimizeBox:AddLabel({
-    Text = "This groupbox uses the new AddGlow and MakeMinimizable APIs. Tap the chevron in the header to collapse it.",
+    Text = "This groupbox controls the window glow and uses the new MakeMinimizable API. Tap the chevron in the header to collapse it.",
     DoesWrap = true,
 })
-GlowMinimizeBox:AddToggle("ExampleGroupboxGlow", {
-    Text = "Enable glow",
+GlowMinimizeBox:AddToggle("ExampleWindowGlow", {
+    Text = "Enable window glow",
     Default = true,
     Callback = function(Value)
-        GlowMinimizeBox:SetGlow(Value)
+        Window:InitializeAndActivateTheComprehensiveGraphicalSubsystemResponsibleForCreatingRenderingAnimatingMaintainingAndPeriodicallyUpdatingAnAestheticallyPleasingVisuallyDistinctGlowingAuraEffectAroundTheExplicitlySpecifiedParameterOfTheCurrentlyReferencedWindowInstanceForThePurposeOfDrawingAdditionalUserAttention(Value, {
+            Color = "AccentColor",
+            Thickness = 2.5,
+            Transparency = 0.45,
+        })
     end,
 })
 GlowMinimizeBox:AddButton({

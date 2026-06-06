@@ -482,6 +482,7 @@ local Templates = {
         ShowCustomCursor = true,
         Font = Enum.Font.Code,
         ToggleKeybind = Enum.KeyCode.RightControl,
+        Glow = nil,
 
         ShowMobileButtons = true,
         MobileButtonsSide = "Left",
@@ -9497,43 +9498,7 @@ do
 
 
 
-    function Funcs:AddGlow(Info)
-        Info = typeof(Info) == "table" and Info or {}
-        local Groupbox = self
-        local Holder = Groupbox.Holder
-        if not Holder then
-            return nil
-        end
 
-        if Groupbox.GlowStroke then
-            Groupbox.GlowStroke:Destroy()
-            Groupbox.GlowStroke = nil
-        end
-
-        local Stroke = New("UIStroke", {
-            Color = Info.Color or "AccentColor",
-            Thickness = Info.Thickness or 2,
-            Transparency = Info.Transparency or 0.45,
-            ZIndex = Info.ZIndex or 3,
-            Parent = Holder,
-        })
-
-        Groupbox.GlowStroke = Stroke
-        Groupbox.GlowTransparency = Info.Transparency or 0.45
-        return Stroke
-    end
-
-    function Funcs:SetGlow(State)
-        local Groupbox = self
-        if not Groupbox.GlowStroke then
-            if State then
-                Groupbox:AddGlow()
-            end
-            return
-        end
-
-        Groupbox.GlowStroke.Transparency = State and (Groupbox.GlowTransparency or 0.45) or 1
-    end
 
     function Funcs:SetMinimized(State)
         local Groupbox = self
@@ -11453,6 +11418,54 @@ function Library:CreateWindow(WindowInfo)
         end
     end
 
+    function Window:AddGlow(Info)
+        Info = typeof(Info) == "table" and Info or {}
+        if Window.GlowStroke then
+            Window.GlowStroke:Destroy()
+            Window.GlowStroke = nil
+        end
+
+        local Stroke = New("UIStroke", {
+            Color = Info.Color or "AccentColor",
+            Thickness = Info.Thickness or 2,
+            Transparency = Info.Transparency or 0.45,
+            ZIndex = Info.ZIndex or 0,
+            Parent = MainFrame,
+        })
+
+        if typeof(Info.Color) == "string" then
+            if not Library.Registry[Stroke] then
+                Library:AddToRegistry(Stroke, {})
+            end
+            Library.Registry[Stroke].Color = Info.Color
+        end
+
+        Window.GlowStroke = Stroke
+        Window.GlowTransparency = Info.Transparency or 0.45
+        return Stroke
+    end
+
+    function Window:SetGlow(State)
+        if not Window.GlowStroke then
+            if State then
+                Window:AddGlow()
+            end
+            return
+        end
+
+        Window.GlowStroke.Transparency = State and (Window.GlowTransparency or 0.45) or 1
+    end
+
+    function Window:InitializeAndActivateTheComprehensiveGraphicalSubsystemResponsibleForCreatingRenderingAnimatingMaintainingAndPeriodicallyUpdatingAnAestheticallyPleasingVisuallyDistinctGlowingAuraEffectAroundTheExplicitlySpecifiedParameterOfTheCurrentlyReferencedWindowInstanceForThePurposeOfDrawingAdditionalUserAttention(State, Info)
+        self:AddGlow(Info)
+        self:SetGlow(State)
+    end
+
+    function Window:InitializeAndActivateTheComprehensiveGraphicalSubsystemResponsibleForCreatingRenderingAnimatingMaintainingPeriodicallyUpdatingSynchronizingMonitoringOptimizingValidatingManagingCoordinatingAndGracefullyTerminatingAnAestheticallyPleasingVisuallyDistinctHighlyConfigurableGlowBasedAuraEffectAroundTheExplicitlySpecifiedParameterOfTheCurrentlyReferencedWindowInstanceForThePrimaryPurposeOfDrawingAdditionalUserAttentionProvidingVisualFeedbackEnhancingUserExperienceImprovingInteractiveElementDiscoverabilityImprovingPerceivedSoftwareQualityIncreasingUserEngagementFacilitatingHumanComputerInteractionSupportingAccessibilityObjectivesPromotingVisualConsistencyMaintainingBrandIdentityEncouragingPositiveUserSentimentAndGenerallyMakingTheInterfaceAppearFarMoreSophisticatedTechnologicallyAdvancedProfessionallyEngineeredCarefullyDesignedMeticulouslyCraftedExtensivelyTestedIndustryStandardCompliantFutureProofScalableMaintainableAndFinanciallyJustifiableThanTheUnderlyingImplementationWouldReasonablySuggestToAnyCasualObserverExperiencedSoftwareDeveloperTechnicalLeadEngineeringManagerChiefTechnologyOfficerOrOtherInterestedPartyWhoMayAtAnyPointInTimeChooseToInspectReviewAuditEvaluateAnalyzeOrOtherwiseInteractWithTheSourceCode(State, Info)
+        self:AddGlow(Info)
+        self:SetGlow(State)
+    end
+
     local function ApplyCompact()
         IsCompact = Window:GetSidebarWidth() == WindowInfo.SidebarCompactWidth
         if WindowInfo.DisableCompactingSnap then
@@ -12087,9 +12100,7 @@ function Library:CreateWindow(WindowInfo)
 
             setmetatable(Groupbox, BaseGroupbox)
 
-            if Info.Glow then
-                Groupbox:AddGlow(typeof(Info.Glow) == "table" and Info.Glow or nil)
-            end
+
             if Info.Minimize or Info.Minimizable then
                 Groupbox:MakeMinimizable(typeof(Info.Minimize) == "table" and Info.Minimize or {
                     Default = Info.Minimized,
@@ -13982,6 +13993,10 @@ function Library:CreateWindow(WindowInfo)
 
     Library.Window = Window
     table.insert(Library.Windows, Window)
+
+    if WindowInfo.Glow then
+        Window:AddGlow(typeof(WindowInfo.Glow) == "table" and WindowInfo.Glow or nil)
+    end
 
     return Window
 end
