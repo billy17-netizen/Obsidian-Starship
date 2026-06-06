@@ -14114,7 +14114,8 @@ function Library:CreateLoading(LoadingInfo)
     local DecorImage = ResolveLoadingImageAsset(LoadingInfo.DecorImage, "LoadingDecor_")
     local DecorImageTransparency = math.clamp(tonumber(LoadingInfo.DecorImageTransparency) or 0.28, 0, 1)
     local DecorHeight = math.max(0, tonumber(LoadingInfo.DecorHeight) or 92)
-    local DecorPosition = tostring(LoadingInfo.DecorPosition or "Bottom"):lower()
+    local DecorPositionVal = LoadingInfo.DecorPosition or "Bottom"
+    local DecorPosition = typeof(DecorPositionVal) == "string" and DecorPositionVal:lower() or DecorPositionVal
     local DecorScaleType = typeof(LoadingInfo.DecorScaleType) == "EnumItem" and LoadingInfo.DecorScaleType
         or Enum.ScaleType.Crop
 
@@ -14388,6 +14389,9 @@ function Library:CreateLoading(LoadingInfo)
 
     local LoadingDecor
     local function GetDecorPlacement()
+        if typeof(DecorPosition) == "UDim2" then
+            return LoadingInfo.DecorAnchorPoint or Vector2.new(0.5, 1), DecorPosition, UDim2.new(1, 0, 0, DecorHeight)
+        end
         if DecorPosition == "top" then
             return Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 0), UDim2.new(1, 0, 0, DecorHeight)
         elseif DecorPosition == "full" then
@@ -14675,7 +14679,7 @@ function Library:CreateLoading(LoadingInfo)
         Name = "InnerContent",
         BackgroundTransparency = 1,
         Position = UDim2.fromOffset(0, 49),
-        Size = UDim2.new(1, 0, 1, -49),
+        Size = UDim2.new(1, 0, 1, -49 - (UseLoadingDecor and DecorPosition == "bottom" and DecorHeight or 0)),
         Parent = Container,
     })
 
