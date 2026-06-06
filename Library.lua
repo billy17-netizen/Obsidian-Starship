@@ -9495,6 +9495,124 @@ do
         return DepGroupbox
     end
 
+
+
+    function Funcs:AddGlow(Info)
+        Info = typeof(Info) == "table" and Info or {}
+        local Groupbox = self
+        local Holder = Groupbox.Holder
+        if not Holder then
+            return nil
+        end
+
+        if Groupbox.GlowStroke then
+            Groupbox.GlowStroke:Destroy()
+            Groupbox.GlowStroke = nil
+        end
+
+        local Stroke = New("UIStroke", {
+            Color = Info.Color or "AccentColor",
+            Thickness = Info.Thickness or 2,
+            Transparency = Info.Transparency or 0.45,
+            ZIndex = Info.ZIndex or 3,
+            Parent = Holder,
+        })
+
+        Groupbox.GlowStroke = Stroke
+        Groupbox.GlowTransparency = Info.Transparency or 0.45
+        return Stroke
+    end
+
+    function Funcs:SetGlow(State)
+        local Groupbox = self
+        if not Groupbox.GlowStroke then
+            if State then
+                Groupbox:AddGlow()
+            end
+            return
+        end
+
+        Groupbox.GlowStroke.Transparency = State and (Groupbox.GlowTransparency or 0.45) or 1
+    end
+
+    function Funcs:SetMinimized(State)
+        local Groupbox = self
+        Groupbox.Minimized = State == true
+
+        if Groupbox.Container then
+            Groupbox.Container.Visible = not Groupbox.Minimized
+        end
+
+        if Groupbox.MinimizeIcon then
+            Groupbox.MinimizeIcon.Rotation = Groupbox.Minimized and -90 or 0
+        end
+
+        if Groupbox.MinimizeButton then
+            Groupbox.MinimizeButton.BackgroundTransparency = Groupbox.Minimized and 0.88 or 1
+        end
+
+        Groupbox:Resize()
+
+        if typeof(Groupbox.MinimizeCallback) == "function" then
+            Library:SafeCallback(Groupbox.MinimizeCallback, Groupbox.Minimized, Groupbox)
+        end
+    end
+
+    function Funcs:ToggleMinimized()
+        self:SetMinimized(not self.Minimized)
+    end
+
+    function Funcs:MakeMinimizable(Info)
+        Info = typeof(Info) == "table" and Info or {}
+        local Groupbox = self
+        if Groupbox.MinimizeButton then
+            return Groupbox.MinimizeButton
+        end
+
+        Groupbox.MinimizeCallback = Info.Callback
+        Groupbox.Minimizable = true
+
+        local Button = New("TextButton", {
+            AnchorPoint = Vector2.new(1, 0),
+            BackgroundColor3 = "MainColor",
+            BackgroundTransparency = 1,
+            Position = UDim2.new(1, -6, 0, 6),
+            Size = UDim2.fromOffset(22, 22),
+            Text = "",
+            ZIndex = 5,
+            Parent = Groupbox.Holder,
+        })
+        table.insert(Library.Corners, New("UICorner", {
+            CornerRadius = UDim.new(0, math.max(4, Library.CornerRadius / 2)),
+            Parent = Button,
+        }))
+
+        local IconData = Library:GetCustomIcon(Info.Icon or "chevron-down")
+        local Icon = New("ImageLabel", {
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            BackgroundTransparency = 1,
+            Image = IconData and IconData.Url or "",
+            ImageColor3 = "FontColor",
+            ImageRectOffset = IconData and IconData.ImageRectOffset or Vector2.zero,
+            ImageRectSize = IconData and IconData.ImageRectSize or Vector2.zero,
+            ImageTransparency = 0.1,
+            Position = UDim2.fromScale(0.5, 0.5),
+            Size = UDim2.fromOffset(16, 16),
+            ZIndex = 6,
+            Parent = Button,
+        })
+
+        Groupbox.MinimizeButton = Button
+        Groupbox.MinimizeIcon = Icon
+
+        Library:GiveSignal(Button.MouseButton1Click:Connect(function()
+            Groupbox:ToggleMinimized()
+        end))
+
+        Groupbox:SetMinimized(Info.Default == true or Info.Minimized == true)
+        return Button
+    end
+
     BaseGroupbox.__index = Funcs
     BaseGroupbox.__namecall = function(_, Key, ...)
         return Funcs[Key](...)
@@ -11947,20 +12065,36 @@ function Library:CreateWindow(WindowInfo)
             local Groupbox = {
                 BoxHolder = BoxHolder,
                 Holder = GroupboxHolder,
+                Label = GroupboxLabel,
                 Container = GroupboxContainer,
+                List = GroupboxList,
+                HeaderHeight = 35,
 
                 Tab = Tab,
                 DependencyBoxes = {},
                 Tabboxes = {},
                 Elements = {},
+                Minimizable = false,
+                Minimized = false,
             }
 
             function Groupbox:Resize()
-                GroupboxHolder.Size = UDim2.new(1, 0, 0, (GroupboxList.AbsoluteContentSize.Y / Library.DPIScale) + 49)
+                local Height = Groupbox.Minimized and Groupbox.HeaderHeight
+                    or ((GroupboxList.AbsoluteContentSize.Y / Library.DPIScale) + 49)
+                GroupboxHolder.Size = UDim2.new(1, 0, 0, Height)
                 Tab:RefreshSides()
             end
 
             setmetatable(Groupbox, BaseGroupbox)
+
+            if Info.Glow then
+                Groupbox:AddGlow(typeof(Info.Glow) == "table" and Info.Glow or nil)
+            end
+            if Info.Minimize or Info.Minimizable then
+                Groupbox:MakeMinimizable(typeof(Info.Minimize) == "table" and Info.Minimize or {
+                    Default = Info.Minimized,
+                })
+            end
 
             Groupbox:Resize()
             Tab.Groupboxes[Info.Name] = Groupbox
@@ -11969,15 +12103,21 @@ function Library:CreateWindow(WindowInfo)
         end
 
         function Tab:AddLeftGroupbox(Name, IconName)
-            return Tab:AddGroupbox({ Side = 1, Name = Name, IconName = IconName })
+            local Info = typeof(Name) == "table" and Name or { Name = Name, IconName = IconName }
+            Info.Side = 1
+            return Tab:AddGroupbox(Info)
         end
 
         function Tab:AddRightGroupbox(Name, IconName)
-            return Tab:AddGroupbox({ Side = 2, Name = Name, IconName = IconName })
+            local Info = typeof(Name) == "table" and Name or { Name = Name, IconName = IconName }
+            Info.Side = 2
+            return Tab:AddGroupbox(Info)
         end
 
         function Tab:AddFullGroupbox(Name, IconName)
-            return Tab:AddGroupbox({ Side = "Full", Name = Name, IconName = IconName })
+            local Info = typeof(Name) == "table" and Name or { Name = Name, IconName = IconName }
+            Info.Side = "Full"
+            return Tab:AddGroupbox(Info)
         end
 
         function Tab:AddTabbox(Info)
