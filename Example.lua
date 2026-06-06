@@ -293,7 +293,7 @@ LeftGroupBox:AddLiquidGlassButton({
             DecorImage = RepoAsset("assets/starship-loading-v2.png"),
             DecorImageTransparency = 0.24,
             DecorHeight = 92,
-            DecorPosition = "top",
+            DecorPosition = "Bottom",
             Drawings = {
                 {
                     Type = "Texture",
@@ -305,6 +305,7 @@ LeftGroupBox:AddLiquidGlassButton({
                     Size = UDim2.new(1, 0, 0, 44),
                     ScaleType = Enum.ScaleType.Tile,
                     TileSize = UDim2.fromOffset(96, 18),
+                    ZIndex = 2,
                 },
                 {
                     Type = "Line",
@@ -313,6 +314,7 @@ LeftGroupBox:AddLiquidGlassButton({
                     BackgroundTransparency = 0.35,
                     Position = UDim2.new(0, 14, 1, -45),
                     Size = UDim2.new(1, -28, 0, 1),
+                    ZIndex = 2,
                 },
             },
         })
