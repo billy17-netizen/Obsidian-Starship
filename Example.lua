@@ -210,6 +210,9 @@ for _, FontExample in ipairs(FontExamples) do
     end)
 
     if Success then
+        if FontExample.Name == "Pixel" then
+            Library:SetCustomFont(FontData)
+        end
         CustomFontBox:AddCustomFontLabel({
             Text = FontExample.Text,
             Font = FontData,
@@ -225,6 +228,14 @@ for _, FontExample in ipairs(FontExamples) do
         })
     end
 end
+
+CustomFontBox:AddCustomFontLabel({
+    Text = "This label uses the default custom font",
+    TextSize = 18,
+    Height = 32,
+    Color = Color3.fromRGB(255, 255, 255),
+    TextXAlignment = Enum.TextXAlignment.Center,
+})
 
 LeftGroupBox:AddGlassPanel("ExampleGlassPanel", {
     Title = "Liquid glass preview",
