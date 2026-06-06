@@ -164,7 +164,7 @@ do
             local Success, NewID = pcall(getcustomasset, AssetData.Path)
 
             if Success and NewID then
-                AssetID = NewID
+                AssetID = string.gsub(tostring(NewID), "\\", "/")
             end
         end
 
