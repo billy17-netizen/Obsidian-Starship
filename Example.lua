@@ -290,7 +290,7 @@ LeftGroupBox:AddLiquidGlassButton({
             SurfaceFillTransparency = 0,
             DrawingDecorations = true,
             Decor = true,
-            DecorImage = RepoAsset("assets/starship-loading.png"),
+            DecorImage = RepoAsset("assets/starship-loading-v2.png"),
             DecorImageTransparency = 0.24,
             DecorHeight = 92,
             Drawings = {
