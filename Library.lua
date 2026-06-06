@@ -14708,7 +14708,7 @@ function Library:CreateLoading(LoadingInfo)
             Text = LoadingInfo.Title,
             Font = TitleFont,
             TextSize = TitleTextSize,
-            TextColor3 = Library.Scheme.FontColor,
+            TextColor3 = Library.Scheme[LoadingInfo.TitleTextColor or "FontColor"] or Library.Scheme.FontColor,
             Size = UDim2.new(0, TitleX, 1, 0),
             TextYAlignment = Enum.TextYAlignment.Center,
         })
