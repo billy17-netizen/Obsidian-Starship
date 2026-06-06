@@ -14407,17 +14407,25 @@ function Library:CreateLoading(LoadingInfo)
         end
 
         local AnchorPoint, Position, Size = GetDecorPlacement()
-        LoadingDecor = Loading:AddDrawingImage({
+        local DecorScaleTypeResolved = DecorScaleType
+        local DecorParent = LoadingInfo.DecorFullWidth and MainFrame or DrawingLayer
+
+        LoadingDecor = New("ImageLabel", {
             Name = "PixelLoadingDecor",
             AnchorPoint = AnchorPoint,
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
             Image = DecorImage,
             ImageColor3 = LoadingInfo.DecorImageColor3 or "WhiteColor",
             ImageTransparency = DecorImageTransparency,
             Position = Position,
-            ScaleType = DecorScaleType,
+            ScaleType = DecorScaleTypeResolved,
             Size = Size,
-            ZIndex = 1,
+            ZIndex = 2,
+            ClipsDescendants = true,
+            Parent = DecorParent,
         })
+        table.insert(Loading.Drawings, LoadingDecor)
 
         return LoadingDecor
     end

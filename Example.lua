@@ -294,6 +294,7 @@ LeftGroupBox:AddLiquidGlassButton({
             DecorImageTransparency = 0.24,
             DecorHeight = 92,
             DecorPosition = "Bottom",
+            DecorFullWidth = true,
             Drawings = {
                 {
                     Type = "Texture",
