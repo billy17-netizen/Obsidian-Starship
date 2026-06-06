@@ -79,7 +79,11 @@ local Tabs = {
             YouTube = "youtube.com/@mspaint",
         },
         Advanced = true,
-        GraphValues = { 10, 18, 16, 25, 31, 27, 40, 45 },
+        GraphValues = { 10, 16, 19, 24, 30, 34, 41, 47 },
+        GraphHeight = 128,
+        GraphArea = true,
+        GraphSmooth = true,
+        DetailCardHeight = 82,
         TopUsers = {
             { Name = "mspaint", DisplayName = "mspaint", UserId = 1, Score = 991 },
             { Name = "Obsidian", DisplayName = "Obsidian UI", UserId = 2, Score = 874 },
@@ -251,10 +255,11 @@ LeftGroupBox:AddLiquidGlassButton({
             SidebarWidth = 230,
             BackdropTransparency = 0.28,
             SurfaceTransparency = 0,
+            SurfaceFillTransparency = 0,
             DrawingDecorations = true,
             Decor = true,
             DecorImage = RepoAsset("assets/PixelLoadingDecor.png"),
-            DecorImageTransparency = 0.4,
+            DecorImageTransparency = 0.24,
             DecorHeight = 92,
             Drawings = {
                 {

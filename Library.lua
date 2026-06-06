@@ -544,11 +544,14 @@ local Templates = {
         BackdropTransparency = 0.35,
         IconPulse = true,
         SurfaceTransparency = 0,
+        SurfaceFill = true,
+        SurfaceFillTransparency = 0,
+        SurfaceFillColor = nil,
         DrawingDecorations = true,
         Drawings = {},
         Decor = true,
         DecorImage = CustomImageManager.GetAsset("PixelLoadingDecor"),
-        DecorImageTransparency = 0.44,
+        DecorImageTransparency = 0.28,
         DecorImageColor3 = "WhiteColor",
         DecorHeight = 92,
         DecorPosition = "Bottom",
@@ -8424,9 +8427,16 @@ do
         end
         Info = Info or {}
 
+        local LineThickness = Info.LineThickness or 3
+        local PointSize = Info.PointSize or 5
+        local GlowThickness = Info.GlowThickness or LineThickness + 5
+        local UseGlow = Info.Glow == true
+        local UseArea = Info.Area == true
+        local UseSmoothing = Info.Smooth == true
+
         local Canvas = self:AddCanvas({
             Height = Info.Height or 150,
-            BackgroundTransparency = Info.BackgroundTransparency or 0.1,
+            BackgroundTransparency = Info.BackgroundTransparency or 0.08,
             CornerRadius = Info.CornerRadius,
             StrokeColor = Info.StrokeColor,
             StrokeTransparency = Info.StrokeTransparency,
@@ -8461,16 +8471,31 @@ do
             local Width = math.max(1, Size.X - Padding * 2)
             local Height = math.max(1, Size.Y - TopPadding - Padding)
             local GridLines = math.max(2, Info.GridLines or 4)
+            local VerticalGridLines = math.max(0, Info.VerticalGridLines or math.min(6, math.max(0, #Values - 1)))
 
             for Index = 0, GridLines do
                 local Alpha = Index / GridLines
                 Canvas:AddLine({
-                    BackgroundColor3 = "OutlineColor",
-                    BackgroundTransparency = Index == GridLines and 0.35 or 0.72,
+                    BackgroundColor3 = Info.GridColor or "OutlineColor",
+                    BackgroundTransparency = Index == GridLines and (Info.BaselineTransparency or 0.34)
+                        or (Info.GridTransparency or 0.76),
                     Position = UDim2.fromOffset(Padding, TopPadding + Height * Alpha),
                     Size = UDim2.fromOffset(Width, 1),
                     ZIndex = 1,
                 })
+            end
+
+            if VerticalGridLines > 0 then
+                for Index = 0, VerticalGridLines do
+                    local Alpha = Index / VerticalGridLines
+                    Canvas:AddLine({
+                        BackgroundColor3 = Info.GridColor or "OutlineColor",
+                        BackgroundTransparency = Info.VerticalGridTransparency or 0.88,
+                        Position = UDim2.fromOffset(Padding + Width * Alpha, TopPadding),
+                        Size = UDim2.fromOffset(1, Height),
+                        ZIndex = 1,
+                    })
+                end
             end
 
             if #Values == 0 then
@@ -8496,12 +8521,38 @@ do
                 MaxValue += 1
             end
 
+            local PlotValues = table.clone(Values)
+            if UseSmoothing and #PlotValues >= 3 then
+                for Index, Value in Values do
+                    local Previous = tonumber(Values[Index - 1]) or tonumber(Value) or 0
+                    local Current = tonumber(Value) or 0
+                    local Next = tonumber(Values[Index + 1]) or Current
+                    PlotValues[Index] = (Previous + Current * 2 + Next) / 4
+                end
+            end
+
             local Points = {}
-            for Index, Value in Values do
+            for Index, Value in PlotValues do
                 local Normalized = ((tonumber(Value) or 0) - MinValue) / (MaxValue - MinValue)
+                Normalized = math.clamp(Normalized, 0, 1)
                 local X = Padding + ((Index - 1) / math.max(1, #Values - 1)) * Width
                 local Y = TopPadding + (1 - Normalized) * Height
                 Points[Index] = Vector2.new(X, Y)
+            end
+
+            if UseArea then
+                local BarWidth = math.max(3, Width / math.max(1, #Points) * 0.56)
+                for _, Point in Points do
+                    Canvas:AddFrame({
+                        AnchorPoint = Vector2.new(0.5, 1),
+                        BackgroundColor3 = Info.AreaColor or Info.LineColor or "AccentColor",
+                        BackgroundTransparency = Info.AreaTransparency or 0.88,
+                        CornerRadius = math.max(2, BarWidth / 2),
+                        Position = UDim2.fromOffset(Point.X, TopPadding + Height),
+                        Size = UDim2.fromOffset(BarWidth, math.max(1, TopPadding + Height - Point.Y)),
+                        ZIndex = 2,
+                    })
+                end
             end
 
             for Index = 1, #Points - 1 do
@@ -8509,26 +8560,51 @@ do
                 local To = Points[Index + 1]
                 local Delta = To - From
                 local Length = Delta.Magnitude
+                if UseGlow then
+                    Canvas:AddLine({
+                        AnchorPoint = Vector2.new(0, 0.5),
+                        BackgroundColor3 = Info.GlowColor or Info.LineColor or "AccentColor",
+                        BackgroundTransparency = Info.GlowTransparency or 0.76,
+                        CornerRadius = GlowThickness,
+                        Position = UDim2.fromOffset(From.X, From.Y),
+                        Rotation = math.deg(math.atan2(Delta.Y, Delta.X)),
+                        Size = UDim2.fromOffset(Length, GlowThickness),
+                        ZIndex = 2,
+                    })
+                end
+
                 Canvas:AddLine({
                     AnchorPoint = Vector2.new(0, 0.5),
                     BackgroundColor3 = Info.LineColor or "AccentColor",
                     BackgroundTransparency = Info.LineTransparency or 0,
-                    CornerRadius = Info.LineThickness or 2,
+                    CornerRadius = LineThickness,
                     Position = UDim2.fromOffset(From.X, From.Y),
                     Rotation = math.deg(math.atan2(Delta.Y, Delta.X)),
-                    Size = UDim2.fromOffset(Length, Info.LineThickness or 2),
+                    Size = UDim2.fromOffset(Length, LineThickness),
                     ZIndex = 3,
                 })
             end
 
             for _, Point in Points do
+                if UseGlow then
+                    Canvas:AddFrame({
+                        AnchorPoint = Vector2.new(0.5, 0.5),
+                        BackgroundColor3 = Info.GlowColor or Info.PointColor or "AccentColor",
+                        BackgroundTransparency = Info.PointGlowTransparency or 0.72,
+                        CornerRadius = 18,
+                        Position = UDim2.fromOffset(Point.X, Point.Y),
+                        Size = UDim2.fromOffset(PointSize + 9, PointSize + 9),
+                        ZIndex = 3,
+                    })
+                end
+
                 Canvas:AddFrame({
                     AnchorPoint = Vector2.new(0.5, 0.5),
                     BackgroundColor3 = Info.PointColor or "AccentColor",
                     BackgroundTransparency = Info.PointTransparency or 0,
                     CornerRadius = 12,
                     Position = UDim2.fromOffset(Point.X, Point.Y),
-                    Size = UDim2.fromOffset(Info.PointSize or 5, Info.PointSize or 5),
+                    Size = UDim2.fromOffset(PointSize, PointSize),
                     ZIndex = 4,
                 })
             end
@@ -12147,16 +12223,25 @@ function Library:CreateWindow(WindowInfo)
 
         function Tab:AddCard(Info)
             Info = Info or {}
+            local FullCard = IsFullSide(Info.Side)
             local Side = Info.Side == 2 and 2 or 1
             local TargetTab = Info.TargetTab or Info.Tab
+            local CardHeight = Info.Height or (FullCard and 90 or 132)
+            local HoverHeight = Info.HoverHeight
+                or (Info.DisableHoverGrow and CardHeight or CardHeight + (FullCard and 2 or 4))
+            local HasThumbnail = Info.Thumbnail ~= nil and tostring(Info.Thumbnail) ~= ""
+            local MinimumBarHeight = math.min(44, CardHeight)
+            local BarHeight = math.clamp(Info.BarHeight or (HasThumbnail and 56 or CardHeight), MinimumBarHeight, CardHeight)
+            local CardParent = FullCard and GetSideParent(Info.Side) or (Side == 1 and TabLeft or TabRight)
             local CardHolder = New("TextButton", {
                 AutoButtonColor = false,
                 BackgroundColor3 = "BackgroundColor",
                 BackgroundTransparency = 0.1,
                 ClipsDescendants = true,
-                Size = UDim2.new(1, 0, 0, Info.Height or 132),
+                LayoutOrder = Info.LayoutOrder or 0,
+                Size = UDim2.new(1, 0, 0, CardHeight),
                 Text = "",
-                Parent = Side == 1 and TabLeft or TabRight,
+                Parent = CardParent,
             })
             RegisterBackgroundImageSurface(CardHolder, 0.1, "Panel")
             table.insert(
@@ -12176,9 +12261,10 @@ function Library:CreateWindow(WindowInfo)
             local Thumb = New("ImageLabel", {
                 BackgroundTransparency = 1,
                 Image = Info.Thumbnail or "",
-                ImageTransparency = Info.Thumbnail and (Info.ThumbnailTransparency or 0.15) or 1,
+                ImageTransparency = HasThumbnail and (Info.ThumbnailTransparency or 0.15) or 1,
                 ScaleType = Enum.ScaleType.Crop,
-                Size = UDim2.new(1, 0, 0, math.max(56, (Info.Height or 132) - 62)),
+                Size = UDim2.new(1, 0, 0, HasThumbnail and math.max(0, CardHeight - BarHeight + 8) or 0),
+                Visible = HasThumbnail,
                 Parent = CardHolder,
             })
             local Bar = New("Frame", {
@@ -12186,7 +12272,7 @@ function Library:CreateWindow(WindowInfo)
                 BackgroundColor3 = "DarkColor",
                 BackgroundTransparency = Info.BottomBarTransparency or 0.25,
                 Position = UDim2.fromScale(0, 1),
-                Size = UDim2.new(1, 0, 0, 56),
+                Size = UDim2.new(1, 0, 0, BarHeight),
                 Parent = CardHolder,
             })
             local Icon = Library:GetCustomIcon(Info.Icon)
@@ -12214,7 +12300,7 @@ function Library:CreateWindow(WindowInfo)
             New("TextLabel", {
                 BackgroundTransparency = 1,
                 Position = UDim2.fromOffset(Icon and 34 or 10, 25),
-                Size = UDim2.new(1, Icon and -42 or -12, 0, 24),
+                Size = UDim2.new(1, Icon and -42 or -12, 0, math.max(18, BarHeight - 30)),
                 Text = tostring(Info.Desc or Info.Description or ""),
                 TextSize = 13,
                 TextTransparency = 0.25,
@@ -12227,8 +12313,7 @@ function Library:CreateWindow(WindowInfo)
             local function SetHover(Hovering)
                 TweenService:Create(CardHolder, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     BackgroundTransparency = GetBackgroundImageSurfaceTransparency(Hovering and 0.02 or 0.1, "Panel"),
-                    Size = Hovering and UDim2.new(1, 0, 0, (Info.Height or 132) + 4)
-                        or UDim2.new(1, 0, 0, Info.Height or 132),
+                    Size = Hovering and UDim2.new(1, 0, 0, HoverHeight) or UDim2.new(1, 0, 0, CardHeight),
                 }):Play()
                 TweenService
                     :Create(Bar, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -12261,10 +12346,19 @@ function Library:CreateWindow(WindowInfo)
                 end
                 if NextTab and typeof(NextTab) == "table" and NextTab.Show then
                     NextTab:Show()
+                    task.defer(function()
+                        if NextTab.Resize then
+                            NextTab:Resize(true)
+                        elseif NextTab.RefreshSides then
+                            NextTab:RefreshSides()
+                        end
+                    end)
                 elseif Info.Callback then
                     Info.Callback(Card)
                 end
             end)
+
+            task.defer(Tab.RefreshSides, Tab)
 
             return Card
         end
@@ -12500,9 +12594,16 @@ function Library:CreateWindow(WindowInfo)
             Stats:AddGraph("DashboardActivityGraph", {
                 Title = Info.GraphTitle or "Activity Graph",
                 Values = Info.GraphValues or { 12, 18, 15, 26, 22, 34, 29, 41 },
-                Height = Info.GraphHeight or 138,
-                LineThickness = 3,
-                PointSize = 6,
+                Height = Info.GraphHeight or 128,
+                BackgroundTransparency = Info.GraphBackgroundTransparency or 0.08,
+                GridLines = Info.GraphGridLines or 4,
+                Smooth = Info.GraphSmooth ~= false,
+                Area = Info.GraphArea ~= false,
+                AreaTransparency = Info.GraphAreaTransparency or 0.88,
+                Glow = Info.GraphGlow ~= false,
+                GlowTransparency = Info.GraphGlowTransparency or 0.76,
+                LineThickness = Info.GraphLineThickness or 3,
+                PointSize = Info.GraphPointSize or 5,
             })
 
             Stats:AddTopUserBox("DashboardTopUsers", {
@@ -12535,11 +12636,15 @@ function Library:CreateWindow(WindowInfo)
             })
 
             Dashboard:AddCard({
-                Side = 1,
+                Side = Info.DetailCardSide or "Full",
                 Title = Info.DetailCardTitle or "Open hidden player details",
                 Desc = Info.DetailCardDescription or "Card tab index: opens a dedicated hidden tab without adding it to the tab holder.",
                 Icon = "external-link",
-                Height = Info.DetailCardHeight or 116,
+                Height = Info.DetailCardHeight or 82,
+                BarHeight = Info.DetailCardBarHeight or 82,
+                BottomBarTransparency = Info.DetailCardTransparency or 0.12,
+                DisableHoverGrow = true,
+                LayoutOrder = Info.DetailCardLayoutOrder or -10,
                 TargetTab = DetailTab,
                 StrokeColor = "AccentColor",
                 StrokeTransparency = 0.35,
@@ -13764,6 +13869,7 @@ function Library:CreateLoading(LoadingInfo)
 
     local BackdropTransparency = math.clamp(tonumber(LoadingInfo.BackdropTransparency) or 0.35, 0, 1)
     local SurfaceTransparency = math.clamp(tonumber(LoadingInfo.SurfaceTransparency) or 0, 0, 1)
+    local SurfaceFillTransparency = math.clamp(tonumber(LoadingInfo.SurfaceFillTransparency) or SurfaceTransparency, 0, 1)
     local ParticleCount = math.clamp(math.floor(tonumber(LoadingInfo.ParticleCount) or 0), 0, 48)
 
     local function ResolveLoadingImageAsset(Image, Prefix)
@@ -13787,7 +13893,7 @@ function Library:CreateLoading(LoadingInfo)
 
     local UseLoadingDecor = LoadingInfo.Decor ~= false and LoadingInfo.DecorImage ~= nil
     local DecorImage = ResolveLoadingImageAsset(LoadingInfo.DecorImage, "LoadingDecor_")
-    local DecorImageTransparency = math.clamp(tonumber(LoadingInfo.DecorImageTransparency) or 0.44, 0, 1)
+    local DecorImageTransparency = math.clamp(tonumber(LoadingInfo.DecorImageTransparency) or 0.28, 0, 1)
     local DecorHeight = math.max(0, tonumber(LoadingInfo.DecorHeight) or 92)
     local DecorPosition = tostring(LoadingInfo.DecorPosition or "Bottom"):lower()
     local DecorScaleType = typeof(LoadingInfo.DecorScaleType) == "EnumItem" and LoadingInfo.DecorScaleType
@@ -13853,6 +13959,25 @@ function Library:CreateLoading(LoadingInfo)
         Library.Corners,
         New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = MainFrame })
     )
+
+    local SurfaceFill
+    if LoadingInfo.SurfaceFill ~= false then
+        SurfaceFill = New("Frame", {
+            Name = "SurfaceFill",
+            BackgroundColor3 = LoadingInfo.SurfaceFillColor or function()
+                return Library:GetBetterColor(Library.Scheme.BackgroundColor, -1)
+            end,
+            BackgroundTransparency = SurfaceFillTransparency,
+            BorderSizePixel = 0,
+            Size = UDim2.fromScale(1, 1),
+            ZIndex = 1,
+            Parent = MainFrame,
+        })
+        table.insert(
+            Library.Corners,
+            New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = SurfaceFill })
+        )
+    end
 
     local MainScale = New("UIScale", {
         Scale = UseEntranceAnimation and TargetScale * 0.94 or TargetScale,
@@ -14062,6 +14187,23 @@ function Library:CreateLoading(LoadingInfo)
         DecorImageTransparency = math.clamp(tonumber(Transparency) or DecorImageTransparency, 0, 1)
         if LoadingDecor then
             LoadingDecor.ImageTransparency = DecorImageTransparency
+        end
+    end
+
+    function Loading:SetSurfaceTransparency(Transparency)
+        SurfaceTransparency = math.clamp(tonumber(Transparency) or SurfaceTransparency, 0, 1)
+        MainFrame.BackgroundTransparency = SurfaceTransparency
+
+        if SurfaceFill then
+            SurfaceFillTransparency = SurfaceTransparency
+            SurfaceFill.BackgroundTransparency = SurfaceFillTransparency
+        end
+    end
+
+    function Loading:SetSurfaceFillTransparency(Transparency)
+        SurfaceFillTransparency = math.clamp(tonumber(Transparency) or SurfaceFillTransparency, 0, 1)
+        if SurfaceFill then
+            SurfaceFill.BackgroundTransparency = SurfaceFillTransparency
         end
     end
 
@@ -15026,6 +15168,13 @@ function Library:CreateLoading(LoadingInfo)
                     Position = UDim2.new(0.5, 0, 0.5, 14),
                 }
             ):Play()
+            if SurfaceFill then
+                TweenService:Create(
+                    SurfaceFill,
+                    TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                    { BackgroundTransparency = 1 }
+                ):Play()
+            end
             TweenService:Create(
                 MainScale,
                 TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
