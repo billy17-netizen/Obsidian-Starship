@@ -282,7 +282,7 @@ LeftGroupBox:AddLiquidGlassButton({
             AutoResizeHeight = true,
             ShowSidebar = true,
             WindowWidth = 460,
-            WindowHeight = 285,
+            WindowHeight = 345,
             ContentWidth = 460,
             SidebarWidth = 230,
             BackdropTransparency = 0.28,
@@ -351,7 +351,7 @@ LeftGroupBox:AddLiquidGlassButton({
                 Loading:SetMessage(Step[1])
                 Loading:SetDescription(Step[2])
                 Loading:SetCurrentStep(Index)
-                task.wait(0.55)
+                task.wait(5.0)
             end
 
             if not Loading.Destroyed then
