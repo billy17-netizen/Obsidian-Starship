@@ -15400,6 +15400,34 @@ function Library:CreateLoading(LoadingInfo)
                 { Scale = TargetScale * 0.96 }
             ):Play()
 
+            for _, child in ipairs(MainFrame:GetDescendants()) do
+                if child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox") then
+                    TweenService:Create(
+                        child,
+                        TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                        { TextTransparency = 1 }
+                    ):Play()
+                elseif child:IsA("ImageLabel") or child:IsA("ImageButton") then
+                    TweenService:Create(
+                        child,
+                        TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                        { ImageTransparency = 1 }
+                    ):Play()
+                elseif child:IsA("UIStroke") then
+                    TweenService:Create(
+                        child,
+                        TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                        { Transparency = 1 }
+                    ):Play()
+                elseif child:IsA("Frame") then
+                    TweenService:Create(
+                        child,
+                        TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                        { BackgroundTransparency = 1 }
+                    ):Play()
+                end
+            end
+
             if Backdrop then
                 TweenService:Create(
                     Backdrop,
