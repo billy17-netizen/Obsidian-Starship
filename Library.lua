@@ -11969,7 +11969,7 @@ function Library:CreateWindow(WindowInfo)
 
         function Tab:AddGroupbox(Info)
             Info = typeof(Info) == "table" and Info or { Name = tostring(Info or "Groupbox") }
-            Info.Name = Info.Name or "Groupbox"
+            Info.Name = tostring(Info.Name or "Groupbox")
 
             local BoxHolder = New("Frame", {
                 AutomaticSize = Enum.AutomaticSize.Y,

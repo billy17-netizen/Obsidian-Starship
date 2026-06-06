@@ -1,7 +1,7 @@
 -- example script by https://github.com/mstudio45/LinoriaLib/blob/main/Example.lua and modified by deivid
 -- You can suggest changes with a pull request or something
 
-local repo = "https://raw.githubusercontent.com/tanhoangviet/Obsidian-UI-Modded/main/"
+local repo = "https://raw.githubusercontent.com/billy17-netizen/Obsidian-Starship/main/"
 local repoCacheKey = tostring(os.time())
 local function RepoAsset(Path)
     return repo .. Path .. "?v=" .. repoCacheKey
