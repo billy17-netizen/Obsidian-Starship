@@ -230,12 +230,41 @@ for _, FontExample in ipairs(FontExamples) do
 end
 
 CustomFontBox:AddCustomFontLabel({
-    Text = "This label uses the default custom font",
-    TextSize = 18,
+    Text = "PLAYER STATISTICS",
+    TextSize = 20,
     Height = 32,
     Color = Color3.fromRGB(255, 255, 255),
     TextXAlignment = Enum.TextXAlignment.Center,
 })
+
+CustomFontBox:AddCustomFontLabel({
+    Text = "LEVEL 99",
+    TextSize = 16,
+    Height = 24,
+    Color = Color3.fromRGB(125, 235, 255),
+})
+
+CustomFontBox:AddCustomFontLabel({
+    Text = "COINS 1234567",
+    TextSize = 16,
+    Height = 24,
+    Color = Color3.fromRGB(255, 212, 102),
+})
+
+-- Floating screen watermark example
+-- Library.ScreenGui must exist
+task.spawn(function()
+    task.wait(1.0)
+    
+    Library:CreateCustomText(Library.ScreenGui, {
+        Text = "OBSIDIAN HUB DEVELOPMENT BUILD",
+        TextSize = 14,
+        Color = Color3.fromRGB(255, 255, 255),
+        Position = UDim2.new(0, 15, 0, 15),
+        Size = UDim2.fromOffset(400, 20),
+        ZIndex = 10000,
+    })
+end)
 
 LeftGroupBox:AddGlassPanel("ExampleGlassPanel", {
     Title = "Liquid glass preview",
