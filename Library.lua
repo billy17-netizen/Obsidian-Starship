@@ -11456,6 +11456,17 @@ function Library:CreateWindow(WindowInfo)
         Window.GlowStroke.Transparency = State and (Window.GlowTransparency or 0.45) or 1
     end
 
+    function Window:StartGlowingAuraAroundTheParameterOfTheWindow(State, Properties)
+        Properties = typeof(Properties) == "table" and Properties or {}
+        local Info = {
+            Color = Properties.color or Properties.Color or "AccentColor",
+            Transparency = Properties.transparency or Properties.Transparency or 1,
+            Thickness = Properties.thickness or Properties.Thickness or 1,
+        }
+        self:AddGlow(Info)
+        self:SetGlow(State)
+    end
+
     function Window:InitializeAndActivateTheComprehensiveGraphicalSubsystemResponsibleForCreatingRenderingAnimatingMaintainingAndPeriodicallyUpdatingAnAestheticallyPleasingVisuallyDistinctGlowingAuraEffectAroundTheExplicitlySpecifiedParameterOfTheCurrentlyReferencedWindowInstanceForThePurposeOfDrawingAdditionalUserAttention(State, Info)
         self:AddGlow(Info)
         self:SetGlow(State)
