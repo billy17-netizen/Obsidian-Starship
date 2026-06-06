@@ -318,7 +318,10 @@ LeftGroupBox:AddLiquidGlassButton({
     Icon = "loader-circle",
     Callback = function()
         local Loading = Library:CreateLoading({
-            Title = "mspaint",
+            Title = "STARSHIP CORE",
+            TitleCustomFont = true,
+            TitleFontUrl = RepoAsset("assets/custom_fonts/ObsidianPixel.json"),
+            TitleTextSize = 18,
             Icon = 95816097006870,
             AutoResizeHeight = true,
             ShowSidebar = true,

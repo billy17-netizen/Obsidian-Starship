@@ -553,6 +553,10 @@ local Templates = {
         LoadingIcon = CustomImageManager.GetAsset("LoadingIcon"),
         LoadingIconColor = nil,
         LoadingIconTweenTime = 1,
+        TitleCustomFont = false,
+        TitleFont = nil,
+        TitleFontUrl = nil,
+        TitleTextSize = 20,
         Animated = true,
         EntranceAnimation = true,
         ExitAnimation = true,
@@ -14670,19 +14674,53 @@ function Library:CreateLoading(LoadingInfo)
         })
     end
 
-    local TitleX = Library:GetTextBounds(
-        LoadingInfo.Title,
-        Library.Scheme.Font,
-        20,
-        TitleHolder.AbsoluteSize.X - (LoadingInfo.Icon and (LoadingInfo.IconSize.X.Offset + 6) or 0) - 12
-    )
-    local _WindowTitle = New("TextLabel", {
-        BackgroundTransparency = 1,
-        Size = UDim2.new(0, TitleX, 1, 0),
-        Text = LoadingInfo.Title,
-        TextSize = 20,
-        Parent = TitleHolder,
-    })
+    local TitleTextSize = tonumber(LoadingInfo.TitleTextSize) or 20
+    local TitleFont = LoadingInfo.TitleFont
+    if LoadingInfo.TitleCustomFont and not TitleFont and LoadingInfo.TitleFontUrl then
+        local Success, DownloadedFont = pcall(function()
+            return Library:DownloadCustomFont(LoadingInfo.TitleFontUrl)
+        end)
+        if Success then
+            TitleFont = DownloadedFont
+        end
+    end
+
+    local UseCustomTitle = LoadingInfo.TitleCustomFont and typeof(TitleFont) == "table" and TitleFont.Type == "CustomFont"
+    local TitleX
+    if UseCustomTitle and TitleFont.GetTextBounds then
+        TitleX = select(1, TitleFont:GetTextBounds(
+            LoadingInfo.Title,
+            TitleTextSize,
+            TitleHolder.AbsoluteSize.X - (LoadingInfo.Icon and (LoadingInfo.IconSize.X.Offset + 6) or 0) - 12
+        ))
+    else
+        TitleX = Library:GetTextBounds(
+            LoadingInfo.Title,
+            Library.Scheme.Font,
+            TitleTextSize,
+            TitleHolder.AbsoluteSize.X - (LoadingInfo.Icon and (LoadingInfo.IconSize.X.Offset + 6) or 0) - 12
+        )
+    end
+
+    if UseCustomTitle then
+        Library:CreateCustomText(TitleHolder, {
+            Name = "WindowTitle",
+            Text = LoadingInfo.Title,
+            Font = TitleFont,
+            TextSize = TitleTextSize,
+            TextColor3 = Library.Scheme.FontColor,
+            Size = UDim2.new(0, TitleX, 1, 0),
+            TextYAlignment = Enum.TextYAlignment.Center,
+        })
+    else
+        local _WindowTitle = New("TextLabel", {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(0, TitleX, 1, 0),
+            Text = LoadingInfo.Title,
+            TextSize = TitleTextSize,
+            Parent = TitleHolder,
+        })
+    end
 
     Library:MakeLine(Container, {
         Position = UDim2.fromOffset(0, 48),
