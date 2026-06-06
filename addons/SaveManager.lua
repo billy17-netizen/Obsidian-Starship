@@ -7,8 +7,32 @@ end)
 
 local HttpService: HttpService = cloneref(game:GetService("HttpService"))
 local isfolder, isfile, listfiles = isfolder, isfile, listfiles
+local makefolder, readfile, writefile, delfile = makefolder, readfile, writefile, delfile
+local getgenv = getgenv or function()
+    return shared
+end
 
-if typeof(clonefunction) == "function" then
+local function HasFileSystem()
+    return typeof(isfolder) == "function"
+        and typeof(isfile) == "function"
+        and typeof(listfiles) == "function"
+        and typeof(makefolder) == "function"
+        and typeof(readfile) == "function"
+        and typeof(writefile) == "function"
+        and typeof(delfile) == "function"
+end
+
+local function CleanPathName(Name)
+    Name = tostring(Name or "")
+    Name = Name:gsub("^%s+", ""):gsub("%s+$", "")
+    if Name == "" or Name:find("/", 1, true) or Name:find("\\", 1, true) or Name:find("..", 1, true) then
+        return nil
+    end
+
+    return Name
+end
+
+if typeof(clonefunction) == "function" and typeof(isfolder) == "function" and typeof(isfile) == "function" and typeof(listfiles) == "function" then
     -- Fix is_____ functions for shitsploits, those functions should never error, only return a boolean.
 
     local
@@ -133,11 +157,13 @@ local SaveManager = {} do
 
     --// Folders \\--
     function SaveManager:CheckSubFolder(createFolder)
-        if typeof(self.SubFolder) ~= "string" or self.SubFolder == "" then return false end
+        local Cleaned = CleanPathName(self.SubFolder)
+        if not Cleaned then return false end
+        self.SubFolder = Cleaned
 
         if createFolder == true then
             if not isfolder(self.Folder .. "/settings/" .. self.SubFolder) then
-                makefolder(self.Folder .. "/settings/" .. self.SubFolder)
+                pcall(makefolder, self.Folder .. "/settings/" .. self.SubFolder)
             end
         end
 
@@ -170,18 +196,22 @@ local SaveManager = {} do
     end
 
     function SaveManager:BuildFolderTree()
+        if not HasFileSystem() then
+            return false
+        end
+
         local paths = self:GetPaths()
 
         for i = 1, #paths do
             local str = paths[i]
             if isfolder(str) then continue end
 
-            makefolder(str)
+            pcall(makefolder, str)
         end
     end
 
     function SaveManager:CheckFolderTree()
-        if isfolder(self.Folder) then return end
+        if not HasFileSystem() or isfolder(self.Folder) then return end
         SaveManager:BuildFolderTree()
 
         task.wait(0.1)
@@ -205,7 +235,8 @@ local SaveManager = {} do
 
     --// Save, Load, Delete, Refresh \\--
     function SaveManager:Save(name)
-        if (not name) then
+        name = CleanPathName(name)
+        if not name then
             return false, "no config file is selected"
         end
         SaveManager:CheckFolderTree()
@@ -240,12 +271,17 @@ local SaveManager = {} do
             return false, "failed to encode data"
         end
 
-        writefile(fullPath, encoded)
+        local successWrite = pcall(writefile, fullPath, encoded)
+        if not successWrite then
+            return false, "write file error"
+        end
+
         return true
     end
 
     function SaveManager:Load(name)
-        if (not name) then
+        name = CleanPathName(name)
+        if not name then
             return false, "no config file is selected"
         end
         SaveManager:CheckFolderTree()
@@ -255,10 +291,13 @@ local SaveManager = {} do
             file = self.Folder .. "/settings/" .. self.SubFolder .. "/" .. name .. ".json"
         end
 
-        if not isfile(file) then return false, "invalid file" end
+        if not HasFileSystem() or not isfile(file) then return false, "invalid file" end
 
-        local success, decoded = pcall(HttpService.JSONDecode, HttpService, readfile(file))
-        if not success then return false, "decode error" end
+        local successRead, raw = pcall(readfile, file)
+        if not successRead then return false, "read file error" end
+
+        local success, decoded = pcall(HttpService.JSONDecode, HttpService, raw)
+        if not success or typeof(decoded) ~= "table" or typeof(decoded.objects) ~= "table" then return false, "decode error" end
 
         if self.UseLoadingOrder == true and typeof(self.LoadingOrder) == "table" then
             table.sort(decoded.objects, function(a, b)
@@ -273,14 +312,21 @@ local SaveManager = {} do
             if not self.Parser[option.type] then continue end
             if self.Ignore[option.idx] then continue end
 
-            task.spawn(self.Parser[option.type].Load, option.idx, option) -- task.spawn() so the config loading wont get stuck.
+            task.spawn(function()
+                if self.Library and self.Library.Unloaded then
+                    return
+                end
+
+                self.Parser[option.type].Load(option.idx, option)
+            end) -- task.spawn() so the config loading wont get stuck.
         end
 
         return true
     end
 
     function SaveManager:Delete(name)
-        if (not name) then
+        name = CleanPathName(name)
+        if not name then
             return false, "no config file is selected"
         end
 
@@ -289,7 +335,7 @@ local SaveManager = {} do
             file = self.Folder .. "/settings/" .. self.SubFolder .. "/" .. name .. ".json"
         end
 
-        if not isfile(file) then return false, "invalid file" end
+        if not HasFileSystem() or not isfile(file) then return false, "invalid file" end
 
         local success = pcall(delfile, file)
         if not success then return false, "delete file error" end
@@ -305,9 +351,11 @@ local SaveManager = {} do
             local out = {}
 
             if SaveManager:CheckSubFolder(true) then
-                list = listfiles(self.Folder .. "/settings/" .. self.SubFolder)
+                local SuccessList, Files = pcall(listfiles, self.Folder .. "/settings/" .. self.SubFolder)
+                list = SuccessList and Files or {}
             else
-                list = listfiles(self.Folder .. "/settings")
+                local SuccessList, Files = pcall(listfiles, self.Folder .. "/settings")
+                list = SuccessList and Files or {}
             end
             if typeof(list) ~= "table" then list = {} end
 
@@ -356,7 +404,7 @@ local SaveManager = {} do
             autoLoadPath = self.Folder .. "/settings/" .. self.SubFolder .. "/autoload.txt"
         end
 
-        if isfile(autoLoadPath) then
+        if HasFileSystem() and isfile(autoLoadPath) then
             local successRead, name = pcall(readfile, autoLoadPath)
             if not successRead then
                 return "none"
@@ -377,7 +425,7 @@ local SaveManager = {} do
             autoLoadPath = self.Folder .. "/settings/" .. self.SubFolder .. "/autoload.txt"
         end
 
-        if isfile(autoLoadPath) then
+        if HasFileSystem() and isfile(autoLoadPath) then
             local successRead, name = pcall(readfile, autoLoadPath)
             if not successRead then
                 self.Library:Notify("Failed to load autoload config: write file error")
@@ -402,6 +450,11 @@ local SaveManager = {} do
             autoLoadPath = self.Folder .. "/settings/" .. self.SubFolder .. "/autoload.txt"
         end
 
+        name = CleanPathName(name)
+        if not name then return false, "invalid file" end
+
+        if not HasFileSystem() then return false, "write file error" end
+
         local success = pcall(writefile, autoLoadPath, name)
         if not success then return false, "write file error" end
 
@@ -415,6 +468,8 @@ local SaveManager = {} do
         if SaveManager:CheckSubFolder(true) then
             autoLoadPath = self.Folder .. "/settings/" .. self.SubFolder .. "/autoload.txt"
         end
+
+        if not HasFileSystem() then return false, "delete file error" end
 
         local success = pcall(delfile, autoLoadPath)
         if not success then return false, "delete file error" end

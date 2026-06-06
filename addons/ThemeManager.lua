@@ -7,8 +7,32 @@ end)
 
 local HttpService: HttpService = cloneref(game:GetService("HttpService"))
 local isfolder, isfile, listfiles = isfolder, isfile, listfiles
+local makefolder, readfile, writefile, delfile = makefolder, readfile, writefile, delfile
+local getgenv = getgenv or function()
+    return shared
+end
 
-if typeof(clonefunction) == "function" then
+local function HasFileSystem()
+    return typeof(isfolder) == "function"
+        and typeof(isfile) == "function"
+        and typeof(listfiles) == "function"
+        and typeof(makefolder) == "function"
+        and typeof(readfile) == "function"
+        and typeof(writefile) == "function"
+        and typeof(delfile) == "function"
+end
+
+local function CleanPathName(Name)
+    Name = tostring(Name or "")
+    Name = Name:gsub("^%s+", ""):gsub("%s+$", "")
+    if Name == "" or Name:find("/", 1, true) or Name:find("\\", 1, true) or Name:find("..", 1, true) then
+        return nil
+    end
+
+    return Name
+end
+
+if typeof(clonefunction) == "function" and typeof(isfolder) == "function" and typeof(isfile) == "function" and typeof(listfiles) == "function" then
     -- Fix is_____ functions for shitsploits, those functions should never error, only return a boolean.
 
     local
@@ -293,6 +317,10 @@ do
     end
 
     function ThemeManager:BuildFolderTree()
+        if not HasFileSystem() then
+            return false
+        end
+
         local paths = self:GetPaths()
 
         for i = 1, #paths do
@@ -300,12 +328,12 @@ do
             if isfolder(str) then
                 continue
             end
-            makefolder(str)
+            pcall(makefolder, str)
         end
     end
 
     function ThemeManager:CheckFolderTree()
-        if isfolder(self.Folder) then
+        if not HasFileSystem() or isfolder(self.Folder) then
             return
         end
         self:BuildFolderTree()
@@ -371,12 +399,20 @@ do
 
     --// Get, Load, Save, Delete, Refresh \\--
     function ThemeManager:GetCustomTheme(file)
+        file = CleanPathName(file)
+        if not file or not HasFileSystem() then
+            return nil
+        end
+
         local path = self.Folder .. "/themes/" .. file .. ".json"
         if not isfile(path) then
             return nil
         end
 
-        local data = readfile(path)
+        local SuccessRead, data = pcall(readfile, path)
+        if not SuccessRead then
+            return nil
+        end
         local success, decoded = pcall(HttpService.JSONDecode, HttpService, data)
 
         if not success then
@@ -388,7 +424,11 @@ do
 
     function ThemeManager:LoadDefault()
         local theme = "Default"
-        local content = isfile(self.Folder .. "/themes/default.txt") and readfile(self.Folder .. "/themes/default.txt")
+        local content
+        if HasFileSystem() and isfile(self.Folder .. "/themes/default.txt") then
+            local SuccessRead, Data = pcall(readfile, self.Folder .. "/themes/default.txt")
+            content = SuccessRead and Data or nil
+        end
 
         local isDefault = true
         if content then
@@ -410,7 +450,9 @@ do
     end
 
     function ThemeManager:SaveDefault(theme)
-        writefile(self.Folder .. "/themes/default.txt", theme)
+        if HasFileSystem() then
+            pcall(writefile, self.Folder .. "/themes/default.txt", tostring(theme or ""))
+        end
     end
 
     function ThemeManager:SetDefaultTheme(theme)
@@ -458,7 +500,8 @@ do
     end
 
     function ThemeManager:SaveCustomTheme(file)
-        if file:gsub(" ", "") == "" then
+        file = CleanPathName(file)
+        if not file then
             self.Library:Notify("Invalid file name for theme (empty)", 3)
             return
         end
@@ -469,12 +512,20 @@ do
         end
         theme["FontFace"] = self.Library.Options["FontFace"].Value
 
-        writefile(self.Folder .. "/themes/" .. file .. ".json", HttpService:JSONEncode(theme))
+        local SuccessEncode, Encoded = pcall(HttpService.JSONEncode, HttpService, theme)
+        if SuccessEncode and HasFileSystem() then
+            pcall(writefile, self.Folder .. "/themes/" .. file .. ".json", Encoded)
+        end
     end
 
     function ThemeManager:Delete(name)
         if not name then
             return false, "no config file is selected"
+        end
+
+        name = CleanPathName(name)
+        if not name or not HasFileSystem() then
+            return false, "invalid file"
         end
 
         local file = self.Folder .. "/themes/" .. name .. ".json"
@@ -491,7 +542,14 @@ do
     end
 
     function ThemeManager:ReloadCustomThemes()
-        local list = listfiles(self.Folder .. "/themes")
+        if not HasFileSystem() then
+            return {}
+        end
+
+        local SuccessList, list = pcall(listfiles, self.Folder .. "/themes")
+        if not SuccessList or typeof(list) ~= "table" then
+            return {}
+        end
 
         local out = {}
         for i = 1, #list do
@@ -636,7 +694,7 @@ do
             end
         end)
         groupbox:AddButton("Reset default", function()
-            local success = pcall(delfile, self.Folder .. "/themes/default.txt")
+            local success = HasFileSystem() and pcall(delfile, self.Folder .. "/themes/default.txt")
             if not success then
                 self.Library:Notify("Failed to reset default: delete file error")
                 return
@@ -652,6 +710,15 @@ do
 
         local function UpdateTheme()
             self:ThemeUpdate()
+        end
+
+        if self.Library.OnUnload then
+            self.Library:OnUnload(function()
+                local SuccessEnv, Env = pcall(getgenv)
+                if SuccessEnv and typeof(Env) == "table" and Env.ObsidianThemeManager == self then
+                    Env.ObsidianThemeManager = nil
+                end
+            end)
         end
 
         self.Library.Options.BackgroundColor:OnChanged(UpdateTheme)
@@ -684,5 +751,8 @@ do
     ThemeManager:BuildFolderTree()
 end
 
-getgenv().ObsidianThemeManager = ThemeManager
+local SuccessEnv, Env = pcall(getgenv)
+if SuccessEnv and typeof(Env) == "table" then
+    Env.ObsidianThemeManager = ThemeManager
+end
 return ThemeManager

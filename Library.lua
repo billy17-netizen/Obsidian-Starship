@@ -19,6 +19,20 @@ local gethui = gethui or function()
     return CoreGui
 end
 
+local function SafeGetGlobal(Name)
+    local Success, Env = pcall(getgenv)
+    if Success and typeof(Env) == "table" then
+        return Env[Name], Env
+    end
+
+    return nil, nil
+end
+
+local PreviousLibrary = SafeGetGlobal("Library")
+if typeof(PreviousLibrary) == "table" and typeof(PreviousLibrary.Unload) == "function" then
+    pcall(PreviousLibrary.Unload, PreviousLibrary)
+end
+
 local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local Mouse = cloneref(LocalPlayer:GetMouse())
 
@@ -2079,6 +2093,34 @@ local function ParentUI(UI: Instance, SkipHiddenUI: boolean?)
     SafeParentUI(UI, gethui)
 end
 
+local function DestroyExistingGui(Name: string)
+    local Parents = {}
+    local Success, Hui = pcall(gethui)
+    if Success and typeof(Hui) == "Instance" then
+        table.insert(Parents, Hui)
+    end
+    table.insert(Parents, CoreGui)
+    pcall(function()
+        table.insert(Parents, LocalPlayer:FindFirstChildOfClass("PlayerGui"))
+    end)
+
+    for _, Parent in Parents do
+        if typeof(Parent) == "Instance" then
+            local Gui = Parent:FindFirstChild(Name)
+            if Gui then
+                pcall(function()
+                    Gui:Destroy()
+                end)
+            end
+        end
+    end
+end
+
+DestroyExistingGui("Obsidian")
+DestroyExistingGui("ObsidianFloatingSprites")
+DestroyExistingGui("ObsidianPopup")
+DestroyExistingGui("ObsidianLoading")
+
 local ScreenGui = New("ScreenGui", {
     Name = "Obsidian",
     DisplayOrder = 998,
@@ -2110,9 +2152,9 @@ local FullscreenBackground = New("ImageLabel", {
     Parent = ScreenGui,
 })
 
-ScreenGui.DescendantRemoving:Connect(function(Instance)
+Library:GiveSignal(ScreenGui.DescendantRemoving:Connect(function(Instance)
     Library:RemoveFromRegistry(Instance)
-end)
+end))
 
 local ModalElement = New("TextButton", {
     BackgroundTransparency = 1,
@@ -3259,10 +3301,20 @@ function Library:AddTooltip(InfoStr: string, DisabledInfoStr: string, HoverInsta
 end
 
 function Library:OnUnload(Callback)
+    if typeof(Callback) ~= "function" then
+        return
+    end
+
     table.insert(Library.UnloadSignals, Callback)
 end
 
 function Library:Unload()
+    if Library.Unloaded then
+        return
+    end
+
+    Library.Unloaded = true
+
     for Index = #Library.Signals, 1, -1 do
         local Connection = table.remove(Library.Signals, Index)
         if Connection and Connection.Connected then
@@ -3278,8 +3330,6 @@ function Library:Unload()
         Library:SafeCallback(Tooltip.Destroy, Tooltip)
     end
 
-    Library.Unloaded = true
-
     if Library.ActiveLoading then
         Library.ActiveLoading:Destroy()
     end
@@ -3292,7 +3342,10 @@ function Library:Unload()
         FloatingSpritesGui:Destroy()
     end
 
-    getgenv().Library = nil
+    local CurrentLibrary, Env = SafeGetGlobal("Library")
+    if Env and CurrentLibrary == Library then
+        Env.Library = nil
+    end
 end
 
 local CheckIcon = Library:GetIcon("check")
@@ -15239,5 +15292,8 @@ Library:GiveSignal(Players.PlayerRemoving:Connect(OnPlayerChange))
 Library:GiveSignal(Teams.ChildAdded:Connect(OnTeamChange))
 Library:GiveSignal(Teams.ChildRemoved:Connect(OnTeamChange))
 
-getgenv().Library = Library
+local _, GlobalEnv = SafeGetGlobal("Library")
+if GlobalEnv then
+    GlobalEnv.Library = Library
+end
 return Library
