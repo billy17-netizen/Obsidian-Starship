@@ -14205,8 +14205,50 @@ function Library:CreateLoading(LoadingInfo)
     table.insert(Library.Scales, MainScale)
     Library.ScalesOffset[MainScale] = Library.IsMobile and 0.2 or 0
 
-    local DrawingLayer
+    local Container = New("Frame", {
+        Name = "Content",
+        BackgroundTransparency = 1,
+        Position = UDim2.fromOffset(0, 0),
+        Size = UDim2.new(0, Loading.ContentWidth, 1, 0),
+        ZIndex = 3,
+        Parent = MainFrame,
+    })
+
+    local DrawingLayer = New("Frame", {
+        Name = "LoadingDrawingLayer",
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        Size = UDim2.fromScale(1, 1),
+        ZIndex = 1,
+        Parent = Container,
+    })
+    Loading.DrawingLayer = DrawingLayer
     Loading.Drawings = {}
+
+    local SideBar = New("Frame", {
+        Name = "SideBar",
+        BackgroundTransparency = 1,
+        Position = UDim2.fromOffset(Loading.ContentWidth, 0),
+        Size = UDim2.new(0, Loading.ShowSidebar and Loading.SidebarWidth or 0, 1, 0),
+        ClipsDescendants = true,
+        Visible = Loading.ShowSidebar,
+        ZIndex = 3,
+        Parent = MainFrame,
+    })
+    local SidebarCorner = New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = SideBar })
+    table.insert(Library.Corners, SidebarCorner)
+
+    Library:AddOutline(SideBar)
+
+    local SidebarDivider = New("Frame", {
+        BackgroundColor3 = "OutlineColor",
+        BorderSizePixel = 0,
+        Position = UDim2.fromOffset(0, 0),
+        Size = UDim2.new(0, 1, 1, 0),
+        Visible = Loading.ShowSidebar,
+        Parent = SideBar,
+    })
 
     local function ResolveDrawingImage(Image, Prefix)
         Image = Image or ""
@@ -14561,50 +14603,6 @@ function Library:CreateLoading(LoadingInfo)
         end))
     end
 
-    --// Layout Containers \\--
-    local Container = New("Frame", {
-        Name = "Content",
-        BackgroundTransparency = 1,
-        Position = UDim2.fromOffset(0, 0),
-        Size = UDim2.new(0, Loading.ContentWidth, 1, 0),
-        ZIndex = 3,
-        Parent = MainFrame,
-    })
-
-    DrawingLayer = New("Frame", {
-        Name = "LoadingDrawingLayer",
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ClipsDescendants = true,
-        Size = UDim2.fromScale(1, 1),
-        ZIndex = 1,
-        Parent = Container,
-    })
-    Loading.DrawingLayer = DrawingLayer
-
-    local SideBar = New("Frame", {
-        Name = "SideBar",
-        BackgroundTransparency = 1,
-        Position = UDim2.fromOffset(Loading.ContentWidth, 0),
-        Size = UDim2.new(0, Loading.ShowSidebar and Loading.SidebarWidth or 0, 1, 0),
-        ClipsDescendants = true,
-        Visible = Loading.ShowSidebar,
-        ZIndex = 3,
-        Parent = MainFrame,
-    })
-    local SidebarCorner = New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = SideBar })
-    table.insert(Library.Corners, SidebarCorner)
-
-    Library:AddOutline(SideBar)
-
-    local SidebarDivider = New("Frame", {
-        BackgroundColor3 = "OutlineColor",
-        BorderSizePixel = 0,
-        Position = UDim2.fromOffset(0, 0),
-        Size = UDim2.new(0, 1, 1, 0),
-        Visible = Loading.ShowSidebar,
-        Parent = SideBar,
-    })
 
     --// Top Bar \\--
     local TopBar = New("Frame", {
