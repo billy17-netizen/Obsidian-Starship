@@ -1903,6 +1903,7 @@ function Library:AddFloatingSprite(Info)
         Visible = Sprite.Visible,
         ZIndex = Info.ZIndex or 50000,
         Parent = ParentGui,
+        Active = Info.Draggable or false,
     })
 
     local function ApplyImage(NewImage)
@@ -1998,6 +1999,10 @@ function Library:AddFloatingSprite(Info)
         Sprite:Play()
     end
     Sprite:BringToFront()
+
+    if Info.Draggable then
+        Library:MakeDraggable(ImageObject, ImageObject, true)
+    end
 
     return Sprite
 end

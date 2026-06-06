@@ -162,6 +162,7 @@ local FloatingArisu = Library:AddFloatingSprite({
     Size = UDim2.fromOffset(90, 90),
     Visible = true,
     ZIndex = 50000,
+    Draggable = true,
 })
 
 Library:AddKeybindMenuButton({
