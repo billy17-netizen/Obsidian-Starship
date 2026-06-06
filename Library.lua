@@ -14205,16 +14205,7 @@ function Library:CreateLoading(LoadingInfo)
     table.insert(Library.Scales, MainScale)
     Library.ScalesOffset[MainScale] = Library.IsMobile and 0.2 or 0
 
-    local DrawingLayer = New("Frame", {
-        Name = "LoadingDrawingLayer",
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ClipsDescendants = true,
-        Size = UDim2.fromScale(1, 1),
-        ZIndex = 1,
-        Parent = MainFrame,
-    })
-    Loading.DrawingLayer = DrawingLayer
+    local DrawingLayer
     Loading.Drawings = {}
 
     local function ResolveDrawingImage(Image, Prefix)
@@ -14579,6 +14570,17 @@ function Library:CreateLoading(LoadingInfo)
         ZIndex = 3,
         Parent = MainFrame,
     })
+
+    DrawingLayer = New("Frame", {
+        Name = "LoadingDrawingLayer",
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        Size = UDim2.fromScale(1, 1),
+        ZIndex = 1,
+        Parent = Container,
+    })
+    Loading.DrawingLayer = DrawingLayer
 
     local SideBar = New("Frame", {
         Name = "SideBar",
