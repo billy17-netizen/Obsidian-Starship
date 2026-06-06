@@ -301,7 +301,7 @@ LeftGroupBox:AddLiquidGlassButton({
                     Image = RepoAsset("assets/LoadingBarTexture.png"),
                     ImageColor3 = Color3.fromRGB(125, 85, 255),
                     ImageTransparency = 0.78,
-                    Position = UDim2.new(0, 0, 1, -44),
+                    Position = UDim2.new(0, 0, 1, -136),
                     Size = UDim2.new(1, 0, 0, 44),
                     ScaleType = Enum.ScaleType.Tile,
                     TileSize = UDim2.fromOffset(96, 18),
@@ -312,7 +312,7 @@ LeftGroupBox:AddLiquidGlassButton({
                     Name = "BottomAccentLine",
                     BackgroundColor3 = Color3.fromRGB(125, 85, 255),
                     BackgroundTransparency = 0.35,
-                    Position = UDim2.new(0, 14, 1, -45),
+                    Position = UDim2.new(0, 14, 1, -137),
                     Size = UDim2.new(1, -28, 0, 1),
                     ZIndex = 2,
                 },
@@ -351,7 +351,7 @@ LeftGroupBox:AddLiquidGlassButton({
                 Loading:SetMessage(Step[1])
                 Loading:SetDescription(Step[2])
                 Loading:SetCurrentStep(Index)
-                task.wait(0.55)
+                task.wait(5.0)
             end
 
             if not Loading.Destroyed then
