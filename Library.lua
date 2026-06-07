@@ -11056,15 +11056,40 @@ function Library:CreateWindow(WindowInfo)
             Parent = CurrentTabInfo,
         })
 
-        CurrentTabLabel = New("TextLabel", {
-            BackgroundTransparency = 1,
-            Size = UDim2.fromScale(1, 0),
-            AutomaticSize = Enum.AutomaticSize.Y,
-            Text = "",
-            TextSize = 14,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            Parent = CurrentTabInfo,
-        })
+        local UseCustomCurrentTabTitle = Library.TabTitleCustomFont and typeof(Library.TabTitleFont) == "table" and Library.TabTitleFont.Type == "CustomFont"
+        if Library.TabTitleCustomFont and not UseCustomCurrentTabTitle and Library.TabTitleFontUrl then
+            local Success, DownloadedFont = pcall(function()
+                return Library:DownloadCustomFont(Library.TabTitleFontUrl)
+            end)
+
+            if Success then
+                Library.TabTitleFont = DownloadedFont
+                UseCustomCurrentTabTitle = typeof(DownloadedFont) == "table" and DownloadedFont.Type == "CustomFont"
+            end
+        end
+
+        if UseCustomCurrentTabTitle then
+            CurrentTabLabel = Library:CreateCustomText(CurrentTabInfo, {
+                Name = "CurrentTabTitle",
+                Text = "",
+                Font = Library.TabTitleFont,
+                TextSize = Library.TabTitleTextSize or 14,
+                TextColor3 = Library.Scheme.FontColor,
+                Size = UDim2.fromScale(1, 1),
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextYAlignment = Enum.TextYAlignment.Center,
+            })
+        else
+            CurrentTabLabel = New("TextLabel", {
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 0),
+                AutomaticSize = Enum.AutomaticSize.Y,
+                Text = "",
+                TextSize = 14,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Parent = CurrentTabInfo,
+            })
+        end
 
         CurrentTabDescriptionFrame = New("ScrollingFrame", {
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
@@ -11558,7 +11583,11 @@ function Library:CreateWindow(WindowInfo)
     end
 
     function Window:ShowTabInfo(Name, Description)
-        CurrentTabLabel.Text = Name
+        if CurrentTabLabel.SetText then
+            CurrentTabLabel:SetText(Name)
+        else
+            CurrentTabLabel.Text = Name
+        end
         CurrentTabDescription.Text = Description
         if CurrentTabDescriptionFrame then
             CurrentTabDescriptionFrame.CanvasPosition = Vector2.zero
