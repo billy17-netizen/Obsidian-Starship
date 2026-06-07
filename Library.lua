@@ -11669,43 +11669,17 @@ function Library:CreateWindow(WindowInfo)
                 Parent = TabButton,
             })
 
-            local UseCustomTabTitle = Library.TabTitleCustomFont and typeof(Library.TabTitleFont) == "table" and Library.TabTitleFont.Type == "CustomFont"
-            if Library.TabTitleCustomFont and not UseCustomTabTitle and Library.TabTitleFontUrl then
-                local Success, DownloadedFont = pcall(function()
-                    return Library:DownloadFont(Library.TabTitleFontUrl)
-                end)
-                if Success then
-                    Library.TabTitleFont = DownloadedFont
-                    UseCustomTabTitle = typeof(DownloadedFont) == "table" and DownloadedFont.Type == "CustomFont"
-                end
-            end
-
-            if UseCustomTabTitle then
-                TabLabel = Library:CreateCustomText(TabButton, {
-                    Name = "TabTitle",
-                    Text = Name,
-                    Font = Library.TabTitleFont,
-                    TextSize = Library.TabTitleTextSize or 16,
-                    TextColor3 = Library.Scheme.FontColor,
-                    Position = UDim2.fromOffset(30, 0),
-                    Size = UDim2.new(1, -30, 1, 0),
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    TextYAlignment = Enum.TextYAlignment.Center,
-                    Visible = not IsCompact,
-                })
-            else
-                TabLabel = New("TextLabel", {
-                    BackgroundTransparency = 1,
-                    Position = UDim2.fromOffset(30, 0),
-                    Size = UDim2.new(1, -30, 1, 0),
-                    Text = Name,
-                    TextSize = 16,
-                    TextTransparency = 0.5,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    Visible = not IsCompact,
-                    Parent = TabButton,
-                })
-            end
+            TabLabel = New("TextLabel", {
+                BackgroundTransparency = 1,
+                Position = UDim2.fromOffset(30, 0),
+                Size = UDim2.new(1, -30, 1, 0),
+                Text = Name,
+                TextSize = 16,
+                TextTransparency = 0.5,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Visible = not IsCompact,
+                Parent = TabButton,
+            })
 
             if Icon then
                 TabIcon = New("ImageLabel", {
