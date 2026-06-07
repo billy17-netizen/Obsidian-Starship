@@ -11059,7 +11059,7 @@ function Library:CreateWindow(WindowInfo)
         local UseCustomCurrentTabTitle = Library.TabTitleCustomFont and typeof(Library.TabTitleFont) == "table" and Library.TabTitleFont.Type == "CustomFont"
         if Library.TabTitleCustomFont and not UseCustomCurrentTabTitle and Library.TabTitleFontUrl then
             local Success, DownloadedFont = pcall(function()
-                return Library:DownloadCustomFont(Library.TabTitleFontUrl)
+                return Library:DownloadFont(Library.TabTitleFontUrl)
             end)
 
             if Success then
@@ -11672,7 +11672,7 @@ function Library:CreateWindow(WindowInfo)
             local UseCustomTabTitle = Library.TabTitleCustomFont and typeof(Library.TabTitleFont) == "table" and Library.TabTitleFont.Type == "CustomFont"
             if Library.TabTitleCustomFont and not UseCustomTabTitle and Library.TabTitleFontUrl then
                 local Success, DownloadedFont = pcall(function()
-                    return Library:DownloadCustomFont(Library.TabTitleFontUrl)
+                    return Library:DownloadFont(Library.TabTitleFontUrl)
                 end)
                 if Success then
                     Library.TabTitleFont = DownloadedFont
@@ -12131,7 +12131,7 @@ function Library:CreateWindow(WindowInfo)
                 local UseCustomGroupboxTitle = Library.GroupboxTitleCustomFont and typeof(Library.GroupboxTitleFont) == "table" and Library.GroupboxTitleFont.Type == "CustomFont"
                 if Library.GroupboxTitleCustomFont and not UseCustomGroupboxTitle and Library.GroupboxTitleFontUrl then
                     local Success, DownloadedFont = pcall(function()
-                        return Library:DownloadCustomFont(Library.GroupboxTitleFontUrl)
+                        return Library:DownloadFont(Library.GroupboxTitleFontUrl)
                     end)
                     if Success then
                         Library.GroupboxTitleFont = DownloadedFont
@@ -14768,7 +14768,7 @@ function Library:CreateLoading(LoadingInfo)
     local TitleFont = LoadingInfo.TitleFont
     if LoadingInfo.TitleCustomFont and not TitleFont and LoadingInfo.TitleFontUrl then
         local Success, DownloadedFont = pcall(function()
-            return Library:DownloadCustomFont(LoadingInfo.TitleFontUrl)
+            return Library:DownloadFont(LoadingInfo.TitleFontUrl)
         end)
         if Success then
             TitleFont = DownloadedFont
