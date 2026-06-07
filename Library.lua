@@ -11583,8 +11583,9 @@ function Library:CreateWindow(WindowInfo)
     end
 
     function Window:ShowTabInfo(Name, Description)
-        if typeof(CurrentTabLabel) == "table" and CurrentTabLabel.SetText then
-            CurrentTabLabel:SetText(Name)
+        local SetText = typeof(CurrentTabLabel) == "table" and rawget(CurrentTabLabel, "SetText")
+        if SetText then
+            SetText(CurrentTabLabel, Name)
         else
             CurrentTabLabel.Text = Name
         end
