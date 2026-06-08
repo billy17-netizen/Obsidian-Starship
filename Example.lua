@@ -334,7 +334,7 @@ LeftGroupBox:AddLiquidGlassButton({
             SurfaceFillTransparency = 0,
             DrawingDecorations = true,
             Decor = true,
-            DecorImage = RepoAsset("assets/sprites/BackgroundCitySkylineLoadingSheet.png"),
+            DecorImage = RepoAsset("assets/sprites/PixelStarshipSpaceLoadingSheet.png"),
             DecorImageTransparency = 0,
             DecorHeight = 170,
             DecorPosition = "Bottom",
@@ -343,7 +343,7 @@ LeftGroupBox:AddLiquidGlassButton({
             DecorSpriteFrameWidth = 690,
             DecorSpriteFrameHeight = 170,
             DecorSpriteFrameCount = 8,
-            DecorSpriteFPS = 10,
+            DecorSpriteFPS = 4,
             Drawings = {
                 {
                     Type = "Texture",
