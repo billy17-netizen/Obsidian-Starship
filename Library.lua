@@ -14193,6 +14193,11 @@ function Library:CreateLoading(LoadingInfo)
     local DecorPosition = typeof(DecorPositionVal) == "string" and DecorPositionVal:lower() or DecorPositionVal
     local DecorScaleType = typeof(LoadingInfo.DecorScaleType) == "EnumItem" and LoadingInfo.DecorScaleType
         or Enum.ScaleType.Crop
+    local DecorSpriteFrameWidth = tonumber(LoadingInfo.DecorSpriteFrameWidth) or 0
+    local DecorSpriteFrameHeight = tonumber(LoadingInfo.DecorSpriteFrameHeight) or 0
+    local DecorSpriteFrameCount = math.max(1, math.floor(tonumber(LoadingInfo.DecorSpriteFrameCount) or 1))
+    local DecorSpriteFPS = math.max(1, tonumber(LoadingInfo.DecorSpriteFPS) or 10)
+    local UseDecorSpriteSheet = DecorSpriteFrameWidth > 0 and DecorSpriteFrameHeight > 0 and DecorSpriteFrameCount > 1
 
     local function GetLoadingFrameWidth()
         return Loading.ShowSidebar and (Loading.ContentWidth + Loading.SidebarWidth) or Loading.WindowWidth
@@ -14501,6 +14506,30 @@ function Library:CreateLoading(LoadingInfo)
             Parent = DecorParent,
         })
         table.insert(Loading.Drawings, LoadingDecor)
+
+        if UseDecorSpriteSheet then
+            LoadingDecor.ImageRectSize = Vector2.new(DecorSpriteFrameWidth, DecorSpriteFrameHeight)
+            LoadingDecor.ImageRectOffset = Vector2.zero
+
+            local FrameIndex = 0
+            local FrameTime = 1 / DecorSpriteFPS
+            local Accumulator = 0
+
+            TrackConnection(RunService.RenderStepped:Connect(function(DeltaTime)
+                if not LoadingAnimations.Running or not LoadingDecor or not LoadingDecor.Parent then
+                    return
+                end
+
+                Accumulator += DeltaTime
+                if Accumulator < FrameTime then
+                    return
+                end
+
+                Accumulator %= FrameTime
+                FrameIndex = (FrameIndex + 1) % DecorSpriteFrameCount
+                LoadingDecor.ImageRectOffset = Vector2.new(FrameIndex * DecorSpriteFrameWidth, 0)
+            end))
+        end
 
         return LoadingDecor
     end
