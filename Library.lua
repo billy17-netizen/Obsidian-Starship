@@ -591,6 +591,12 @@ local Templates = {
         DecorSpriteFrameHeight = 0,
         DecorSpriteFrameCount = 1,
         DecorSpriteFPS = 10,
+        DecorMotion = false,
+        DecorMotionTitle = "STARSHIP-CORE",
+        DecorMotionSpeed = 2,
+        DecorMotionFlame = true,
+        DecorMotionStars = true,
+        DecorMotionStarCount = 18,
         ProgressShine = false,
         ProgressTexture = true,
         ProgressTextureImage = CustomImageManager.GetAsset("LoadingBarTexture"),
@@ -14202,6 +14208,12 @@ function Library:CreateLoading(LoadingInfo)
     local DecorSpriteFrameCount = math.max(1, math.floor(tonumber(LoadingInfo.DecorSpriteFrameCount) or 1))
     local DecorSpriteFPS = math.max(1, tonumber(LoadingInfo.DecorSpriteFPS) or 10)
     local UseDecorSpriteSheet = DecorSpriteFrameWidth > 0 and DecorSpriteFrameHeight > 0 and DecorSpriteFrameCount > 1
+    local UseDecorMotion = LoadingInfo.DecorMotion == true
+    local DecorMotionTitle = tostring(LoadingInfo.DecorMotionTitle or "STARSHIP-CORE")
+    local DecorMotionSpeed = math.max(0.25, tonumber(LoadingInfo.DecorMotionSpeed) or 2)
+    local DecorMotionFlame = LoadingInfo.DecorMotionFlame ~= false
+    local DecorMotionStars = LoadingInfo.DecorMotionStars ~= false
+    local DecorMotionStarCount = math.max(0, math.floor(tonumber(LoadingInfo.DecorMotionStarCount) or 18))
 
     local function GetLoadingFrameWidth()
         return Loading.ShowSidebar and (Loading.ContentWidth + Loading.SidebarWidth) or Loading.WindowWidth
@@ -14512,10 +14524,10 @@ function Library:CreateLoading(LoadingInfo)
         table.insert(Loading.Drawings, LoadingDecor)
 
         if UseDecorSpriteSheet then
+            local FrameIndex = math.min(1, DecorSpriteFrameCount - 1)
             LoadingDecor.ImageRectSize = Vector2.new(DecorSpriteFrameWidth, DecorSpriteFrameHeight)
-            LoadingDecor.ImageRectOffset = Vector2.zero
+            LoadingDecor.ImageRectOffset = Vector2.new(FrameIndex * DecorSpriteFrameWidth, 0)
 
-            local FrameIndex = 0
             local FrameTime = 1 / DecorSpriteFPS
             local Accumulator = 0
 
@@ -14537,6 +14549,133 @@ function Library:CreateLoading(LoadingInfo)
 
         return LoadingDecor
     end
+
+    local function CreateDecorMotion()
+        if not UseDecorMotion then
+            return
+        end
+
+        local AnchorPoint, Position, Size = GetDecorPlacement()
+        local MotionParent = LoadingInfo.DecorFullWidth and MainFrame or DrawingLayer
+        local MotionPanel = New("Frame", {
+            Name = "StarshipCoreMotionDecor",
+            AnchorPoint = AnchorPoint,
+            BackgroundColor3 = Color3.fromRGB(3, 2, 13),
+            BorderSizePixel = 0,
+            ClipsDescendants = true,
+            Position = Position,
+            Size = Size,
+            ZIndex = 2,
+            Parent = MotionParent,
+        })
+        table.insert(Loading.Drawings, MotionPanel)
+
+        New("TextLabel", {
+            Name = "StarshipCoreMotionTitle",
+            BackgroundTransparency = 1,
+            Font = Enum.Font.Code,
+            Position = UDim2.fromOffset(18, 12),
+            Size = UDim2.fromOffset(320, 28),
+            Text = DecorMotionTitle,
+            TextColor3 = Color3.fromRGB(245, 245, 255),
+            TextSize = 22,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 4,
+            Parent = MotionPanel,
+        })
+
+        local Ship = New("Frame", {
+            Name = "StarshipCoreShip",
+            BackgroundColor3 = Color3.fromRGB(235, 235, 250),
+            BorderSizePixel = 0,
+            Position = UDim2.fromOffset(28, 88),
+            Size = UDim2.fromOffset(110, 18),
+            ZIndex = 5,
+            Parent = MotionPanel,
+        })
+
+        New("Frame", { BackgroundColor3 = Color3.fromRGB(235, 235, 250), BorderSizePixel = 0, Position = UDim2.fromOffset(110, 6), Size = UDim2.fromOffset(26, 6), ZIndex = 5, Parent = Ship })
+        New("Frame", { BackgroundColor3 = Color3.fromRGB(235, 235, 250), BorderSizePixel = 0, Position = UDim2.fromOffset(24, -18), Size = UDim2.fromOffset(52, 18), ZIndex = 5, Parent = Ship })
+        New("Frame", { BackgroundColor3 = Color3.fromRGB(235, 235, 250), BorderSizePixel = 0, Position = UDim2.fromOffset(24, 18), Size = UDim2.fromOffset(52, 18), ZIndex = 5, Parent = Ship })
+        New("Frame", { BackgroundColor3 = Color3.fromRGB(180, 70, 255), BorderSizePixel = 0, Position = UDim2.fromOffset(10, 5), Size = UDim2.fromOffset(88, 4), ZIndex = 6, Parent = Ship })
+
+        local Flame = New("Frame", {
+            Name = "StarshipCoreFlame",
+            BackgroundColor3 = Color3.fromRGB(255, 60, 210),
+            BorderSizePixel = 0,
+            Position = UDim2.fromOffset(-42, 5),
+            Size = UDim2.fromOffset(42, 8),
+            ZIndex = 4,
+            Parent = Ship,
+        })
+
+        New("Frame", {
+            Name = "StarshipCoreMotionLine",
+            BackgroundColor3 = Color3.fromRGB(180, 70, 255),
+            BorderSizePixel = 0,
+            Position = UDim2.new(0, 0, 1, -28),
+            Size = UDim2.new(1, 0, 0, 3),
+            ZIndex = 4,
+            Parent = MotionPanel,
+        })
+
+        local Stars = {}
+        if DecorMotionStars then
+            for Index = 1, DecorMotionStarCount do
+                local X = (Index * 37) % 640
+                local Y = 42 + ((Index * 23) % 74)
+                local Size = Index % 4 == 0 and 3 or 2
+                local Star = New("Frame", {
+                    Name = "StarshipCoreStar",
+                    BackgroundColor3 = Index % 5 == 0 and Color3.fromRGB(255, 80, 220) or Color3.fromRGB(245, 245, 255),
+                    BorderSizePixel = 0,
+                    Position = UDim2.fromOffset(X, Y),
+                    Size = UDim2.fromOffset(Size, Size),
+                    ZIndex = 3,
+                    Parent = MotionPanel,
+                })
+
+                table.insert(Stars, {
+                    Instance = Star,
+                    BaseX = X,
+                    BaseY = Y,
+                    Speed = 8 + (Index % 5) * 3,
+                    Phase = Index * 0.73,
+                    Size = Size,
+                })
+            end
+        end
+
+        TrackConnection(RunService.RenderStepped:Connect(function()
+            if not LoadingAnimations.Running or not MotionPanel.Parent then
+                return
+            end
+
+            local Now = os.clock()
+            local Width = math.max(1, MotionPanel.AbsoluteSize.X)
+            local X = ((Now / DecorMotionSpeed) % 1) * (Width + 170) - 135
+            local Bob = math.sin(Now * 6) * 4
+            Ship.Position = UDim2.fromOffset(X, 88 + Bob)
+
+            if DecorMotionFlame then
+                Flame.Size = UDim2.fromOffset(34 + math.abs(math.sin(Now * 18)) * 22, 8)
+            end
+
+            for _, StarInfo in Stars do
+                local Star = StarInfo.Instance
+                if Star.Parent then
+                    local StarX = (StarInfo.BaseX - (Now * StarInfo.Speed)) % math.max(1, Width)
+                    local Alpha = 0.45 + math.abs(math.sin(Now * 2.4 + StarInfo.Phase)) * 0.55
+                    local StarSize = StarInfo.Size + (Alpha > 0.82 and 1 or 0)
+                    Star.Position = UDim2.fromOffset(StarX, StarInfo.BaseY)
+                    Star.Size = UDim2.fromOffset(StarSize, StarSize)
+                    Star.BackgroundTransparency = 1 - Alpha
+                end
+            end
+        end))
+    end
+
+    CreateDecorMotion()
 
     function Loading:SetDecorImage(Image)
         DecorImage = ResolveLoadingImageAsset(Image, "LoadingDecor_")
