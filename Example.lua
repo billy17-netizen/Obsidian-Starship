@@ -300,13 +300,38 @@ GlowMinimizeBox:AddButton({
         GlowMinimizeBox:ToggleMinimized()
     end,
 })
-LeftGroupBox:AddLiquidGlassToggle("ExampleLiquidToggle", {
+local ExampleLiquidToggle = LeftGroupBox:AddLiquidGlassToggle("ExampleLiquidToggle", {
     Text = "Liquid glass toggle",
     Default = true,
     Callback = function(Value)
         print("[cb] Liquid glass toggle changed:", Value)
     end,
 })
+
+ExampleLiquidToggle:AddColorPicker("ExampleLiquidToggleColor", {
+    Default = Color3.fromRGB(125, 85, 255),
+    Title = "Liquid glass toggle color",
+    Transparency = 0,
+    Callback = function(Color)
+        print("[cb] Liquid glass color changed:", Color)
+    end,
+})
+
+ExampleLiquidToggle:AddKeyPicker("ExampleLiquidToggleKey", {
+    Default = "G",
+    Mode = "Toggle",
+    SyncToggleState = true,
+    Text = "Liquid glass toggle keybind",
+    Callback = function(Value)
+        print("[cb] Liquid glass keybind toggled:", Value)
+    end,
+})
+
+ExampleLiquidToggle:OnChanged(function(Value)
+    print("Liquid glass OnChanged fired:", Value)
+end)
+
+ExampleLiquidToggle:SetValueNoCallback(ExampleLiquidToggle.Value)
 LeftGroupBox:AddShinyButton({
     Text = "Shiny animated button",
     Callback = function()

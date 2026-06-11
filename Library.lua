@@ -5549,10 +5549,20 @@ do
         local Toggle = {
             Text = Info.Text,
             Value = Info.Default,
+
+            Tooltip = Info.Tooltip,
+            DisabledTooltip = Info.DisabledTooltip,
+            TooltipTable = nil,
+
             Callback = Info.Callback,
             Changed = Info.Changed,
+
+            Risky = Info.Risky,
             Disabled = Info.Disabled,
             Visible = Info.Visible,
+            Addons = {},
+
+            Variant = "LiquidGlass",
             Type = "Toggle",
         }
 
@@ -5585,9 +5595,18 @@ do
             Size = UDim2.new(1, -58, 1, 0),
             Text = Toggle.Text,
             TextSize = 14,
+            TextTransparency = 0.4,
             TextXAlignment = Enum.TextXAlignment.Left,
             Parent = Holder,
         })
+
+        New("UIListLayout", {
+            FillDirection = Enum.FillDirection.Horizontal,
+            HorizontalAlignment = Enum.HorizontalAlignment.Right,
+            Padding = UDim.new(0, 6),
+            Parent = TextLabel,
+        })
+
         local Pill = New("Frame", {
             AnchorPoint = Vector2.new(1, 0.5),
             BackgroundColor3 = "OutlineColor",
@@ -5605,61 +5624,128 @@ do
         })
         table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Dot }))
 
-        function Toggle:Display()
-            TweenService
-                :Create(Pill, Library.TweenInfo, {
-                    BackgroundColor3 = Toggle.Value and Library.Scheme.AccentColor or Library.Scheme.OutlineColor,
-                })
-                :Play()
-            TweenService
-                :Create(Dot, Library.TweenInfo, {
-                    Position = Toggle.Value and UDim2.new(1, -15, 0.5, 0) or UDim2.new(0, 3, 0.5, 0),
-                })
-                :Play()
+        function Toggle:UpdateColors()
+            Toggle:Display()
         end
 
-        function Toggle:SetValue(Value)
-            if Toggle.Disabled then
+        function Toggle:Display()
+            if Library.Unloaded then
                 return
             end
-            Toggle.Value = Value == true
-            Toggle:Display()
-            Library:SafeCallback(Toggle.Callback, Toggle.Value)
-            Library:SafeCallback(Toggle.Changed, Toggle.Value)
+
+            TweenService:Create(Pill, Library.TweenInfo, {
+                BackgroundColor3 = Toggle.Value and Library.Scheme.AccentColor or Library.Scheme.OutlineColor,
+                BackgroundTransparency = Toggle.Disabled and 0.55 or 0,
+            }):Play()
+            TweenService:Create(Dot, Library.TweenInfo, {
+                Position = Toggle.Value and UDim2.new(1, -15, 0.5, 0) or UDim2.new(0, 3, 0.5, 0),
+            }):Play()
+            TweenService:Create(TextLabel, Library.TweenInfo, {
+                TextTransparency = Toggle.Disabled and 0.8 or (Toggle.Value and 0 or 0.4),
+            }):Play()
         end
 
         function Toggle:OnChanged(Func)
             Toggle.Changed = Func
         end
 
-        function Toggle:SetDisabled(Disabled)
-            Toggle.Disabled = Disabled
-            Holder.Active = not Disabled
-            TextLabel.TextTransparency = Disabled and 0.75 or 0
+        function Toggle:SetValueNoCallback(Value)
+            if Toggle.Disabled then
+                return
+            end
+
+            Toggle.Value = Value == true
+            Toggle:Display()
+
+            for _, Addon in Toggle.Addons do
+                if Addon.Type == "KeyPicker" and Addon.SyncToggleState then
+                    Addon.Toggled = Toggle.Value
+                    Addon:Update()
+                end
+            end
+
+            Library:UpdateDependencyBoxes()
         end
 
-        function Toggle:SetVisible(Visible)
+        function Toggle:SetValue(Value)
+            if Toggle.Disabled then
+                return
+            end
+
+            Toggle:SetValueNoCallback(Value)
+            Library:SafeCallback(Toggle.Callback, Toggle.Value)
+            Library:SafeCallback(Toggle.Changed, Toggle.Value)
+        end
+
+        function Toggle:SetDisabled(Disabled: boolean)
+            Toggle.Disabled = Disabled
+
+            if Toggle.TooltipTable then
+                Toggle.TooltipTable.Disabled = Toggle.Disabled
+            end
+
+            for _, Addon in Toggle.Addons do
+                if Addon.Type == "KeyPicker" and Addon.SyncToggleState then
+                    Addon:Update()
+                end
+            end
+
+            Holder.Active = not Toggle.Disabled
+            Toggle:Display()
+        end
+
+        function Toggle:SetVisible(Visible: boolean)
             Toggle.Visible = Visible
-            Holder.Visible = Visible
+            Holder.Visible = Toggle.Visible
             Groupbox:Resize()
         end
 
-        function Toggle:SetText(Text)
-            Toggle.Text = tostring(Text)
-            TextLabel.Text = Toggle.Text
+        function Toggle:SetText(Text: string)
+            Toggle.Text = Text
+            TextLabel.Text = Text
         end
 
         Holder.MouseButton1Click:Connect(function()
+            if Toggle.Disabled then
+                return
+            end
+
             Toggle:SetValue(not Toggle.Value)
         end)
 
+        if typeof(Toggle.Tooltip) == "string" or typeof(Toggle.DisabledTooltip) == "string" then
+            Toggle.TooltipTable = Library:AddTooltip(Toggle.Tooltip, Toggle.DisabledTooltip, Holder)
+            Toggle.TooltipTable.Disabled = Toggle.Disabled
+        end
+
+        if Toggle.Risky then
+            TextLabel.TextColor3 = Library.Scheme.RedColor
+            Library.Registry[TextLabel].TextColor3 = "RedColor"
+        end
+
         Toggle:Display()
-        Toggle.Holder = Holder
+        Groupbox:Resize()
+
+        function Toggle:AddColorPicker(...)
+            return BaseAddons.__index.AddColorPicker(Toggle, ...)
+        end
+
+        function Toggle:AddKeyPicker(...)
+            return BaseAddons.__index.AddKeyPicker(Toggle, ...)
+        end
+
         Toggle.TextLabel = TextLabel
+        Toggle.Container = Container
+        setmetatable(Toggle, BaseAddons)
+
+        Toggle.Holder = Holder
         table.insert(Groupbox.Elements, Toggle)
+
+        Toggle.Default = Toggle.Value
+
         Toggles[Idx] = Toggle
         Options[Idx] = Toggle
-        Groupbox:Resize()
+
         return Toggle
     end
 
